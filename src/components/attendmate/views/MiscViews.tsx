@@ -1,0 +1,346 @@
+"use client";
+// Timetable · Postings · Exams · Modules · Settings views.
+import { useMemo, useRef, useState } from "react";
+import { Download, LogOut, RotateCcw, Upload, Stethoscope, CalendarClock } from "lucide-react";
+import { useAttendMate } from "@/lib/attendmate/storage";
+import {
+  MASTER_TIMETABLE, SUBJECT_MAP, AETCOM_MODULES, PANDEMIC_MODULES, EXAMS,
+} from "@/lib/attendmate/data";
+import {
+  todayISO, getGroupInfo, getClinicalPostingForDate, getPersonalRosterTimeline,
+  formatDisplayDate, daysBetween,
+} from "@/lib/attendmate/engine";
+
+/* ================= TIMETABLE ================= */
+export function TimetableView() {
+  const { state } = useAttendMate();
+  const subGroup = getGroupInfo(state.profile.rollNo).subGroup;
+  const days = [1, 2, 3, 4, 5, 6];
+  const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const rows = ["09", "cp", "14", "15", "16"];
+  const rowTime = (slotId: string) => {
+    for (const d of days) { const s = (MASTER_TIMETABLE[d] || []).find((x) => x.id.endsWith(slotId === "cp" ? "-cp" : `-${slotId}`)); if (s) return s.time; }
+    return "";
+  };
+
+  return (
+    <div className="space-y-5">
+      <section className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="text-[15px] font-extrabold">Master weekly timetable</h2>
+          <span className="rounded-full bg-violet-600/10 px-2.5 py-1 text-[11px] font-bold text-violet-600 dark:text-violet-300">Sub-group {subGroup}</span>
+          <span className="ml-auto text-[11px] font-semibold text-muted-foreground">20 theory hrs · 18 clinical hrs per week</span>
+        </div>
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full min-w-[640px] border-collapse text-[12px]">
+            <thead>
+              <tr>
+                <th className="w-24 rounded-tl-xl bg-muted p-2.5 text-left text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Time</th>
+                {dayNames.map((d) => <th key={d} className="bg-muted p-2.5 text-left text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{d}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r, ri) => (
+                <tr key={r}>
+                  <td className="border-t bg-muted/40 p-2.5 text-[11px] font-bold text-muted-foreground">{rowTime(r)}</td>
+                  {days.map((d) => {
+                    const slot = (MASTER_TIMETABLE[d] || [])[ri];
+                    if (!slot) return <td key={d} className="border-t p-1.5" />;
+                    const isCP = slot.type === "clinical";
+                    const posting = isCP ? getClinicalPostingForDate(todayISO(), subGroup) : null;
+                    const meta = isCP ? null : SUBJECT_MAP[slot.subject];
+                    return (
+                      <td key={d} className="border-t p-1.5">
+                        <div className="rounded-lg border px-2.5 py-2"
+                          style={meta ? { borderColor: `${meta.color}55`, background: `${meta.color}14` } : { borderColor: "rgb(139 92 246 / .35)", background: "rgb(139 92 246 / .08)" }}>
+                          <div className="font-bold">{isCP ? `CP — ${posting ? posting.code : "—"}` : slot.subject}</div>
+                          <div className="mt-0.5 line-clamp-1 text-[10px] text-muted-foreground" title={slot.label}>
+                            {isCP ? (posting ? posting.name : "Clinical Posting") : meta?.name}
+                          </div>
+                        </div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-3 text-[11px] text-muted-foreground">
+          PS/DR (Tue 09) and RD/AN (Wed 14) alternate weekly in the official schedule — mark the slot, then credit either subject. The 10 AM – 1 PM posting credits the department your sub-group is rotating through.
+        </p>
+      </section>
+    </div>
+  );
+}
+
+/* ================= POSTINGS ================= */
+export function PostingsView() {
+  const { state } = useAttendMate();
+  const subGroup = getGroupInfo(state.profile.rollNo).subGroup;
+  const timeline = useMemo(() => getPersonalRosterTimeline(subGroup), [subGroup]);
+  const today = todayISO();
+  const current = getClinicalPostingForDate(today, subGroup);
+  const past = timeline.filter((r) => r.end < today);
+  const upcoming = timeline.filter((r) => r.start > today);
+  const daysLeft = current ? daysBetween(today, current.end) : null;
+  const totalDays = current ? daysBetween(current.start, current.end) + 1 : null;
+
+  return (
+    <div className="space-y-5">
+      {current ? (
+        <section className="rounded-2xl border bg-card p-5 shadow-sm">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-violet-600/10 text-violet-600 dark:text-violet-300"><Stethoscope className="h-5 w-5" /></span>
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Current rotation</div>
+              <h2 className="text-lg font-extrabold">{current.name} ({current.code})</h2>
+            </div>
+            <span className="ml-auto rounded-full bg-violet-600/10 px-3 py-1.5 text-[11.5px] font-bold text-violet-600 dark:text-violet-300">{current.block}</span>
+          </div>
+          <div className="mt-4 flex items-center gap-3">
+            <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
+              <div className="h-full rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-500"
+                style={{ width: `${totalDays ? Math.min(100, Math.max(0, ((totalDays - (daysLeft || 0)) / totalDays) * 100)) : 0}%` }} />
+            </div>
+            <span className="text-[12px] font-bold">{daysLeft !== null && daysLeft >= 0 ? `${daysLeft} day${daysLeft === 1 ? "" : "s"} left` : "ends today"}</span>
+          </div>
+          <p className="mt-2 text-[12px] text-muted-foreground">{formatDisplayDate(current.start)} → {formatDisplayDate(current.end)} · your 10 AM – 1 PM posting credits {current.code}</p>
+        </section>
+      ) : (
+        <section className="rounded-2xl border border-dashed bg-card p-5 text-center text-sm text-muted-foreground">
+          No rotation scheduled for today — check the timeline below.
+        </section>
+      )}
+
+      <section className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+        <div className="border-b bg-muted/40 px-5 py-3 text-[13px] font-extrabold">Full posting timeline — Sub-group {subGroup}</div>
+        <div className="max-h-[420px] overflow-y-auto">
+          {timeline.map((r) => {
+            const status = r.end < today ? "past" : r.start <= today ? "current" : "upcoming";
+            return (
+              <div key={`${r.code}-${r.start}`} className={`flex flex-wrap items-center gap-x-3 gap-y-1 px-5 py-3 text-[12.5px] ${status === "current" ? "bg-violet-600/5" : ""}`}>
+                <span className={`h-2 w-2 shrink-0 rounded-full ${status === "past" ? "bg-muted-foreground/30" : status === "current" ? "bg-violet-600" : "bg-emerald-500"}`} />
+                <span className={`font-semibold ${status === "past" ? "text-muted-foreground" : ""}`}>{r.name} <span className="text-muted-foreground">({r.code})</span></span>
+                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">{r.block}</span>
+                <span className="ml-auto text-[11px] text-muted-foreground">{formatDisplayDate(r.start)} → {formatDisplayDate(r.end)}</span>
+              </div>
+            );
+          })}
+        </div>
+        <div className="border-t bg-muted/20 px-5 py-2.5 text-[11px] text-muted-foreground">{past.length} completed · {timeline.length - past.length - upcoming.length} current · {upcoming.length} upcoming</div>
+      </section>
+    </div>
+  );
+}
+
+/* ================= EXAMS ================= */
+export function ExamsView() {
+  const today = todayISO();
+  return (
+    <div className="space-y-4">
+      <section className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
+        <h2 className="flex items-center gap-2 text-[15px] font-extrabold"><CalendarClock className="h-4 w-4 text-violet-600" /> Assessment calendar 2026–28</h2>
+        <p className="mt-1 text-xs text-muted-foreground">Official internal assessments and the pre-university exam. Assessment windows appear dashed on the calendar.</p>
+      </section>
+      {EXAMS.map((e) => {
+        const daysTo = daysBetween(today, e.start);
+        const happening = today >= e.start && today <= e.end;
+        const done = today > e.end;
+        return (
+          <section key={e.id} className={`rounded-2xl border p-4 shadow-sm sm:p-5 ${happening ? "border-rose-500/50 bg-rose-500/5" : "bg-card"}`}>
+            <div className="flex flex-wrap items-center gap-3">
+              <div>
+                <h3 className="text-[14.5px] font-extrabold">{e.name}</h3>
+                <p className="mt-0.5 max-w-xl text-[12px] text-muted-foreground">{e.subjects}</p>
+              </div>
+              <span className={`ml-auto rounded-full px-3 py-1.5 text-[11.5px] font-bold ${
+                happening ? "bg-rose-500 text-white" : done ? "bg-muted text-muted-foreground" : "bg-violet-600/10 text-violet-600 dark:text-violet-300"
+              }`}>
+                {happening ? "HAPPENING NOW" : done ? "COMPLETED" : `T−${daysTo} DAYS`}
+              </span>
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px]">
+              <span className="font-semibold">{formatDisplayDate(e.start)} → {formatDisplayDate(e.end)}</span>
+              <span className="text-muted-foreground">{daysBetween(e.start, e.end) + 1} days · week {Math.ceil((daysBetween("2026-10-10", e.start) + 1) / 7)} of session</span>
+            </div>
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ================= MODULES ================= */
+export function ModulesView() {
+  const { state, setState } = useAttendMate();
+  const aetcomDone = AETCOM_MODULES.filter((m) => state.aetcomDone[m.id]).length;
+  const panDone = PANDEMIC_MODULES.filter((m) => state.pandemicDone[m.id]).length;
+
+  const section = (title: string, mods: typeof AETCOM_MODULES, done: number, doneMap: Record<string, boolean>, key: "aetcomDone" | "pandemicDone") => (
+    <section className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+      <div className="border-b bg-muted/40 px-5 py-3.5">
+        <div className="flex items-center gap-3">
+          <h3 className="text-[13.5px] font-extrabold">{title}</h3>
+          <span className="rounded-full bg-violet-600/10 px-2.5 py-1 text-[11px] font-bold text-violet-600 dark:text-violet-300">{done}/{mods.length} done</span>
+        </div>
+        <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-muted">
+          <div className="h-full rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-500" style={{ width: `${(done / mods.length) * 100}%` }} />
+        </div>
+      </div>
+      <div className="max-h-[360px] overflow-y-auto">
+        {mods.map((m) => (
+          <label key={m.id} className="flex cursor-pointer items-start gap-3 border-b px-5 py-3 last:border-b-0 hover:bg-muted/30">
+            <input
+              type="checkbox"
+              checked={Boolean(doneMap[m.id])}
+              onChange={(e) => setState((p) => ({ ...p, [key]: { ...p[key], [m.id]: e.target.checked } }), "Toggle module")}
+              className="mt-1 h-4 w-4 shrink-0 cursor-pointer accent-violet-600"
+            />
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={`text-[12.5px] font-bold ${doneMap[m.id] ? "text-muted-foreground line-through" : ""}`}>{m.title}</span>
+                <span className="rounded bg-muted px-1.5 py-0.5 text-[9.5px] font-bold text-muted-foreground">{m.hours}</span>
+              </div>
+              <div className="mt-0.5 text-[11px] font-semibold text-violet-600 dark:text-violet-300">{m.dept}</div>
+              <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{m.topic}</p>
+            </div>
+          </label>
+        ))}
+      </div>
+    </section>
+  );
+
+  return (
+    <div className="space-y-5">
+      {section("AETCOM Module — Foundation Course (Phase-III)", AETCOM_MODULES, aetcomDone, state.aetcomDone, "aetcomDone")}
+      {section("Pandemic Management Module", PANDEMIC_MODULES, panDone, state.pandemicDone, "pandemicDone")}
+    </div>
+  );
+}
+
+/* ================= SETTINGS ================= */
+export function SettingsView() {
+  const { state, setState, resetAll, importState, setTheme } = useAttendMate();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [form, setForm] = useState({
+    name: state.profile.name, email: state.profile.email, rollNo: String(state.profile.rollNo),
+    theoryTarget: String(state.profile.theoryTarget), clinicalTarget: String(state.profile.clinicalTarget),
+  });
+
+  const exportBackup = () => {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `attendmate-pro-backup-${todayISO()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setMsg("Backup downloaded — keep it safe.");
+  };
+
+  const importBackup = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const ok = importState(String(reader.result));
+      setMsg(ok ? "Backup imported successfully." : "That file doesn't look like an AttendMate Pro backup.");
+    };
+    reader.readAsText(file);
+  };
+
+  const signOut = () => {
+    setState((p) => ({ ...p, profile: { ...p.profile, name: "", email: "", rollNo: 1 } }), "Sign out");
+    window.location.hash = "/";
+  };
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      <section className="rounded-2xl border bg-card p-5 shadow-sm">
+        <h2 className="text-[15px] font-extrabold">Profile</h2>
+        <p className="text-xs text-muted-foreground">Stored only in this browser — nothing is transmitted.</p>
+        <div className="mt-4 space-y-3">
+          <label className="block text-[11px] font-semibold text-muted-foreground">Full name
+            <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
+              className="mt-1 w-full rounded-xl border bg-background px-3.5 py-2.5 text-[13px] font-bold outline-none focus:border-violet-500" />
+          </label>
+          <label className="block text-[11px] font-semibold text-muted-foreground">Email
+            <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
+              className="mt-1 w-full rounded-xl border bg-background px-3.5 py-2.5 text-[13px] font-bold outline-none focus:border-violet-500" />
+          </label>
+          <label className="block text-[11px] font-semibold text-muted-foreground">Roll number (1–100)
+            <input type="number" min={1} max={100} value={form.rollNo} onChange={(e) => setForm({ ...form, rollNo: e.target.value })}
+              className="mt-1 w-32 rounded-xl border bg-background px-3.5 py-2.5 text-[13px] font-bold outline-none focus:border-violet-500" />
+          </label>
+          <button
+            onClick={() => setState((p) => ({ ...p, profile: { ...p.profile, name: form.name.trim() || p.profile.name, email: form.email.trim() || p.profile.email, rollNo: Math.max(1, Math.min(100, parseInt(form.rollNo, 10) || p.profile.rollNo)) } }), "Update profile")}
+            className="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-500 px-4 py-2.5 text-[12.5px] font-bold text-white shadow-md shadow-violet-600/30 transition hover:brightness-110"
+          >Save profile</button>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border bg-card p-5 shadow-sm">
+        <h2 className="text-[15px] font-extrabold">Attendance targets</h2>
+        <p className="text-xs text-muted-foreground">College rules are 75% theory / 80% clinical — customise if your department says otherwise.</p>
+        <div className="mt-4 flex items-end gap-3">
+          <label className="text-[11px] font-semibold text-muted-foreground">Theory %
+            <input type="number" min={1} max={100} value={form.theoryTarget} onChange={(e) => setForm({ ...form, theoryTarget: e.target.value })}
+              className="mt-1 w-24 rounded-xl border bg-background px-3.5 py-2.5 text-[13px] font-bold outline-none focus:border-violet-500" />
+          </label>
+          <label className="text-[11px] font-semibold text-muted-foreground">Clinical %
+            <input type="number" min={1} max={100} value={form.clinicalTarget} onChange={(e) => setForm({ ...form, clinicalTarget: e.target.value })}
+              className="mt-1 w-24 rounded-xl border bg-background px-3.5 py-2.5 text-[13px] font-bold outline-none focus:border-violet-500" />
+          </label>
+          <button
+            onClick={() => setState((p) => ({ ...p, profile: { ...p.profile, theoryTarget: Math.max(1, Math.min(100, parseInt(form.theoryTarget, 10) || 75)), clinicalTarget: Math.max(1, Math.min(100, parseInt(form.clinicalTarget, 10) || 80)) } }), "Update targets")}
+            className="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-500 px-4 py-2.5 text-[12.5px] font-bold text-white shadow-md shadow-violet-600/30 transition hover:brightness-110"
+          >Save targets</button>
+        </div>
+
+        <h3 className="mt-6 text-[13px] font-extrabold">Appearance</h3>
+        <div className="mt-2 inline-flex rounded-xl border bg-muted/60 p-1">
+          {(["light", "dark"] as const).map((th) => (
+            <button key={th} onClick={() => setTheme(th)}
+              className={`rounded-lg px-4 py-1.5 text-[12px] font-bold capitalize ${state.profile.theme === th ? "bg-background shadow-sm" : "text-muted-foreground"}`}>{th}</button>
+          ))}
+        </div>
+      </section>
+
+      <section className="rounded-2xl border bg-card p-5 shadow-sm lg:col-span-2">
+        <h2 className="text-[15px] font-extrabold">Data — backup &amp; recovery</h2>
+        <p className="text-xs text-muted-foreground">Everything lives in localStorage. Export regularly; import on a new device to restore.</p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button onClick={exportBackup} className="inline-flex items-center gap-1.5 rounded-xl border bg-background px-4 py-2.5 text-[12.5px] font-bold transition hover:border-violet-500 hover:text-violet-600">
+            <Download className="h-4 w-4" /> Export backup
+          </button>
+          <button onClick={() => fileRef.current?.click()} className="inline-flex items-center gap-1.5 rounded-xl border bg-background px-4 py-2.5 text-[12.5px] font-bold transition hover:border-violet-500 hover:text-violet-600">
+            <Upload className="h-4 w-4" /> Import backup
+          </button>
+          <input ref={fileRef} type="file" accept="application/json" className="hidden" aria-hidden
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) importBackup(f); e.target.value = ""; }} />
+          {confirmReset ? (
+            <span className="inline-flex items-center gap-2 rounded-xl border border-rose-500/50 bg-rose-500/5 px-3 py-2 text-[12px] font-bold text-rose-600 dark:text-rose-300">
+              Erase all data?
+              <button onClick={() => { resetAll(); setConfirmReset(false); setMsg("All data erased."); window.location.hash = "/"; }}
+                className="rounded-lg bg-rose-500 px-3 py-1.5 text-[11.5px] font-bold text-white">Yes, erase</button>
+              <button onClick={() => setConfirmReset(false)} className="rounded-lg border px-3 py-1.5 text-[11.5px] font-bold">Cancel</button>
+            </span>
+          ) : (
+            <button onClick={() => setConfirmReset(true)} className="inline-flex items-center gap-1.5 rounded-xl border bg-background px-4 py-2.5 text-[12.5px] font-bold text-rose-600 dark:text-rose-300 transition hover:border-rose-500">
+              <RotateCcw className="h-4 w-4" /> Reset all data
+            </button>
+          )}
+          <button onClick={signOut} className="inline-flex items-center gap-1.5 rounded-xl border bg-background px-4 py-2.5 text-[12.5px] font-bold transition hover:border-violet-500 hover:text-violet-600">
+            <LogOut className="h-4 w-4" /> Sign out
+          </button>
+        </div>
+        {msg && <p className="mt-3 rounded-xl border border-dashed p-2.5 text-[12px] font-semibold">{msg}</p>}
+        <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">
+          AttendMate Pro is an unofficial, student-built tool — not affiliated with NSMCH or Aryabhatta Knowledge University.
+          Dates and rosters follow the published Phase-III (Part-2) schedule; the college&apos;s word always wins.
+        </p>
+      </section>
+    </div>
+  );
+}
