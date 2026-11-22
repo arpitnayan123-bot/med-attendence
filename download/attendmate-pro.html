@@ -264,8 +264,79 @@ a{color:var(--brand)}
 
 footer{padding:20px clamp(14px,3vw,28px) 30px;color:var(--muted);font-size:11.5px;text-align:center}
 
+/* ================= LOGIN (Google-style) ================= */
+.login-overlay{
+  position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;padding:20px;
+  background:var(--bg);overflow-y:auto;
+}
+.login-card{
+  width:100%;max-width:410px;background:var(--card);border:1px solid var(--line);
+  border-radius:26px;padding:clamp(26px,6vw,44px);box-shadow:0 12px 40px rgba(15,23,42,.14);
+}
+.login-logo{display:flex;justify-content:center;margin-bottom:16px}
+.login-card h1{font-size:24px;font-weight:500;text-align:center;margin:0 0 8px;color:var(--ink)}
+.login-card .lead{text-align:center;font-size:14.5px;color:var(--muted);margin:0 0 22px;line-height:1.45}
+.login-card .lead b{color:var(--brand);font-weight:600}
+.g-field{position:relative;margin-top:14px}
+.g-field input{
+  width:100%;padding:17px 14px 5px;border:1px solid var(--line);border-radius:8px;
+  font-size:15.5px;line-height:1.2;outline:none;background:transparent;color:var(--ink);
+}
+.g-field label{
+  position:absolute;left:13px;top:18px;color:var(--muted);font-size:15px;pointer-events:none;
+  transition:all .14s ease;background:var(--card);padding:0 5px;line-height:1;
+}
+.g-field input:focus{border-color:var(--brand);border-width:2px;padding:16px 13px 4px}
+.g-field input:focus + label,.g-field input:not(:placeholder-shown) + label{top:5px;font-size:11.5px;color:var(--brand);font-weight:600}
+.g-field.error input{border-color:var(--bad)}
+.g-field.error label{color:var(--bad)}
+.g-err{color:var(--bad);font-size:12px;margin-top:6px;display:none}
+.g-field.error + .g-err,.g-field.error .g-err{display:block}
+.login-actions{display:flex;justify-content:space-between;align-items:center;margin-top:26px;gap:10px;flex-wrap:wrap}
+.g-btn{
+  background:#1a73e8;color:#fff;border:none;border-radius:22px;padding:10px 26px;
+  font-size:14.5px;font-weight:600;letter-spacing:.01em;transition:box-shadow .15s,filter .15s;
+}
+.g-btn:hover{filter:brightness(1.06);box-shadow:0 1px 4px rgba(26,115,232,.4)}
+.g-link{color:var(--brand);font-weight:600;font-size:13.5px;background:none;border:none;padding:8px 4px;border-radius:6px}
+.g-link:hover{background:var(--brand-soft)}
+.g-hint{font-size:12px;color:var(--muted);text-align:center;margin:20px 0 0;line-height:1.5}
+.g-email-chip{
+  display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:99px;
+  padding:7px 14px 7px 8px;font-size:13.5px;font-weight:600;margin:2px 0 18px;background:var(--soft);
+}
+.g-foot{
+  width:100%;max-width:410px;display:flex;justify-content:space-between;align-items:center;
+  margin-top:14px;font-size:12px;color:var(--muted);flex-wrap:wrap;gap:6px;padding:0 6px;
+}
+.step2-head{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.g-back{width:36px;height:36px;border-radius:99px;border:none;background:none;color:var(--muted);display:inline-flex;align-items:center;justify-content:center;flex:none}
+.g-back:hover{background:var(--soft)}
+.g-back svg{width:19px;height:19px}
+
+/* account menu */
+#btn-account{padding:0;overflow:visible}
+.avatar{
+  width:30px;height:30px;border-radius:99px;color:#fff;font-size:13px;font-weight:700;
+  display:inline-flex;align-items:center;justify-content:center;flex:none;
+}
+.avatar.lg{width:44px;height:44px;font-size:19px}
+.acct-menu{
+  position:absolute;top:54px;right:10px;z-index:60;width:290px;max-width:calc(100vw - 20px);
+  background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);
+  padding:16px;display:none;text-align:center;
+}
+.acct-menu.open{display:block}
+.acct-menu .nm{font-weight:700;font-size:15px;margin-top:10px}
+.acct-menu .em{font-size:12.5px;color:var(--muted);word-break:break-all}
+.acct-menu .row-btns{display:flex;gap:8px;margin-top:14px}
+.acct-menu .row-btns .btn{flex:1;justify-content:center}
+.acct-signout{color:var(--bad);border-color:var(--bad)}
+.acct-signout:hover{background:var(--bad-soft);color:var(--bad);border-color:var(--bad)}
+
 @media print{
-  .sidebar,.tabsbar,.topbar,.icon-btn,.btn,#toast{display:none !important}
+  .sidebar,.tabsbar,.topbar,.icon-btn,.btn,#toast,.login-overlay,.acct-menu{display:none !important}
   body{background:#fff}
   .main{margin-left:0}
   .view{display:none !important}
@@ -305,6 +376,17 @@ footer{padding:20px clamp(14px,3vw,28px) 30px;color:var(--muted);font-size:11.5p
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
       </button>
       <button class="icon-btn" id="btn-theme" title="Toggle theme"><span id="theme-icon"></span></button>
+      <button class="icon-btn" id="btn-account" title="Account"><span id="avatar-slot"></span></button>
+      <div class="acct-menu" id="acct-menu">
+        <div style="display:flex;justify-content:center"><span class="avatar lg" id="acct-avatar"></span></div>
+        <div class="nm" id="acct-name">—</div>
+        <div class="em" id="acct-email">—</div>
+        <div style="margin-top:8px"><span class="chip brand" id="acct-roll">—</span></div>
+        <div class="row-btns">
+          <button class="btn sm" id="acct-settings">Settings</button>
+          <button class="btn sm acct-signout" id="acct-signout">Sign out</button>
+        </div>
+      </div>
     </header>
 
     <main class="content">
@@ -511,6 +593,7 @@ footer{padding:20px clamp(14px,3vw,28px) 30px;color:var(--muted);font-size:11.5p
           <div class="row" style="margin-top:14px">
             <button class="btn primary sm" id="btn-save-profile">Save profile</button>
           </div>
+          <div class="row" id="set-email-line" style="margin-top:10px"></div>
         </div>
         <div class="card">
           <h2>Attendance targets</h2>
@@ -547,6 +630,58 @@ footer{padding:20px clamp(14px,3vw,28px) 30px;color:var(--muted);font-size:11.5p
 </div>
 
 <div id="toast"><span id="toast-msg"></span><button id="toast-undo" style="display:none">Undo</button></div>
+
+<!-- ============ LOGIN WINDOW (Google-style, local-only) ============ -->
+<div class="login-overlay" id="login-overlay" style="display:none">
+  <!-- Step 1: Gmail -->
+  <div class="login-card" id="login-step1">
+    <div class="login-logo">
+      <svg width="38" height="38" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+    </div>
+    <h1>Sign in with Google</h1>
+    <p class="lead">to continue to <b>AttendMate Pro</b><br>NSMCH Bihta · Phase-III (Part-2) · 2026–27</p>
+    <div class="g-field" id="f-email">
+      <input type="email" id="login-email" placeholder=" " autocomplete="email" autocapitalize="off" spellcheck="false">
+      <label for="login-email">Email (e.g. yourname@gmail.com)</label>
+    </div>
+    <div class="g-err" id="err-email">Enter a valid email address</div>
+    <div class="login-actions">
+      <button class="g-link" id="btn-create-acct" type="button">Create account</button>
+      <button class="g-btn" id="btn-email-next" type="button">Next</button>
+    </div>
+    <p class="g-hint">Offline demo sign-in — this stores your name, roll number and email only in this browser (localStorage). Nothing is sent to Google or anywhere else.</p>
+  </div>
+
+  <!-- Step 2: Name + Roll no -->
+  <div class="login-card" id="login-step2" style="display:none">
+    <div class="step2-head">
+      <button class="g-back" id="btn-login-back" type="button" title="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg></button>
+      <span class="g-email-chip"><span class="avatar" id="chip-avatar" style="width:22px;height:22px;font-size:10px">G</span><span id="chip-email">—</span></span>
+    </div>
+    <h1 style="font-size:21px">Complete your profile</h1>
+    <p class="lead">Your roll number decides your clinical posting sub-group</p>
+    <div class="g-field" id="f-name">
+      <input type="text" id="login-name" placeholder=" " autocomplete="name">
+      <label for="login-name">Full name</label>
+    </div>
+    <div class="g-err" id="err-name">Enter your name</div>
+    <div class="g-field" id="f-roll">
+      <input type="number" id="login-roll" placeholder=" " min="1" max="100" inputmode="numeric">
+      <label for="login-roll">Roll number (1–100)</label>
+    </div>
+    <div class="g-err" id="err-roll">Roll number must be between 1 and 100</div>
+    <div style="margin-top:12px"><span class="chip brand" id="roll-group-chip" style="display:none"></span></div>
+    <div class="login-actions">
+      <button class="g-link" id="btn-login-back2" type="button">Back</button>
+      <button class="g-btn" id="btn-signin" type="button">Sign in</button>
+    </div>
+  </div>
+
+  <div class="g-foot">
+    <span>English (India)</span>
+    <span>Help · Privacy · Terms</span>
+  </div>
+</div>
 <script>
 "use strict";
 /* =====================================================================
@@ -725,7 +860,7 @@ function getTodayISO() {
 }
 function createDefaultState() {
   return {
-    profile: { name: '', rollNo: 1, theoryTarget: 75, clinicalTarget: 80, theme: 'light' },
+    profile: { name: '', email: '', rollNo: 1, theoryTarget: 75, clinicalTarget: 80, theme: 'light' },
     logs: {},          // { 'YYYY-MM-DD': { [slotId]: { status, subject, kind?, custom? } } }
     baseline: {},      // { code: { theoryPresent, theoryTotal, clinicalPresent, clinicalTotal } }
     aetcomDone: {},
@@ -1085,6 +1220,14 @@ function updateHeaderChips(st) {
   const gi = getGroupInfo(state.profile.rollNo);
   document.getElementById('side-student').innerHTML =
     (state.profile.name ? esc(state.profile.name) + ' · ' : '') + `Roll ${gi.rollNo} · Sub-group ${gi.subGroup}`;
+  // account avatar + menu
+  const letter = (state.profile.name || state.profile.email || 'A').trim().charAt(0).toUpperCase() || 'A';
+  const col = avatarColor(state.profile.email || state.profile.name || 'A');
+  document.getElementById('avatar-slot').innerHTML = `<span class="avatar" style="background:${col}">${esc(letter)}</span>`;
+  document.getElementById('acct-avatar').outerHTML = `<span class="avatar lg" id="acct-avatar" style="background:${col}">${esc(letter)}</span>`;
+  document.getElementById('acct-name').textContent = state.profile.name || 'Student';
+  document.getElementById('acct-email').textContent = state.profile.email || 'Local account (not signed in)';
+  document.getElementById('acct-roll').textContent = `Roll ${gi.rollNo} · Group ${gi.group} · Sub-group ${gi.subGroup}`;
   // at-risk badge on Subjects tab
   const target = state.profile.theoryTarget;
   let atRisk = 0;
@@ -1094,6 +1237,121 @@ function updateHeaderChips(st) {
   }
   const badge = document.getElementById('badge-subjects');
   if (badge) { badge.textContent = atRisk; badge.style.display = atRisk ? 'inline' : 'none'; }
+}
+
+/* ================= LOGIN (Google-style, local-only) ================= */
+const AVATAR_COLORS = ['#1a73e8', '#d93025', '#188038', '#f29900', '#9334e6', '#0b8043', '#c5221f', '#e37400'];
+function avatarColor(seed) {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+}
+function isSignedIn() { return !!(state.profile.email && state.profile.email.trim()); }
+
+function showLogin() {
+  document.getElementById('login-overlay').style.display = 'flex';
+  showLoginStep(1);
+  const em = document.getElementById('login-email');
+  let lastEmail = '';
+  try { lastEmail = localStorage.getItem('attendmate_pro_last_email') || ''; } catch (e) { }
+  em.value = state.profile.email || lastEmail;
+  setTimeout(() => em.focus(), 60);
+}
+function hideLogin() { document.getElementById('login-overlay').style.display = 'none'; }
+
+function showLoginStep(n) {
+  document.getElementById('login-step1').style.display = n === 1 ? '' : 'none';
+  document.getElementById('login-step2').style.display = n === 2 ? '' : 'none';
+}
+
+function setFieldError(fieldId, errId, on) {
+  document.getElementById(fieldId).classList.toggle('error', on);
+  document.getElementById(errId).style.display = on ? 'block' : 'none';
+}
+
+function wireLogin() {
+  const emIn = document.getElementById('login-email');
+  const goStep2 = () => {
+    const email = emIn.value.trim().toLowerCase();
+    const ok = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+    setFieldError('f-email', 'err-email', !ok);
+    if (!ok) { emIn.focus(); return; }
+    const letter = email.charAt(0).toUpperCase();
+    document.getElementById('chip-email').textContent = email;
+    const chipAv = document.getElementById('chip-avatar');
+    chipAv.textContent = letter;
+    chipAv.style.background = avatarColor(email);
+    const nm = document.getElementById('login-name');
+    const rl = document.getElementById('login-roll');
+    if (!nm.value) nm.value = state.profile.name || '';
+    if (!rl.value) rl.value = state.profile.rollNo > 1 ? state.profile.rollNo : '';
+    showLoginStep(2);
+    setTimeout(() => nm.focus(), 60);
+  };
+  document.getElementById('btn-email-next').addEventListener('click', goStep2);
+  emIn.addEventListener('keydown', e => { if (e.key === 'Enter') goStep2(); });
+  emIn.addEventListener('input', () => setFieldError('f-email', 'err-email', false));
+  document.getElementById('btn-create-acct').addEventListener('click', () =>
+    toast('Offline app — just sign in with any Gmail address; it is stored only in this browser'));
+  const back = () => { showLoginStep(1); setTimeout(() => emIn.focus(), 60); };
+  document.getElementById('btn-login-back').addEventListener('click', back);
+  document.getElementById('btn-login-back2').addEventListener('click', back);
+
+  const nmIn = document.getElementById('login-name');
+  const rlIn = document.getElementById('login-roll');
+  nmIn.addEventListener('input', () => setFieldError('f-name', 'err-name', false));
+  rlIn.addEventListener('input', () => {
+    setFieldError('f-roll', 'err-roll', false);
+    const r = parseInt(rlIn.value, 10);
+    const chip = document.getElementById('roll-group-chip');
+    if (r >= 1 && r <= 100) {
+      const gi = getGroupInfo(r);
+      chip.style.display = 'inline-flex';
+      chip.textContent = `Group ${gi.group} · Sub-group ${gi.subGroup}`;
+    } else chip.style.display = 'none';
+  });
+  const signIn = () => {
+    const name = nmIn.value.trim();
+    const roll = parseInt(rlIn.value, 10);
+    const badName = !name, badRoll = !(roll >= 1 && roll <= 100);
+    setFieldError('f-name', 'err-name', badName);
+    setFieldError('f-roll', 'err-roll', badRoll);
+    if (badName) { nmIn.focus(); return; }
+    if (badRoll) { rlIn.focus(); return; }
+    state.profile.name = name;
+    state.profile.rollNo = roll;
+    state.profile.email = emIn.value.trim().toLowerCase();
+    saveState();
+    hideLogin();
+    renderAll();
+    const gi = getGroupInfo(roll);
+    toast(`Welcome, ${name} — Roll ${roll} · Sub-group ${gi.subGroup}`);
+  };
+  document.getElementById('btn-signin').addEventListener('click', signIn);
+  [nmIn, rlIn].forEach(el => el.addEventListener('keydown', e => { if (e.key === 'Enter') signIn(); }));
+
+  // account menu
+  const menu = document.getElementById('acct-menu');
+  document.getElementById('btn-account').addEventListener('click', e => {
+    e.stopPropagation();
+    menu.classList.toggle('open');
+  });
+  document.addEventListener('click', e => {
+    if (!menu.contains(e.target)) menu.classList.remove('open');
+  });
+  document.getElementById('acct-settings').addEventListener('click', () => {
+    menu.classList.remove('open');
+    switchTab('settings');
+  });
+  document.getElementById('acct-signout').addEventListener('click', () => {
+    menu.classList.remove('open');
+    try { localStorage.setItem('attendmate_pro_last_email', state.profile.email || ''); } catch (e) { }
+    state.profile.email = '';
+    saveState();
+    renderAll();
+    showLogin();
+    toast('Signed out — attendance data kept in this browser');
+  });
 }
 
 /* ================= TODAY ================= */
@@ -1640,6 +1898,10 @@ function renderSettings() {
   try { bytes = (localStorage.getItem(STORAGE_KEY) || '').length; } catch (e) { }
   const loggedDays = Object.keys(state.logs).length;
   document.getElementById('storage-info').textContent = `${loggedDays} day${loggedDays === 1 ? '' : 's'} logged · ${(bytes / 1024).toFixed(1)} KB stored · last saved locally just now`;
+  const emLine = document.getElementById('set-email-line');
+  if (emLine) emLine.innerHTML = state.profile.email
+    ? `<span class="chip brand">${icon('check', 11)} Signed in as ${esc(state.profile.email)}</span><span class="xs muted">email is managed from the account menu (sign out / sign in)</span>`
+    : `<span class="chip warn">Not signed in</span>`;
   const feats = [
     ['Offline-first', 'Zero dependencies — works fully offline, no CDN, install-and-go single file'],
     ['Smart bunk planner', 'Per-subject safe-skip and must-attend math for both theory and clinical modes'],
@@ -1810,7 +2072,7 @@ function wireEvents() {
     if (!confirm('Reset ALL data? Logs, baselines and module progress will be erased. Export a backup first!')) return;
     pushUndo();
     state = createDefaultState();
-    saveState(); applyTheme(); switchTab('today'); toast('All data reset');
+    saveState(); applyTheme(); switchTab('today'); showLogin(); toast('All data reset');
   });
 }
 
@@ -1826,7 +2088,9 @@ function init() {
   document.getElementById('fill-from').value = shiftDate(todayIso, -7);
   document.getElementById('fill-to').value = shiftDate(todayIso, -1);
   wireEvents();
+  wireLogin();
   switchTab(state.activeTab || 'today');
+  if (!isSignedIn()) showLogin();
 }
 init();
 </script>
