@@ -46,20 +46,20 @@ export default function AnalyticsView() {
     <div className="space-y-5">
       {/* streak + volume cards */}
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <StatCard value={streaks.totalLoggedDays} label="Days logged" accent="rgb(139 92 246)" />
+        <StatCard value={streaks.totalLoggedDays} label="Days logged" accent="rgb(249 115 22)" />
         <StatCard value={<span>{streaks.current} 🔥</span>} label="Current perfect streak" accent="rgb(244 63 94)" />
         <StatCard value={streaks.best} label="Best streak" accent="rgb(245 158 11)" />
         <StatCard value={streaks.perfectDays} label="Perfect days (0 absent)" accent="rgb(16 185 129)" />
         <StatCard value={holidays} label="Holiday / cancelled days" accent="rgb(100 116 139)" />
-        <StatCard value={attended} label="Classes attended" accent="rgb(14 165 233)" />
+        <StatCard value={attended} label="Classes attended" accent="rgb(234 88 12)" />
       </section>
 
       {/* rings */}
-      <section className="rounded-2xl border bg-card p-5 shadow-sm">
+      <section className="clay-card p-5">
         <h2 className="text-[15px] font-extrabold">Overall attendance rings</h2>
         <p className="text-xs text-muted-foreground">Live percentage vs your targets across both modes</p>
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
-          <div className="flex items-center gap-4 rounded-2xl border p-4">
+        <div className="mt-4 grid gap-4 lg:grid-cols-3">
+          <div className="flex items-center gap-4 rounded-2xl bg-muted/60 p-4">
             <Ring pct={ov.tT > 0 ? (ov.tP / ov.tT) * 100 : null} target={state.profile.theoryTarget} size={96} />
             <div className="text-[12.5px]">
               <div className="font-extrabold">Theory</div>
@@ -69,7 +69,7 @@ export default function AnalyticsView() {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-4 rounded-2xl border p-4">
+          <div className="flex items-center gap-4 rounded-2xl bg-muted/60 p-4">
             <Ring pct={ov.cT > 0 ? (ov.cP / ov.cT) * 100 : null} target={state.profile.clinicalTarget} size={96} />
             <div className="text-[12.5px]">
               <div className="font-extrabold">Clinical</div>
@@ -79,7 +79,7 @@ export default function AnalyticsView() {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-4 rounded-2xl border p-4">
+          <div className="flex items-center gap-4 rounded-2xl bg-muted/60 p-4">
             <Ring pct={combT > 0 ? (combP / combT) * 100 : null} target={combinedTarget} size={96} />
             <div className="text-[12.5px]">
               <div className="font-extrabold">Combined</div>
@@ -91,7 +91,7 @@ export default function AnalyticsView() {
       </section>
 
       {/* trend */}
-      <section className="rounded-2xl border bg-card p-5 shadow-sm">
+      <section className="clay-card p-5">
         <h2 className="text-[15px] font-extrabold">Day-by-day trend</h2>
         <p className="text-xs text-muted-foreground">Overall % of every logged day (most recent 15)</p>
         <div className="mt-3"><Sparkline points={trend} target={state.profile.theoryTarget} /></div>
@@ -99,7 +99,7 @@ export default function AnalyticsView() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* weekday averages */}
-        <section className="rounded-2xl border bg-card p-5 shadow-sm">
+        <section className="clay-card p-5">
           <h2 className="text-[15px] font-extrabold">Average by weekday</h2>
           <p className="text-xs text-muted-foreground">Where your week is strongest</p>
           <div className="mt-4 space-y-2.5">
@@ -107,7 +107,7 @@ export default function AnalyticsView() {
               <div key={w.dow} className="flex items-center gap-3">
                 <span className="w-9 text-[12px] font-bold text-muted-foreground">{WD_NAMES[i]}</span>
                 <div className="h-3 flex-1 overflow-hidden rounded-full bg-muted">
-                  <div className="h-full rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-500"
+                  <div className="h-full rounded-full bg-gradient-to-r from-orange-500 to-rose-500"
                     style={{ width: `${w.avg ?? 0}%` }} />
                 </div>
                 <span className="w-24 text-right text-[11.5px] font-bold">
@@ -120,8 +120,8 @@ export default function AnalyticsView() {
         </section>
 
         {/* projection */}
-        <section className="rounded-2xl border bg-card p-5 shadow-sm">
-          <h2 className="flex items-center gap-2 text-[15px] font-extrabold"><TrendingUp className="h-4 w-4 text-violet-600" /> Projection to Sentup</h2>
+        <section className="clay-card p-5">
+          <h2 className="flex items-center gap-2 text-[15px] font-extrabold"><TrendingUp className="h-4 w-4 text-orange-600 dark:text-orange-300" /> Projection to Sentup</h2>
           <p className="text-xs text-muted-foreground">Where you land on 24 Dec 2027 if your current rate holds</p>
           <div className="mt-4 flex items-center justify-around gap-2">
             <div className="text-center">
@@ -141,7 +141,7 @@ export default function AnalyticsView() {
       </div>
 
       {/* leaderboard */}
-      <section className="rounded-2xl border bg-card p-5 shadow-sm">
+      <section className="clay-card p-5">
         <div className="flex flex-wrap items-center gap-3">
           <h2 className="text-[15px] font-extrabold">Subject leaderboard</h2>
           <div className="inline-flex rounded-lg border bg-muted/60 p-0.5 text-[11px] font-bold">

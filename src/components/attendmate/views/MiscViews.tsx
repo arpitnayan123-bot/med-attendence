@@ -25,10 +25,10 @@ export function TimetableView() {
 
   return (
     <div className="space-y-5">
-      <section className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
+      <section className="clay-card p-4 sm:p-5">
         <div className="flex flex-wrap items-center gap-3">
           <h2 className="text-[15px] font-extrabold">Master weekly timetable</h2>
-          <span className="rounded-full bg-violet-600/10 px-2.5 py-1 text-[11px] font-bold text-violet-600 dark:text-violet-300">Sub-group {subGroup}</span>
+          <span className="rounded-full bg-orange-500/10 px-2.5 py-1 text-[11px] font-bold text-orange-600 dark:text-orange-300">Sub-group {subGroup}</span>
           <span className="ml-auto text-[11px] font-semibold text-muted-foreground">20 theory hrs · 18 clinical hrs per week</span>
         </div>
         <div className="mt-4 overflow-x-auto">
@@ -52,7 +52,7 @@ export function TimetableView() {
                     return (
                       <td key={d} className="border-t p-1.5">
                         <div className="rounded-lg border px-2.5 py-2"
-                          style={meta ? { borderColor: `${meta.color}55`, background: `${meta.color}14` } : { borderColor: "rgb(139 92 246 / .35)", background: "rgb(139 92 246 / .08)" }}>
+                          style={meta ? { borderColor: `${meta.color}55`, background: `${meta.color}14` } : { borderColor: "rgb(249 115 22 / .35)", background: "rgb(249 115 22 / .08)" }}>
                           <div className="font-bold">{isCP ? `CP — ${posting ? posting.code : "—"}` : slot.subject}</div>
                           <div className="mt-0.5 line-clamp-1 text-[10px] text-muted-foreground" title={slot.label}>
                             {isCP ? (posting ? posting.name : "Clinical Posting") : meta?.name}
@@ -89,18 +89,18 @@ export function PostingsView() {
   return (
     <div className="space-y-5">
       {current ? (
-        <section className="rounded-2xl border bg-card p-5 shadow-sm">
+        <section className="clay-card p-5">
           <div className="flex flex-wrap items-center gap-3">
-            <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-violet-600/10 text-violet-600 dark:text-violet-300"><Stethoscope className="h-5 w-5" /></span>
+            <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-300"><Stethoscope className="h-5 w-5" /></span>
             <div>
               <div className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Current rotation</div>
               <h2 className="text-lg font-extrabold">{current.name} ({current.code})</h2>
             </div>
-            <span className="ml-auto rounded-full bg-violet-600/10 px-3 py-1.5 text-[11.5px] font-bold text-violet-600 dark:text-violet-300">{current.block}</span>
+            <span className="ml-auto rounded-full bg-orange-500/10 px-3 py-1.5 text-[11.5px] font-bold text-orange-600 dark:text-orange-300">{current.block}</span>
           </div>
           <div className="mt-4 flex items-center gap-3">
             <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
-              <div className="h-full rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-500"
+              <div className="h-full rounded-full bg-gradient-to-r from-orange-500 to-rose-500"
                 style={{ width: `${totalDays ? Math.min(100, Math.max(0, ((totalDays - (daysLeft || 0)) / totalDays) * 100)) : 0}%` }} />
             </div>
             <span className="text-[12px] font-bold">{daysLeft !== null && daysLeft >= 0 ? `${daysLeft} day${daysLeft === 1 ? "" : "s"} left` : "ends today"}</span>
@@ -113,14 +113,14 @@ export function PostingsView() {
         </section>
       )}
 
-      <section className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+      <section className="clay-card overflow-hidden">
         <div className="border-b bg-muted/40 px-5 py-3 text-[13px] font-extrabold">Full posting timeline — Sub-group {subGroup}</div>
         <div className="max-h-[420px] overflow-y-auto">
           {timeline.map((r) => {
             const status = r.end < today ? "past" : r.start <= today ? "current" : "upcoming";
             return (
-              <div key={`${r.code}-${r.start}`} className={`flex flex-wrap items-center gap-x-3 gap-y-1 px-5 py-3 text-[12.5px] ${status === "current" ? "bg-violet-600/5" : ""}`}>
-                <span className={`h-2 w-2 shrink-0 rounded-full ${status === "past" ? "bg-muted-foreground/30" : status === "current" ? "bg-violet-600" : "bg-emerald-500"}`} />
+              <div key={`${r.code}-${r.start}`} className={`flex flex-wrap items-center gap-x-3 gap-y-1 px-5 py-3 text-[12.5px] ${status === "current" ? "bg-orange-500/5" : ""}`}>
+                <span className={`h-2 w-2 shrink-0 rounded-full ${status === "past" ? "bg-muted-foreground/30" : status === "current" ? "bg-orange-500" : "bg-emerald-500"}`} />
                 <span className={`font-semibold ${status === "past" ? "text-muted-foreground" : ""}`}>{r.name} <span className="text-muted-foreground">({r.code})</span></span>
                 <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">{r.block}</span>
                 <span className="ml-auto text-[11px] text-muted-foreground">{formatDisplayDate(r.start)} → {formatDisplayDate(r.end)}</span>
@@ -139,8 +139,8 @@ export function ExamsView() {
   const today = todayISO();
   return (
     <div className="space-y-4">
-      <section className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
-        <h2 className="flex items-center gap-2 text-[15px] font-extrabold"><CalendarClock className="h-4 w-4 text-violet-600" /> Assessment calendar 2026–28</h2>
+      <section className="clay-card p-4 sm:p-5">
+        <h2 className="flex items-center gap-2 text-[15px] font-extrabold"><CalendarClock className="h-4 w-4 text-orange-600 dark:text-orange-300" /> Assessment calendar 2026–28</h2>
         <p className="mt-1 text-xs text-muted-foreground">Official internal assessments and the pre-university exam. Assessment windows appear dashed on the calendar.</p>
       </section>
       {EXAMS.map((e) => {
@@ -148,14 +148,14 @@ export function ExamsView() {
         const happening = today >= e.start && today <= e.end;
         const done = today > e.end;
         return (
-          <section key={e.id} className={`rounded-2xl border p-4 shadow-sm sm:p-5 ${happening ? "border-rose-500/50 bg-rose-500/5" : "bg-card"}`}>
+          <section key={e.id} className={`clay-card p-4 sm:p-5 ${happening ? "outline-2 outline-offset-[-2px] outline-rose-500/50" : ""}`}>
             <div className="flex flex-wrap items-center gap-3">
               <div>
                 <h3 className="text-[14.5px] font-extrabold">{e.name}</h3>
                 <p className="mt-0.5 max-w-xl text-[12px] text-muted-foreground">{e.subjects}</p>
               </div>
               <span className={`ml-auto rounded-full px-3 py-1.5 text-[11.5px] font-bold ${
-                happening ? "bg-rose-500 text-white" : done ? "bg-muted text-muted-foreground" : "bg-violet-600/10 text-violet-600 dark:text-violet-300"
+                happening ? "bg-rose-500 text-white shadow-md shadow-rose-500/30" : done ? "bg-muted text-muted-foreground" : "bg-orange-500/10 text-orange-600 dark:text-orange-300"
               }`}>
                 {happening ? "HAPPENING NOW" : done ? "COMPLETED" : `T−${daysTo} DAYS`}
               </span>
@@ -178,14 +178,14 @@ export function ModulesView() {
   const panDone = PANDEMIC_MODULES.filter((m) => state.pandemicDone[m.id]).length;
 
   const section = (title: string, mods: typeof AETCOM_MODULES, done: number, doneMap: Record<string, boolean>, key: "aetcomDone" | "pandemicDone") => (
-    <section className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+    <section className="clay-card overflow-hidden">
       <div className="border-b bg-muted/40 px-5 py-3.5">
         <div className="flex items-center gap-3">
           <h3 className="text-[13.5px] font-extrabold">{title}</h3>
-          <span className="rounded-full bg-violet-600/10 px-2.5 py-1 text-[11px] font-bold text-violet-600 dark:text-violet-300">{done}/{mods.length} done</span>
+          <span className="rounded-full bg-orange-500/10 px-2.5 py-1 text-[11px] font-bold text-orange-600 dark:text-orange-300">{done}/{mods.length} done</span>
         </div>
         <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-muted">
-          <div className="h-full rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-500" style={{ width: `${(done / mods.length) * 100}%` }} />
+          <div className="h-full rounded-full bg-gradient-to-r from-orange-500 to-rose-500" style={{ width: `${(done / mods.length) * 100}%` }} />
         </div>
       </div>
       <div className="max-h-[360px] overflow-y-auto">
@@ -195,14 +195,14 @@ export function ModulesView() {
               type="checkbox"
               checked={Boolean(doneMap[m.id])}
               onChange={(e) => setState((p) => ({ ...p, [key]: { ...p[key], [m.id]: e.target.checked } }), "Toggle module")}
-              className="mt-1 h-4 w-4 shrink-0 cursor-pointer accent-violet-600"
+              className="mt-1 h-4 w-4 shrink-0 cursor-pointer accent-orange-500"
             />
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <span className={`text-[12.5px] font-bold ${doneMap[m.id] ? "text-muted-foreground line-through" : ""}`}>{m.title}</span>
                 <span className="rounded bg-muted px-1.5 py-0.5 text-[9.5px] font-bold text-muted-foreground">{m.hours}</span>
               </div>
-              <div className="mt-0.5 text-[11px] font-semibold text-violet-600 dark:text-violet-300">{m.dept}</div>
+              <div className="mt-0.5 text-[11px] font-semibold text-orange-600 dark:text-orange-300">{m.dept}</div>
               <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{m.topic}</p>
             </div>
           </label>
@@ -258,14 +258,14 @@ export function SettingsView() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <section className="rounded-2xl border bg-card p-5 shadow-sm lg:col-span-2">
+      <section className="clay-card p-5 lg:col-span-2">
         <div className="flex flex-wrap items-center gap-3">
           <h2 className="text-[15px] font-extrabold">Account &amp; sync</h2>
           {authed ? (
             <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
               syncStatus === "synced" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-              : syncStatus === "saving" ? "bg-violet-600/10 text-violet-600 dark:text-violet-300"
-              : syncStatus === "queued" ? "bg-violet-600/10 text-violet-600 dark:text-violet-300"
+              : syncStatus === "saving" ? "bg-orange-500/10 text-orange-600 dark:text-orange-300"
+              : syncStatus === "queued" ? "bg-orange-500/10 text-orange-600 dark:text-orange-300"
               : syncStatus === "offline" ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
               : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
             }`}>
@@ -275,7 +275,7 @@ export function SettingsView() {
             <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-bold text-muted-foreground">Local only — no account</span>
           )}
           {(syncStatus === "offline" || syncStatus === "error") && (
-            <button onClick={retrySync} className="rounded-xl border bg-background px-3.5 py-2 text-[12px] font-bold text-muted-foreground transition hover:text-violet-600">Retry now</button>
+            <button onClick={retrySync} className="clay-btn clay-soft clay-sm">Retry now</button>
           )}
         </div>
         <p className="mt-1.5 max-w-[70ch] text-xs text-muted-foreground">
@@ -285,44 +285,44 @@ export function SettingsView() {
         </p>
       </section>
 
-      <section className="rounded-2xl border bg-card p-5 shadow-sm">
+      <section className="clay-card p-5">
         <h2 className="text-[15px] font-extrabold">Profile</h2>
         <p className="text-xs text-muted-foreground">{authed ? "Changes sync to your account automatically." : "Stored only in this browser — nothing is transmitted."}</p>
         <div className="mt-4 space-y-3">
           <label className="block text-[11px] font-semibold text-muted-foreground">Full name
             <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="mt-1 w-full rounded-xl border bg-background px-3.5 py-2.5 text-[13px] font-bold outline-none focus:border-violet-500" />
+              className="clay-input mt-1 w-full px-3.5 py-2.5 text-[13px]" />
           </label>
           <label className="block text-[11px] font-semibold text-muted-foreground">Email
             <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="mt-1 w-full rounded-xl border bg-background px-3.5 py-2.5 text-[13px] font-bold outline-none focus:border-violet-500" />
+              className="clay-input mt-1 w-full px-3.5 py-2.5 text-[13px]" />
           </label>
           <label className="block text-[11px] font-semibold text-muted-foreground">Roll number (1–100)
             <input type="number" min={1} max={100} value={form.rollNo} onChange={(e) => setForm({ ...form, rollNo: e.target.value })}
-              className="mt-1 w-32 rounded-xl border bg-background px-3.5 py-2.5 text-[13px] font-bold outline-none focus:border-violet-500" />
+              className="clay-input mt-1 w-32 px-3.5 py-2.5 text-[13px]" />
           </label>
           <button
             onClick={() => setState((p) => ({ ...p, profile: { ...p.profile, name: form.name.trim() || p.profile.name, email: form.email.trim() || p.profile.email, rollNo: Math.max(1, Math.min(100, parseInt(form.rollNo, 10) || p.profile.rollNo)) } }), "Update profile")}
-            className="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-500 px-4 py-2.5 text-[12.5px] font-bold text-white shadow-md shadow-violet-600/30 transition hover:brightness-110"
+            className="clay-btn clay-primary clay-md"
           >Save profile</button>
         </div>
       </section>
 
-      <section className="rounded-2xl border bg-card p-5 shadow-sm">
+      <section className="clay-card p-5">
         <h2 className="text-[15px] font-extrabold">Attendance targets</h2>
         <p className="text-xs text-muted-foreground">College rules are 75% theory / 80% clinical — customise if your department says otherwise.</p>
         <div className="mt-4 flex items-end gap-3">
           <label className="text-[11px] font-semibold text-muted-foreground">Theory %
             <input type="number" min={1} max={100} value={form.theoryTarget} onChange={(e) => setForm({ ...form, theoryTarget: e.target.value })}
-              className="mt-1 w-24 rounded-xl border bg-background px-3.5 py-2.5 text-[13px] font-bold outline-none focus:border-violet-500" />
+              className="clay-input mt-1 w-24 px-3.5 py-2.5 text-[13px]" />
           </label>
           <label className="text-[11px] font-semibold text-muted-foreground">Clinical %
             <input type="number" min={1} max={100} value={form.clinicalTarget} onChange={(e) => setForm({ ...form, clinicalTarget: e.target.value })}
-              className="mt-1 w-24 rounded-xl border bg-background px-3.5 py-2.5 text-[13px] font-bold outline-none focus:border-violet-500" />
+              className="clay-input mt-1 w-24 px-3.5 py-2.5 text-[13px]" />
           </label>
           <button
             onClick={() => setState((p) => ({ ...p, profile: { ...p.profile, theoryTarget: Math.max(1, Math.min(100, parseInt(form.theoryTarget, 10) || 75)), clinicalTarget: Math.max(1, Math.min(100, parseInt(form.clinicalTarget, 10) || 80)) } }), "Update targets")}
-            className="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-500 px-4 py-2.5 text-[12.5px] font-bold text-white shadow-md shadow-violet-600/30 transition hover:brightness-110"
+            className="clay-btn clay-primary clay-md"
           >Save targets</button>
         </div>
 
@@ -335,14 +335,14 @@ export function SettingsView() {
         </div>
       </section>
 
-      <section className="rounded-2xl border bg-card p-5 shadow-sm lg:col-span-2">
+      <section className="clay-card p-5 lg:col-span-2">
         <h2 className="text-[15px] font-extrabold">Data — backup &amp; recovery</h2>
         <p className="text-xs text-muted-foreground">Everything lives in localStorage. Export regularly; import on a new device to restore.</p>
         <div className="mt-4 flex flex-wrap gap-2">
-          <button onClick={exportBackup} className="inline-flex items-center gap-1.5 rounded-xl border bg-background px-4 py-2.5 text-[12.5px] font-bold transition hover:border-violet-500 hover:text-violet-600">
+          <button onClick={exportBackup} className="clay-btn clay-soft clay-md">
             <Download className="h-4 w-4" /> Export backup
           </button>
-          <button onClick={() => fileRef.current?.click()} className="inline-flex items-center gap-1.5 rounded-xl border bg-background px-4 py-2.5 text-[12.5px] font-bold transition hover:border-violet-500 hover:text-violet-600">
+          <button onClick={() => fileRef.current?.click()} className="clay-btn clay-soft clay-md">
             <Upload className="h-4 w-4" /> Import backup
           </button>
           <input ref={fileRef} type="file" accept="application/json" className="hidden" aria-hidden
@@ -351,15 +351,15 @@ export function SettingsView() {
             <span className="inline-flex items-center gap-2 rounded-xl border border-rose-500/50 bg-rose-500/5 px-3 py-2 text-[12px] font-bold text-rose-600 dark:text-rose-300">
               Erase all data{authed ? " (device + server)" : ""}?
               <button onClick={() => { void resetAll().then(() => setMsg("All data erased.")); setConfirmReset(false); }}
-                className="rounded-lg bg-rose-500 px-3 py-1.5 text-[11.5px] font-bold text-white">Yes, erase</button>
-              <button onClick={() => setConfirmReset(false)} className="rounded-lg border px-3 py-1.5 text-[11.5px] font-bold">Cancel</button>
+                className="clay-btn clay-danger clay-sm rounded-[0.7rem]">Yes, erase</button>
+              <button onClick={() => setConfirmReset(false)} className="clay-btn clay-soft clay-sm rounded-[0.7rem]">Cancel</button>
             </span>
           ) : (
-            <button onClick={() => setConfirmReset(true)} className="inline-flex items-center gap-1.5 rounded-xl border bg-background px-4 py-2.5 text-[12.5px] font-bold text-rose-600 dark:text-rose-300 transition hover:border-rose-500">
+            <button onClick={() => setConfirmReset(true)} className="clay-btn clay-danger clay-md">
               <RotateCcw className="h-4 w-4" /> Reset all data
             </button>
           )}
-          <button onClick={() => void signOutEverywhere()} className="inline-flex items-center gap-1.5 rounded-xl border bg-background px-4 py-2.5 text-[12.5px] font-bold transition hover:border-violet-500 hover:text-violet-600">
+          <button onClick={() => void signOutEverywhere()} className="clay-btn clay-soft clay-md">
             <LogOut className="h-4 w-4" /> Sign out
           </button>
         </div>

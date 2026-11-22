@@ -48,14 +48,16 @@ export default function Dashboard({ nav }: { nav: (to: string) => void }) {
   if (!isSignedIn(state)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
-        <div className="w-full max-w-sm rounded-3xl border bg-card p-8 text-center shadow-lg">
+      <div className="relative w-full max-w-sm">
+        <div className="clay-card w-full max-w-sm p-8 text-center">
           <BrandMark size={44} />
           <h1 className="mt-4 text-lg font-bold">Sign in required</h1>
           <p className="mt-1.5 text-[13px] text-muted-foreground">Your dashboard lives on this device — a quick local sign-in unlocks it.</p>
-          <button onClick={() => nav("")} className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-500 py-3 text-sm font-bold text-white shadow-lg shadow-violet-600/30 transition hover:brightness-110">
+          <button onClick={() => nav("")} className="clay-btn clay-primary clay-lg mt-6 w-full">
             <LogIn className="h-4 w-4" /> Go to sign-in
           </button>
         </div>
+      </div>
       </div>
     );
   }
@@ -65,11 +67,11 @@ export default function Dashboard({ nav }: { nav: (to: string) => void }) {
 
   return (
     <div className="relative min-h-screen overflow-x-clip bg-background">
-      {/* ambient wash — subtle color pools, theme-aware */}
+      {/* ambient wash — warm color pools, theme-aware */}
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0">
-        <div className="absolute -left-24 -top-32 h-96 w-96 rounded-full bg-violet-500/[0.09] blur-3xl dark:bg-violet-500/[0.17]" />
-        <div className="absolute -right-28 top-1/3 h-[26rem] w-[26rem] rounded-full bg-fuchsia-500/[0.07] blur-3xl dark:bg-fuchsia-500/[0.13]" />
-        <div className="absolute -bottom-40 left-1/3 h-96 w-96 rounded-full bg-emerald-500/[0.06] blur-3xl dark:bg-emerald-500/[0.10]" />
+        <div className="absolute -left-24 -top-32 h-96 w-96 rounded-full bg-orange-500/[0.10] blur-3xl dark:bg-orange-500/[0.16]" />
+        <div className="absolute -right-28 top-1/3 h-[26rem] w-[26rem] rounded-full bg-rose-500/[0.08] blur-3xl dark:bg-rose-500/[0.13]" />
+        <div className="absolute -bottom-40 left-1/3 h-96 w-96 rounded-full bg-amber-500/[0.09] blur-3xl dark:bg-amber-500/[0.11]" />
       </div>
 
       {/* desktop sidebar */}
@@ -77,7 +79,7 @@ export default function Dashboard({ nav }: { nav: (to: string) => void }) {
         <div className="flex items-center gap-3 px-5 py-4">
           <BrandMark size={38} />
           <div>
-            <div className="text-[15px] font-extrabold leading-tight">AttendMate <span className="bg-gradient-to-r from-violet-600 to-fuchsia-500 bg-clip-text text-transparent">Pro</span></div>
+            <div className="text-[15px] font-extrabold leading-tight">AttendMate <span className="bg-gradient-to-r from-orange-600 to-rose-500 bg-clip-text text-transparent">Pro</span></div>
             <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">NSMCH Bihta · Phase-III (Part-2) · 2026–27</div>
           </div>
         </div>
@@ -88,7 +90,7 @@ export default function Dashboard({ nav }: { nav: (to: string) => void }) {
               onClick={() => setState((p) => ({ ...p, activeTab: id }))}
               className={`flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-[13.5px] font-semibold transition ${
                 state.activeTab === id
-                  ? "bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white shadow-md shadow-violet-600/30"
+                  ? "bg-gradient-to-r from-orange-500 to-rose-500 text-white shadow-md shadow-orange-500/30"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
@@ -109,14 +111,14 @@ export default function Dashboard({ nav }: { nav: (to: string) => void }) {
           <h1 className="text-[15px] font-bold capitalize md:text-base">{state.activeTab}</h1>
           <div className="ml-auto flex items-center gap-1.5">
             <button onClick={() => nav("")} title="Back to website" aria-label="Back to website"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border bg-card text-muted-foreground transition hover:text-violet-600">
+              className="clay-btn clay-soft clay-icon h-9 w-9 text-muted-foreground">
               <Home className="h-4 w-4" />
             </button>
             {canUndo && (
               <button onClick={undo} title="Undo last action" aria-label="Undo"
-                className="relative inline-flex h-9 items-center gap-1 rounded-xl border bg-card px-2.5 text-muted-foreground transition hover:text-violet-600">
+                className="clay-btn clay-soft relative h-9 rounded-[0.9rem] px-2.5 text-[11px] text-muted-foreground">
                 <Undo2 className="h-4 w-4" />
-                <span className="rounded-full bg-violet-600 px-1.5 text-[10px] font-bold text-white">+</span>
+                <span className="rounded-full bg-orange-500 px-1.5 text-[10px] font-bold text-white">+</span>
               </button>
             )}
             {syncMeta && (
@@ -124,7 +126,7 @@ export default function Dashboard({ nav }: { nav: (to: string) => void }) {
                 onClick={() => (syncStatus === "offline" || syncStatus === "error" ? retrySync() : undefined)}
                 title={`Server sync: ${syncMeta.label}${pending > 0 ? ` (${pending})` : ""}`}
                 aria-label={`Server sync: ${syncMeta.label}${pending > 0 ? ` (${pending})` : ""}`}
-                className="inline-flex h-9 items-center gap-1.5 rounded-xl border bg-card px-2.5 text-[11px] font-bold text-muted-foreground transition hover:text-foreground"
+                className="clay-btn clay-soft h-9 rounded-[0.9rem] px-2.5 text-[11px] font-bold text-muted-foreground"
               >
                 <syncMeta.Icon className={`h-4 w-4 ${syncMeta.cls}`} />
                 <span className="hidden lg:inline">{syncMeta.label}{pending > 0 && syncStatus !== "saving" ? ` (${pending})` : ""}</span>
@@ -133,13 +135,13 @@ export default function Dashboard({ nav }: { nav: (to: string) => void }) {
             <button
               onClick={() => setTheme(state.profile.theme === "dark" ? "light" : "dark")}
               aria-label="Toggle dark mode" title="Toggle dark mode"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border bg-card text-muted-foreground transition hover:text-violet-600"
+              className="clay-btn clay-soft clay-icon h-9 w-9 text-muted-foreground"
             >
               {state.profile.theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
             <button
               onClick={() => setState((p) => ({ ...p, activeTab: "settings" }))}
-              className="ml-0.5 inline-flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-fuchsia-500 text-[13px] font-bold text-white shadow-md shadow-violet-600/30"
+              className="ml-0.5 inline-flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-rose-500 text-[13px] font-bold text-white shadow-md shadow-orange-500/30"
               aria-label="Profile settings"
             >
               {(state.profile.name || "A").charAt(0).toUpperCase()}
@@ -147,14 +149,14 @@ export default function Dashboard({ nav }: { nav: (to: string) => void }) {
           </div>
         </header>
 
-        {/* mobile tabs */}
-        <div className="flex gap-1 overflow-x-auto border-b bg-card px-3 py-2 md:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {/* mobile tabs */}
+      <div className="flex gap-1 overflow-x-auto border-b bg-card px-3 py-2 md:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {TABS.map(({ id, label }) => (
             <button
               key={id}
               onClick={() => setState((p) => ({ ...p, activeTab: id }))}
               className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-[12.5px] font-bold transition ${
-                state.activeTab === id ? "bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white shadow-md shadow-violet-600/30" : "text-muted-foreground hover:bg-muted"
+                state.activeTab === id ? "bg-gradient-to-r from-orange-500 to-rose-500 text-white shadow-md shadow-orange-500/30" : "text-muted-foreground hover:bg-muted"
               }`}
             >
               {label}

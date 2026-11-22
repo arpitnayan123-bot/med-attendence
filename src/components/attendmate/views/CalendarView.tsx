@@ -35,18 +35,18 @@ export default function CalendarView() {
 
   return (
     <div className="space-y-5">
-      <section className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
+      <section className="clay-card p-4 sm:p-5">
         <div className="flex items-center gap-2">
           <button onClick={() => { const d = new Date(y, m - 1, 1); setY(d.getFullYear()); setM(d.getMonth()); }} aria-label="Previous month"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border bg-background transition hover:text-violet-600"><ChevronLeft className="h-4 w-4" /></button>
+            className="clay-btn clay-soft clay-icon h-9 w-9 text-muted-foreground"><ChevronLeft className="h-4 w-4" /></button>
           <h2 className="text-lg font-extrabold tracking-tight">
             {new Date(y, m, 1).toLocaleDateString("en-IN", { month: "long", year: "numeric" })}
           </h2>
           <button onClick={() => { const d = new Date(y, m + 1, 1); setY(d.getFullYear()); setM(d.getMonth()); }} aria-label="Next month"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border bg-background transition hover:text-violet-600"><ChevronRight className="h-4 w-4" /></button>
+            className="clay-btn clay-soft clay-icon h-9 w-9 text-muted-foreground"><ChevronRight className="h-4 w-4" /></button>
           {(y !== parseInt(t.slice(0, 4), 10) || m !== parseInt(t.slice(5, 7), 10) - 1) && (
             <button onClick={() => { setY(parseInt(t.slice(0, 4), 10)); setM(parseInt(t.slice(5, 7), 10) - 1); }}
-              className="ml-auto rounded-xl border bg-background px-3 py-2 text-xs font-bold text-muted-foreground transition hover:text-violet-600">This month</button>
+              className="clay-btn clay-soft clay-sm ml-auto">This month</button>
           )}
         </div>
 
@@ -60,7 +60,7 @@ export default function CalendarView() {
                   title={c.date ? `${formatDisplayDate(c.date)}${c.pct !== null ? ` — ${c.pct.toFixed(0)}%` : c.isHoliday ? " — holiday" : " — unlogged"}` : ""}
                   className={`flex aspect-square w-full flex-col items-center justify-center rounded-xl text-[12.5px] font-bold transition hover:scale-[1.04] ${cellStyle(c)} ${
                     c.exam ? "outline-2 outline-dashed outline-rose-500/70 -outline-offset-2" : ""
-                  } ${c.date === t ? "ring-2 ring-violet-600" : ""}`}
+                  } ${c.date === t ? "ring-2 ring-orange-500" : ""}`}
                 >
                   <span>{parseInt(c.date.slice(8), 10)}</span>
                   {c.pct !== null && <span className="text-[8.5px] font-semibold opacity-80">{c.pct.toFixed(0)}%</span>}
@@ -76,24 +76,24 @@ export default function CalendarView() {
           <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded bg-rose-500/40" /> below</span>
           <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded bg-slate-500/20" /> holiday</span>
           <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded ring-2 ring-inset ring-rose-500/60" /> assessment</span>
-          <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded ring-2 ring-violet-600" /> selected</span>
+          <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded ring-2 ring-orange-500" /> selected</span>
         </div>
       </section>
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-2xl border bg-card p-4 text-center shadow-sm">
+        <div className="clay-card p-4 text-center">
           <div className="text-xl font-extrabold">{monthLogged.length}</div>
           <div className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">days logged</div>
         </div>
-        <div className="rounded-2xl border bg-card p-4 text-center shadow-sm">
+        <div className="clay-card p-4 text-center">
           <div className="text-xl font-extrabold">{avg === null || Number.isNaN(avg) ? "—" : `${avg.toFixed(1)}%`}</div>
           <div className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">month avg</div>
         </div>
-        <div className="rounded-2xl border bg-card p-4 text-center shadow-sm">
+        <div className="clay-card p-4 text-center">
           <div className="text-xl font-extrabold">{perfect}</div>
           <div className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">perfect days</div>
         </div>
-        <div className="rounded-2xl border bg-card p-4 text-center shadow-sm">
+        <div className="clay-card p-4 text-center">
           <div className="text-xl font-extrabold">{holidays}</div>
           <div className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">holidays</div>
         </div>

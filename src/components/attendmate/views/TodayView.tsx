@@ -59,10 +59,10 @@ export default function TodayView() {
 
   return (
     <div className="space-y-5">
-      {/* hero header — gradient spotlight card */}
-      <section className="am-card-in relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-600 via-violet-700 to-fuchsia-600 p-4 text-white shadow-xl shadow-violet-600/25 sm:p-5">
-        <div aria-hidden className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
-        <div aria-hidden className="pointer-events-none absolute -bottom-28 left-1/4 h-56 w-56 rounded-full bg-fuchsia-300/20 blur-3xl" />
+      {/* hero header — warm sunset spotlight card */}
+      <section className="am-card-in relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-500 via-orange-600 to-rose-500 p-4 text-white shadow-xl shadow-orange-600/30 sm:p-5">
+        <div aria-hidden className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-white/15 blur-2xl" />
+        <div aria-hidden className="pointer-events-none absolute -bottom-28 left-1/4 h-56 w-56 rounded-full bg-amber-300/25 blur-3xl" />
         <div className="relative flex flex-wrap items-center gap-3">
           <button onClick={() => setState((p) => ({ ...p, selectedDate: shiftDate(iso, -1) }))} aria-label="Previous day"
             className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/25 bg-white/15 transition hover:bg-white/30"><ChevronLeft className="h-4 w-4" /></button>
@@ -119,8 +119,8 @@ export default function TodayView() {
             <button key={d.iso} onClick={() => setState((p) => ({ ...p, selectedDate: d.iso }))}
               aria-label={`Go to ${formatDisplayDate(d.iso)}`}
               className={`flex min-w-[50px] flex-1 flex-col items-center gap-0.5 rounded-2xl border px-2 py-2 transition ${
-                active ? "border-violet-500 bg-gradient-to-b from-violet-600 to-fuchsia-500 text-white shadow-md shadow-violet-600/30"
-                  : "border-border bg-card text-muted-foreground hover:border-violet-400 hover:text-violet-600"
+                active ? "border-orange-300 bg-gradient-to-b from-orange-500 to-rose-500 text-white shadow-md shadow-orange-500/30"
+                  : "border-border bg-card text-muted-foreground hover:border-orange-400 hover:text-orange-600"
               }`}
             >
               <span className="text-[10px] font-bold uppercase tracking-wide">{d.label}</span>
@@ -136,21 +136,21 @@ export default function TodayView() {
           {/* actions */}
           <div className="am-card-in flex flex-wrap gap-2 [animation-delay:120ms]">
             <button onClick={() => bulkMarkDay(iso, "present", subGroup)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-500 px-4 py-2.5 text-[13px] font-bold text-white shadow-md shadow-violet-600/30 transition hover:brightness-110">
+              className="clay-btn clay-primary clay-md">
               <Check className="h-4 w-4" /> Mark all present
             </button>
             <button onClick={() => copyPreviousDay(iso)}
-              className="inline-flex items-center gap-1.5 rounded-xl border bg-card px-4 py-2.5 text-[13px] font-bold text-muted-foreground transition hover:text-violet-600">
+              className="clay-btn clay-soft clay-md">
               <Copy className="h-4 w-4" /> Copy previous day
             </button>
             <button onClick={() => bulkMarkDay(iso, "cancelled")}
-              className="inline-flex items-center gap-1.5 rounded-xl border bg-card px-4 py-2.5 text-[13px] font-bold text-muted-foreground transition hover:text-amber-600">
+              className="clay-btn clay-soft clay-md">
               <Umbrella className="h-4 w-4" /> Declare holiday
             </button>
           </div>
 
           {/* slot list */}
-          <section className="am-card-in divide-y overflow-hidden rounded-2xl border bg-card shadow-sm [animation-delay:180ms]">
+          <section className="clay-card am-card-in divide-y overflow-hidden [animation-delay:180ms]">
             {slots.map((slot) => {
               const entry = state.logs[iso]?.[slot.id];
               const st = entry?.status;
@@ -181,7 +181,7 @@ export default function TodayView() {
                         value={credited || "CP"}
                         onChange={(e) => markSlot(iso, slot.id, st || "present", e.target.value === "CP" ? "CP" : e.target.value, "clinical")}
                         aria-label="Credit department"
-                        className="rounded-lg border bg-background px-2 py-1.5 text-[11px] font-bold outline-none"
+                        className="clay-input rounded-[0.7rem] px-2 py-1.5 text-[11px]"
                       >
                         <option value="CP">CP</option>
                         {SUBJECTS.filter((s) => s.clinicalWeeks > 0).map((s) => <option key={s.code} value={s.code}>{s.code}</option>)}
@@ -192,7 +192,7 @@ export default function TodayView() {
                         value={credited || slot.subject}
                         onChange={(e) => markSlot(iso, slot.id, st || "present", e.target.value, "theory")}
                         aria-label="Credit subject"
-                        className="rounded-lg border bg-background px-2 py-1.5 text-[11px] font-bold outline-none"
+                        className="clay-input rounded-[0.7rem] px-2 py-1.5 text-[11px]"
                       >
                         <option value={slot.subject}>{slot.subject}</option>
                         <option value={slot.altSubject}>{slot.altSubject}</option>
@@ -203,10 +203,10 @@ export default function TodayView() {
                         key={s}
                         onClick={() => markSlot(iso, slot.id, s, isCP ? (posting?.code || "CP") : slot.subject, slot.type)}
                         aria-label={`Mark ${s}`}
-                        className={`inline-flex h-8 w-8 items-center justify-center rounded-lg border transition ${
+                        className={`clay-btn h-8 w-8 rounded-[0.7rem] ${
                           st === s
-                            ? s === "present" ? "border-emerald-500 bg-emerald-500 text-white" : s === "absent" ? "border-rose-500 bg-rose-500 text-white" : "border-slate-400 bg-slate-400 text-white"
-                            : "bg-background text-muted-foreground hover:border-violet-500 hover:text-violet-600"
+                            ? s === "present" ? "clay-success" : s === "absent" ? "clay-danger" : "bg-gradient-to-b from-slate-400 to-slate-500 text-white shadow-md shadow-slate-500/30"
+                            : "clay-soft text-muted-foreground"
                         }`}
                       >
                         {s === "present" ? <Check className="h-4 w-4" /> : s === "absent" ? <X className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
@@ -222,13 +222,13 @@ export default function TodayView() {
               const meta = e.subject ? SUBJECT_MAP[e.subject] : null;
               return (
                 <div key={id} className="flex items-center gap-3 px-4 py-3 transition hover:bg-muted/50 sm:px-5">
-                  <div className="w-[110px] shrink-0 text-[13px] font-bold text-violet-600 dark:text-violet-300">EXTRA</div>
+                  <div className="w-[110px] shrink-0 text-[13px] font-bold text-orange-600 dark:text-orange-300">EXTRA</div>
                   <div className="min-w-0 flex-1 text-[13.5px] font-semibold">
                     {meta ? meta.name : e.subject} <span className="text-xs text-muted-foreground">({e.kind})</span>
                   </div>
                   {statusChip(e.status)}
                   <button onClick={() => removeSlot(iso, id)} aria-label="Remove extra class"
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border text-muted-foreground transition hover:text-rose-500"><Trash2 className="h-4 w-4" /></button>
+                    className="clay-btn clay-soft clay-icon h-8 w-8 text-muted-foreground"><Trash2 className="h-4 w-4" /></button>
                 </div>
               );
             })}
@@ -236,51 +236,51 @@ export default function TodayView() {
 
           {/* tools */}
           <div className="am-card-in grid gap-4 lg:grid-cols-2 [animation-delay:240ms]">
-            <section className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
-              <h3 className="flex items-center gap-2 text-[14px] font-extrabold"><Repeat className="h-4 w-4 text-violet-600" /> Bulk-fill past days</h3>
+            <section className="clay-card p-4 sm:p-5">
+              <h3 className="flex items-center gap-2 text-[14px] font-extrabold"><Repeat className="h-4 w-4 text-orange-600 dark:text-orange-300" /> Bulk-fill past days</h3>
               <p className="mt-1 text-xs text-muted-foreground">Marks whole past date range (skips Sundays and already-logged days). CP credits resolve from your official roster.</p>
               <div className="mt-3 flex flex-wrap items-end gap-2">
                 <label className="text-[11px] font-semibold text-muted-foreground">From
                   <input type="date" value={fillFrom} max={todayISO()} onChange={(e) => setFillFrom(e.target.value)}
-                    className="mt-1 block rounded-xl border bg-background px-3 py-2 text-[12.5px] font-bold outline-none focus:border-violet-500" />
+                    className="clay-input mt-1 block px-3 py-2 text-[12.5px]" />
                 </label>
                 <label className="text-[11px] font-semibold text-muted-foreground">To
                   <input type="date" value={fillTo} max={todayISO()} onChange={(e) => setFillTo(e.target.value)}
-                    className="mt-1 block rounded-xl border bg-background px-3 py-2 text-[12.5px] font-bold outline-none focus:border-violet-500" />
+                    className="clay-input mt-1 block px-3 py-2 text-[12.5px]" />
                 </label>
                 <label className="text-[11px] font-semibold text-muted-foreground">Status
                   <select value={fillStatus} onChange={(e) => setFillStatus(e.target.value as "present" | "absent")}
-                    className="mt-1 block rounded-xl border bg-background px-3 py-2 text-[12.5px] font-bold outline-none focus:border-violet-500">
+                    className="clay-input mt-1 block px-3 py-2 text-[12.5px]">
                     <option value="present">Present</option>
                     <option value="absent">Absent</option>
                   </select>
                 </label>
                 <button onClick={() => fillFrom <= fillTo && bulkFill(fillFrom, fillTo, fillStatus, subGroup)}
-                  className="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-500 px-4 py-2 text-[12.5px] font-bold text-white shadow-md shadow-violet-600/30 transition hover:brightness-110">
+                  className="clay-btn clay-primary clay-sm">
                   Apply
                 </button>
               </div>
             </section>
 
-            <section className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
-              <h3 className="flex items-center gap-2 text-[14px] font-extrabold"><Plus className="h-4 w-4 text-violet-600" /> Add extra / make-up class</h3>
+            <section className="clay-card p-4 sm:p-5">
+              <h3 className="flex items-center gap-2 text-[14px] font-extrabold"><Plus className="h-4 w-4 text-orange-600 dark:text-orange-300" /> Add extra / make-up class</h3>
               <p className="mt-1 text-xs text-muted-foreground">Unplanned lecture or posting held beyond the timetable — logs under the chosen subject and mode.</p>
               <div className="mt-3 flex flex-wrap items-end gap-2">
                 <label className="text-[11px] font-semibold text-muted-foreground">Subject
                   <select value={extraSub} onChange={(e) => setExtraSub(e.target.value)}
-                    className="mt-1 block max-w-[220px] rounded-xl border bg-background px-3 py-2 text-[12.5px] font-bold outline-none focus:border-violet-500">
+                    className="clay-input mt-1 block max-w-[220px] px-3 py-2 text-[12.5px]">
                     {SUBJECTS.map((s) => <option key={s.code} value={s.code}>{s.name} ({s.code})</option>)}
                   </select>
                 </label>
                 <label className="text-[11px] font-semibold text-muted-foreground">Mode
                   <select value={extraKind} onChange={(e) => setExtraKind(e.target.value as "theory" | "clinical")}
-                    className="mt-1 block rounded-xl border bg-background px-3 py-2 text-[12.5px] font-bold outline-none focus:border-violet-500">
+                    className="clay-input mt-1 block px-3 py-2 text-[12.5px]">
                     <option value="theory">Theory</option>
                     <option value="clinical">Clinical</option>
                   </select>
                 </label>
                 <button onClick={() => addExtraClass(iso, extraSub, extraKind)}
-                  className="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-500 px-4 py-2 text-[12.5px] font-bold text-white shadow-md shadow-violet-600/30 transition hover:brightness-110">
+                  className="clay-btn clay-primary clay-sm">
                   Add class
                 </button>
               </div>

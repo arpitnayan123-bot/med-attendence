@@ -7,7 +7,7 @@ import { formatShortDate } from "@/lib/attendmate/engine";
 export function BrandMark({ size = 36 }: { size?: number }) {
   return (
     <span
-      className="inline-flex items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-500 text-white shadow-lg shadow-violet-600/30"
+      className="inline-flex items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 via-orange-600 to-rose-500 text-white shadow-lg shadow-orange-500/30"
       style={{ width: size, height: size }}
     >
       <GraduationCap style={{ width: size * 0.55, height: size * 0.55 }} strokeWidth={2.2} />
@@ -20,7 +20,7 @@ export function BrandWord({ size = 36 }: { size?: number }) {
     <span className="flex items-center gap-2.5">
       <BrandMark size={size} />
       <span className="font-extrabold tracking-tight text-[15px]">
-        AttendMate&nbsp;<span className="bg-gradient-to-r from-violet-600 to-fuchsia-500 bg-clip-text text-transparent">Pro</span>
+        AttendMate&nbsp;<span className="bg-gradient-to-r from-orange-600 to-rose-500 bg-clip-text text-transparent">Pro</span>
       </span>
     </span>
   );
@@ -87,8 +87,8 @@ export function Sparkline({ points, target, height = 180 }: { points: { date: st
       ))}
       <line x1={padL} x2={W - padR} y1={ty} y2={ty} className="stroke-rose-500" strokeDasharray="5 4" />
       <text x={padL + 4} y={ty - 4} fontSize="10" className="fill-rose-500">target {target}%</text>
-      <path d={path} fill="none" className="stroke-violet-600" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-      {points.map((pt, i) => <circle key={pt.date} cx={x(i)} cy={y(pt.pct)} r="3.2" className="fill-background stroke-violet-600" strokeWidth="2" />)}
+      <path d={path} fill="none" className="stroke-orange-500 dark:stroke-orange-400" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      {points.map((pt, i) => <circle key={pt.date} cx={x(i)} cy={y(pt.pct)} r="3.2" className="fill-background stroke-orange-500 dark:stroke-orange-400" strokeWidth="2" />)}
       <text x={padL} y={H - 6} fontSize="10" className="fill-muted-foreground">{points[0] ? formatShortDate(points[0].date) : ""}</text>
       <text x={W - padR} y={H - 6} fontSize="10" textAnchor="end" className="fill-muted-foreground">{points[points.length - 1] ? formatShortDate(points[points.length - 1].date) : ""}</text>
     </svg>
@@ -98,8 +98,8 @@ export function Sparkline({ points, target, height = 180 }: { points: { date: st
 /* ---------- stat card ---------- */
 export function StatCard({ value, label, accent }: { value: ReactNode; label: string; accent?: string }) {
   return (
-    <div className="rounded-2xl border bg-card p-4 shadow-sm">
-      <div className="border-l-[3px] pl-3" style={{ borderColor: accent || "rgb(139 92 246)" }}>
+    <div className="clay-card p-4">
+      <div className="border-l-[3px] pl-3" style={{ borderColor: accent || "rgb(249 115 22)" }}>
         <div className="text-2xl font-extrabold tracking-tight leading-none">{value}</div>
         <div className="mt-1 text-[11px] font-medium text-muted-foreground">{label}</div>
       </div>

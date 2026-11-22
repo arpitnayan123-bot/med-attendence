@@ -39,11 +39,11 @@ export default function SubjectsView() {
     <div className="space-y-5">
       {/* mode toggle */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="inline-flex rounded-xl border bg-card p-1 shadow-sm">
+        <div className="clay-soft inline-flex rounded-2xl p-1">
           {(["theory", "clinical"] as const).map((m) => (
             <button key={m} onClick={() => setState((p) => ({ ...p, subjMode: m }))}
-              className={`rounded-lg px-4 py-2 text-[12.5px] font-bold capitalize transition ${
-                mode === m ? "bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white shadow-md shadow-violet-600/30" : "text-muted-foreground hover:text-foreground"
+              className={`rounded-xl px-4 py-2 text-[12.5px] font-bold capitalize transition ${
+                mode === m ? "bg-gradient-to-r from-orange-500 to-rose-500 text-white shadow-md shadow-orange-500/30" : "text-muted-foreground hover:text-foreground"
               }`}>
               {m} · {m === "theory" ? state.profile.theoryTarget : state.profile.clinicalTarget}%
             </button>
@@ -69,7 +69,7 @@ export default function SubjectsView() {
                 const bunk = calcBunkInfo(pr, tt, target);
                 const isOpen = open === s.code;
                 return (
-                  <div key={s.code} className="rounded-2xl border bg-card shadow-sm transition hover:shadow-md">
+                  <div key={s.code} className="clay-card transition">
                     <button onClick={() => setOpen(isOpen ? null : s.code)} className="flex w-full items-center gap-3 p-4 text-left" aria-expanded={isOpen}>
                       <Ring pct={pct} target={target} size={64} stroke={7} />
                       <div className="min-w-0 flex-1">
@@ -143,8 +143,8 @@ function SimBtn({ code, mode, delta, target, stats, label, good }: {
   const pct = (np / nt) * 100;
   const bunk = calcBunkInfo(np, nt, target);
   return (
-    <span className="inline-flex items-center gap-2 rounded-xl border bg-background px-3 py-2 text-[11.5px] font-semibold">
-      <button className={`rounded-lg px-2 py-1 text-[11px] font-bold text-white ${good ? "bg-emerald-500" : "bg-rose-500"}`}>{label}</button>
+    <span className="clay-input inline-flex items-center gap-2 px-3 py-2 text-[11.5px] font-semibold">
+      <button className={`clay-btn clay-sm rounded-[0.7rem] ${good ? "clay-success" : "clay-danger"}`}>{label}</button>
       <span className={pct >= target ? "text-emerald-600 dark:text-emerald-400" : pct >= target - 7.5 ? "text-amber-600 dark:text-amber-400" : "text-rose-600 dark:text-rose-400"}>
         {pct.toFixed(1)}% · {bunk.canBunk > 0 ? `can skip ${bunk.canBunk}` : `must attend ${bunk.mustAttend}`}
       </span>
@@ -170,7 +170,7 @@ function BaselineForm({ code }: { code: string }) {
           <label key={lab as string} className="text-[10.5px] font-semibold text-muted-foreground">
             {lab as string}
             <input type="number" min={0} value={val as string} onChange={(e) => (setter as (v: string) => void)(e.target.value)}
-              className="mt-1 w-full rounded-lg border bg-background px-2.5 py-1.5 text-[12.5px] font-bold outline-none focus:border-violet-500" />
+              className="clay-input mt-1 w-full px-2.5 py-1.5 text-[12.5px]" />
           </label>
         ))}
       </div>
@@ -182,7 +182,7 @@ function BaselineForm({ code }: { code: string }) {
             clinicalPresent: parseInt(cp, 10) || 0, clinicalTotal: parseInt(ct, 10) || 0,
           } },
         }), "Update baseline")}
-        className="mt-3 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-500 px-4 py-2 text-[12px] font-bold text-white shadow-md shadow-violet-600/30 transition hover:brightness-110"
+        className="clay-btn clay-primary clay-sm mt-3"
       >
         Save baseline
       </button>
