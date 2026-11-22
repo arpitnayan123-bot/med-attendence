@@ -3,36 +3,60 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="AttendMate Pro — a premium, fully offline attendance tracker for NSMCH Bihta Phase-III (Part-2) students. Roll-number roster resolution, safe-bunk planner, calendar heatmap, analytics and JSON backups.">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#4f46e5">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#070b18">
+<meta name="color-scheme" content="light dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="AttendMate Pro">
+<meta property="og:title" content="AttendMate Pro — Attendance intelligence for medical school">
+<meta property="og:description" content="Offline-first attendance tracker for NSMCH Bihta Phase-III (Part-2): roster resolver, safe-bunk planner, heatmap calendar and analytics. Your data never leaves your device.">
+<meta property="og:type" content="website">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Cdefs%3E%3ClinearGradient%20id='g'%20x1='0'%20y1='0'%20x2='1'%20y2='1'%3E%3Cstop%20offset='0'%20stop-color='%234f46e5'/%3E%3Cstop%20offset='1'%20stop-color='%23a855f7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width='64'%20height='64'%20rx='15'%20fill='url(%23g)'/%3E%3Cpath%20d='M32%2016%2054%2028l-22%2012-22-12z'%20fill='none'%20stroke='white'%20stroke-width='3.5'%20stroke-linejoin='round'/%3E%3Cpath%20d='M20%2034v10c0%204%206%207%2012%207s12-3%2012-7V34'%20fill='none'%20stroke='white'%20stroke-width='3.5'%20stroke-linecap='round'/%3E%3C/svg%3E">
 <title>AttendMate Pro — NSMCH Phase-III Attendance Tracker</title>
 <style>
-/* ================= DESIGN SYSTEM ================= */
+/* ================= DESIGN SYSTEM v3 (premium) ================= */
 :root{
-  --bg:#f4f6fb; --card:#ffffff; --ink:#0f172a; --muted:#5b6b83; --line:#e3e8f2;
-  --soft:#f1f4fa; --brand:#4f46e5; --brand2:#7c3aed; --brand-soft:#eef0fe;
-  --ok:#059669; --ok-soft:#e7f7f0; --warn:#d97706; --warn-soft:#fdf3e3;
-  --bad:#e11d48; --bad-soft:#fdeaf0; --sky:#0284c7; --sky-soft:#e6f3fb;
-  --shadow:0 1px 2px rgba(15,23,42,.05),0 8px 24px -12px rgba(15,23,42,.12);
-  --radius:14px;
+  --bg:#f5f6fc; --card:#ffffff; --ink:#0b1226; --muted:#5c6c88; --line:#e4e9f4;
+  --soft:#eef1f9; --brand:#4f46e5; --brand2:#7c3aed; --brand3:#a855f7; --brand-soft:#eceefe;
+  --grad:linear-gradient(135deg,#4f46e5 0%,#7c3aed 55%,#a855f7 100%);
+  --ok:#059669; --ok-soft:#e4f6ee; --warn:#d97706; --warn-soft:#fcf2e0;
+  --bad:#e11d48; --bad-soft:#fcebef; --sky:#0284c7; --sky-soft:#e4f2fb;
+  --shadow-sm:0 1px 2px rgba(15,23,42,.05),0 4px 14px -8px rgba(15,23,42,.10);
+  --shadow:0 1px 2px rgba(15,23,42,.05),0 12px 32px -14px rgba(15,23,42,.16);
+  --shadow-lg:0 24px 70px -24px rgba(76,54,180,.35),0 4px 18px -6px rgba(15,23,42,.10);
+  --radius:16px; --radius-lg:24px;
 }
 [data-theme="dark"]{
-  --bg:#0b1220; --card:#131a2c; --ink:#e7ecf6; --muted:#93a1b8; --line:#25304a;
-  --soft:#1a2338; --brand:#818cf8; --brand2:#a78bfa; --brand-soft:#1e2749;
-  --ok:#34d399; --ok-soft:#0e2f26; --warn:#fbbf24; --warn-soft:#2e2410;
-  --bad:#fb7185; --bad-soft:#331420; --sky:#38bdf8; --sky-soft:#0d2739;
-  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -12px rgba(0,0,0,.5);
+  --bg:#070b18; --card:#0e1528; --ink:#e8edf8; --muted:#8ea0bd; --line:#202c4a;
+  --soft:#151f3a; --brand:#818cf8; --brand2:#a78bfa; --brand3:#c084fc; --brand-soft:#1c2752;
+  --grad:linear-gradient(135deg,#6366f1 0%,#8b5cf6 55%,#c084fc 100%);
+  --ok:#34d399; --ok-soft:#0d2e24; --warn:#fbbf24; --warn-soft:#2d2410;
+  --bad:#fb7185; --bad-soft:#331420; --sky:#38bdf8; --sky-soft:#0c2740;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.4),0 6px 16px -10px rgba(0,0,0,.5);
+  --shadow:0 1px 2px rgba(0,0,0,.45),0 14px 36px -16px rgba(0,0,0,.6);
+  --shadow-lg:0 30px 80px -28px rgba(0,0,0,.7),0 6px 20px -8px rgba(0,0,0,.5);
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
+html{scroll-behavior:smooth}
 body{
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans","Helvetica Neue",Arial,sans-serif;
-  background:var(--bg); color:var(--ink); font-size:15px; line-height:1.5;
+  background:var(--bg); color:var(--ink); font-size:15px; line-height:1.55;
   -webkit-font-smoothing:antialiased;
 }
+::selection{background:color-mix(in srgb,var(--brand) 24%,transparent)}
 button{font-family:inherit;cursor:pointer}
 input,select{font-family:inherit;font-size:14px;color:var(--ink)}
 a{color:var(--brand)}
-::-webkit-scrollbar{height:8px;width:8px}
-::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px}
+:focus-visible{outline:2.5px solid var(--brand);outline-offset:2px;border-radius:6px}
+.skip-link{position:absolute;left:-9999px;top:0;z-index:200;background:var(--brand);color:#fff;padding:9px 16px;border-radius:0 0 10px 0;font-weight:700}
+.skip-link:focus{left:0}
+::-webkit-scrollbar{height:9px;width:9px}
+::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--muted) 35%,transparent);border-radius:99px;border:2px solid transparent;background-clip:padding-box}
+::-webkit-scrollbar-thumb:hover{background:color-mix(in srgb,var(--muted) 55%,transparent);background-clip:padding-box;border:2px solid transparent}
+::-webkit-scrollbar-track{background:transparent}
 
 /* ================= LAYOUT ================= */
 .app{min-height:100vh}
@@ -335,7 +359,201 @@ footer{padding:20px clamp(14px,3vw,28px) 30px;color:var(--muted);font-size:11.5p
 .acct-signout{color:var(--bad);border-color:var(--bad)}
 .acct-signout:hover{background:var(--bad-soft);color:var(--bad);border-color:var(--bad)}
 
+/* ============================================================
+   v3 · WEBSITE (landing) + PREMIUM APP RESKIN
+   ============================================================ */
+#site{min-height:100vh}
+#app-shell{min-height:100vh}
+.wrap{max-width:1180px;margin:0 auto;padding:0 clamp(18px,4vw,32px)}
+
+/* --- site navbar --- */
+.site-nav{
+  position:sticky;top:0;z-index:50;
+  background:color-mix(in srgb,var(--bg) 78%,transparent);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line);
+}
+.site-nav .inner{max-width:1180px;margin:0 auto;padding:12px clamp(18px,4vw,32px);display:flex;align-items:center;gap:10px}
+.site-nav .logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:16px;margin-right:auto;text-decoration:none;color:var(--ink)}
+.site-nav .logo .brand-mark{width:34px;height:34px;border-radius:10px}
+.site-nav .links{display:flex;gap:4px;align-items:center}
+.site-nav .links a{color:var(--muted);text-decoration:none;font-size:13.5px;font-weight:600;padding:7px 12px;border-radius:10px;transition:.15s}
+.site-nav .links a:hover{color:var(--ink);background:var(--soft)}
+.site-nav .links a.nav-cta{background:var(--grad);color:#fff;font-weight:800;padding:8px 16px;font-size:13px;box-shadow:0 6px 16px -8px color-mix(in srgb,var(--brand) 60%,transparent)}
+.site-nav .links a.nav-cta:hover{filter:brightness(1.07);color:#fff}
+@media(max-width:820px){.site-nav .links a:not(.nav-cta){display:none}}
+
+/* --- hero --- */
+.hero{position:relative;overflow:hidden;padding:clamp(56px,9vw,110px) 0 clamp(48px,7vw,84px)}
+.hero::before{
+  content:"";position:absolute;inset:-40% -20% auto;height:130%;z-index:-1;
+  background:
+    radial-gradient(46% 42% at 18% 22%,color-mix(in srgb,var(--brand) 16%,transparent),transparent 70%),
+    radial-gradient(40% 38% at 82% 12%,color-mix(in srgb,var(--brand3) 15%,transparent),transparent 70%),
+    radial-gradient(34% 34% at 60% 68%,color-mix(in srgb,var(--sky) 10%,transparent),transparent 70%);
+}
+.hero .inner{max-width:1180px;margin:0 auto;padding:0 clamp(18px,4vw,32px);display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:clamp(28px,5vw,60px);align-items:center}
+@media(max-width:980px){.hero .inner{grid-template-columns:1fr}.hero-preview{margin-top:10px}}
+.pill{
+  display:inline-flex;align-items:center;gap:8px;border:1px solid color-mix(in srgb,var(--brand) 30%,var(--line));
+  background:color-mix(in srgb,var(--brand) 7%,var(--card));color:var(--brand);
+  border-radius:99px;padding:6px 14px;font-size:12px;font-weight:700;letter-spacing:.02em;
+}
+.pill .dot{width:7px;height:7px;border-radius:99px;background:var(--grad);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 20%,transparent)}
+.hero h1{
+  font-size:clamp(2.15rem,5.4vw,3.7rem);line-height:1.06;letter-spacing:-.03em;font-weight:850;margin:18px 0 16px;
+}
+.hero h1 .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero .sub{font-size:clamp(15px,1.8vw,17.5px);color:var(--muted);max-width:54ch;margin:0 0 26px}
+.hero-cta{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.btn-hero{
+  background:var(--grad);color:#fff;border:none;border-radius:14px;padding:13px 26px;
+  font-size:15px;font-weight:800;letter-spacing:.01em;box-shadow:0 10px 26px -8px color-mix(in srgb,var(--brand) 55%,transparent);
+  transition:transform .15s,filter .15s,box-shadow .15s;display:inline-flex;align-items:center;gap:9px;
+}
+.btn-hero:hover{filter:brightness(1.07);transform:translateY(-1.5px);box-shadow:0 16px 34px -10px color-mix(in srgb,var(--brand) 60%,transparent)}
+.btn-hero.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:var(--shadow-sm)}
+.btn-hero.ghost:hover{border-color:var(--brand);color:var(--brand)}
+.hero-stats{display:flex;gap:clamp(18px,3.5vw,40px);margin-top:34px;flex-wrap:wrap}
+.hero-stats .hs b{display:block;font-size:clamp(19px,2.6vw,24px);letter-spacing:-.02em;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero-stats .hs span{font-size:11.5px;color:var(--muted);font-weight:600;letter-spacing:.02em}
+
+/* --- hero preview mock --- */
+.hero-preview{position:relative;min-width:0}
+.preview{
+  border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--card);
+  box-shadow:var(--shadow-lg);overflow:hidden;transform:perspective(1600px) rotateY(-4deg) rotateX(1.5deg);
+  transition:transform .4s;
+}
+.preview:hover{transform:perspective(1600px) rotateY(-1deg) rotateX(.5deg)}
+@media(max-width:640px){.preview{transform:none}}
+.pv-bar{display:flex;align-items:center;gap:6px;padding:11px 16px;border-bottom:1px solid var(--line);background:var(--soft)}
+.pv-bar i{width:10px;height:10px;border-radius:99px;background:var(--line)}
+.pv-bar i:nth-child(1){background:var(--bad-soft);border:1px solid color-mix(in srgb,var(--bad) 45%,transparent)}
+.pv-bar i:nth-child(2){background:var(--warn-soft);border:1px solid color-mix(in srgb,var(--warn) 45%,transparent)}
+.pv-bar i:nth-child(3){background:var(--ok-soft);border:1px solid color-mix(in srgb,var(--ok) 45%,transparent)}
+.pv-bar span{margin-left:8px;font-size:11.5px;font-weight:700;color:var(--muted)}
+.pv-body{display:grid;grid-template-columns:118px minmax(0,1fr);min-height:300px}
+@media(max-width:520px){.pv-body{grid-template-columns:1fr}.pv-side{display:none}}
+.pv-side{border-right:1px solid var(--line);padding:12px 10px;display:flex;flex-direction:column;gap:6px}
+.pv-side i{height:9px;border-radius:99px;background:var(--soft);display:block}
+.pv-side i.on{background:color-mix(in srgb,var(--brand) 30%,transparent)}
+.pv-main{padding:16px 18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.pv-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.pv-card{border:1px solid var(--line);border-radius:13px;padding:11px 12px;display:flex;align-items:center;gap:10px;min-width:0}
+.pv-card svg{flex:none}
+.pv-card .t{font-size:9.5px;color:var(--muted);font-weight:700;letter-spacing:.03em;text-transform:uppercase;white-space:nowrap}
+.pv-card .v{font-size:15px;font-weight:800;letter-spacing:-.02em;white-space:nowrap}
+.pv-rows{display:flex;flex-direction:column;gap:10px;min-width:0}
+.pv-row{display:grid;grid-template-columns:64px minmax(0,1fr) 42px;gap:10px;align-items:center}
+.pv-row .nm{font-size:11.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.pv-row .bar{height:7px;min-width:0}
+.pv-row .pc{font-size:10.5px;font-weight:800;text-align:right;white-space:nowrap}
+
+/* --- sections --- */
+.sec{padding:clamp(52px,8vw,92px) 0;position:relative}
+.sec.alt{background:color-mix(in srgb,var(--brand) 3.5%,var(--bg));border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.sec-head{max-width:640px;margin:0 auto clamp(30px,5vw,52px);text-align:center}
+.sec-head .kick{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--brand)}
+.sec-head h2{font-size:clamp(1.6rem,3.4vw,2.35rem);letter-spacing:-.025em;line-height:1.12;margin:10px 0 12px;font-weight:830}
+.sec-head p{color:var(--muted);font-size:15px;margin:0}
+
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(268px,1fr));gap:16px}
+.feat{
+  border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--card);
+  padding:22px;box-shadow:var(--shadow-sm);transition:transform .2s,box-shadow .2s,border-color .2s;
+  position:relative;overflow:hidden;
+}
+.feat::after{content:"";position:absolute;inset:auto 0 0 0;height:3px;background:var(--grad);opacity:0;transition:opacity .2s}
+.feat:hover{transform:translateY(-4px);box-shadow:var(--shadow);border-color:color-mix(in srgb,var(--brand) 28%,var(--line))}
+.feat:hover::after{opacity:1}
+.feat .ic{
+  width:44px;height:44px;border-radius:13px;background:color-mix(in srgb,var(--brand) 9%,var(--card));
+  border:1px solid color-mix(in srgb,var(--brand) 20%,var(--line));color:var(--brand);
+  display:inline-flex;align-items:center;justify-content:center;margin-bottom:14px;
+}
+.feat .ic svg{width:21px;height:21px}
+.feat h3{font-size:15.5px;margin:0 0 6px;font-weight:800;letter-spacing:-.01em}
+.feat p{margin:0;font-size:13px;color:var(--muted);line-height:1.6}
+
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;counter-reset:step}
+.step{
+  border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--card);padding:22px;box-shadow:var(--shadow-sm);position:relative;
+}
+.step::before{
+  counter-increment:step;content:counter(step);
+  width:34px;height:34px;border-radius:11px;background:var(--grad);color:#fff;font-weight:800;font-size:15px;
+  display:inline-flex;align-items:center;justify-content:center;margin-bottom:14px;box-shadow:0 6px 16px -6px color-mix(in srgb,var(--brand) 60%,transparent);
+}
+.step h3{font-size:15px;margin:0 0 6px;font-weight:800}
+.step p{margin:0;font-size:13px;color:var(--muted);line-height:1.6}
+
+.roster-band{
+  border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--card);box-shadow:var(--shadow-sm);
+  padding:clamp(18px,3.5vw,30px);display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center;
+}
+@media(max-width:820px){.roster-band{grid-template-columns:1fr}}
+.roster-band h3{margin:0 0 6px;font-size:16.5px;font-weight:800}
+.roster-band p{margin:0;color:var(--muted);font-size:13.5px;max-width:52ch}
+.grp-chips{display:flex;gap:8px;flex-wrap:wrap}
+.grp-chips .g{
+  border:1px solid var(--line);border-radius:13px;padding:9px 13px;text-align:center;background:var(--soft);
+}
+.grp-chips .g b{display:block;font-size:15px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.grp-chips .g span{font-size:10.5px;color:var(--muted);font-weight:700}
+
+.faq{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+.faq details{border:1px solid var(--line);border-radius:14px;background:var(--card);padding:4px 18px;box-shadow:var(--shadow-sm)}
+.faq details[open]{border-color:color-mix(in srgb,var(--brand) 30%,var(--line))}
+.faq summary{cursor:pointer;font-weight:700;font-size:14.5px;padding:13px 0;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";font-size:19px;color:var(--brand);font-weight:600;transition:transform .2s}
+.faq details[open] summary::after{transform:rotate(45deg)}
+.faq .ans{padding:0 0 14px;color:var(--muted);font-size:13.5px;line-height:1.65}
+
+.cta-band{
+  max-width:1180px;margin:0 auto;border-radius:var(--radius-lg);padding:clamp(30px,5vw,54px);
+  background:var(--grad);color:#fff;text-align:center;position:relative;overflow:hidden;
+  box-shadow:var(--shadow-lg);
+}
+.cta-band::before{content:"";position:absolute;inset:0;background:radial-gradient(60% 120% at 50% -20%,rgba(255,255,255,.22),transparent 60%)}
+.cta-band h2{margin:0 0 10px;font-size:clamp(1.45rem,3vw,2.1rem);letter-spacing:-.02em;position:relative}
+.cta-band p{margin:0 auto 24px;max-width:56ch;color:rgba(255,255,255,.86);font-size:14.5px;position:relative}
+.cta-band .btn-hero{background:#fff;color:var(--brand);box-shadow:0 14px 30px -12px rgba(0,0,0,.4);position:relative}
+.cta-band .btn-hero:hover{color:#3730a3}
+
+.site-footer{border-top:1px solid var(--line);padding:30px 0 40px;color:var(--muted);font-size:12.5px}
+.site-footer .inner{max-width:1180px;margin:0 auto;padding:0 clamp(18px,4vw,32px);display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;align-items:center}
+.site-footer .brand-mark{width:26px;height:26px;border-radius:8px;display:inline-flex;vertical-align:middle;margin-right:8px}
+
+/* --- premium app reskin --- */
+.brand h1{letter-spacing:-.02em;font-weight:850}
+.tab-btn{border-radius:11px}
+.tab-btn.active{position:relative}
+.tab-btn.active::before{content:"";position:absolute;left:-14px;top:50%;transform:translateY(-50%);width:3.5px;height:18px;border-radius:99px;background:var(--grad)}
+@media(max-width:1023px){.tab-btn.active::before{display:none}}
+.tabsbar .tab-btn.active{border-color:color-mix(in srgb,var(--brand) 45%,var(--line));box-shadow:0 0 0 1px color-mix(in srgb,var(--brand) 30%,transparent)}
+.card{transition:box-shadow .2s}
+.view.active{animation:viewIn .28s ease}
+@keyframes viewIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+.btn.primary{background:var(--grad)}
+.seg button.on{background:var(--brand)}
+.icon-btn{border-radius:11px;transition:color .15s,border-color .15s,transform .15s}
+.icon-btn:hover{transform:translateY(-1px)}
+.bar{height:9px}
+.stat{position:relative;overflow:hidden}
+.stat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3.5px;background:var(--grad);border-radius:99px;opacity:.85}
+.stat{padding-left:17px}
+.chip{letter-spacing:.01em}
+
+/* login: keep glassy card */
+.login-card{box-shadow:var(--shadow-lg)}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important;scroll-behavior:auto !important}
+}
 @media print{
+  .site-nav,.site,#site{display:none !important}
   .sidebar,.tabsbar,.topbar,.icon-btn,.btn,#toast,.login-overlay,.acct-menu{display:none !important}
   body{background:#fff}
   .main{margin-left:0}
@@ -346,7 +564,175 @@ footer{padding:20px clamp(14px,3vw,28px) 30px;color:var(--muted);font-size:11.5p
 </style>
 </head>
 <body>
-<div class="app">
+<a class="skip-link" href="#app-content">Skip to dashboard</a>
+
+<!-- ================= WEBSITE / LANDING (route: #home) ================= -->
+<section id="site">
+  <nav class="site-nav" aria-label="Site">
+    <div class="inner">
+      <a class="logo" href="#home">
+        <span class="brand-mark" id="site-brand-mark" aria-hidden="true"></span>
+        AttendMate&nbsp;<span style="background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent">Pro</span>
+      </a>
+      <div class="links">
+        <a href="#features">Features</a>
+        <a href="#how">How it works</a>
+        <a href="#roster">Roster</a>
+        <a href="#faq">FAQ</a>
+        <button class="icon-btn" id="btn-theme-site" title="Toggle theme" aria-label="Toggle dark mode"><span id="theme-icon-site"></span></button>
+        <a href="#app" class="nav-cta">Open App</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="inner">
+      <div>
+        <span class="pill"><span class="dot"></span> NSMCH Bihta · Phase-III (Part-2) · Batch 2023 · 2026–27</span>
+        <h1>Attendance, <span class="grad">engineered</span> for medical school.</h1>
+        <p class="sub">AttendMate Pro turns the official NSMCH Phase-III (Part-2) timetable and posting roster into a private, offline command centre — know exactly which classes you can skip, which you can't, and where every posting takes you next.</p>
+        <div class="hero-cta">
+          <a href="#app" class="btn-hero" data-go-app>Open the dashboard
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></a>
+          <a href="#features" class="btn-hero ghost">See what's inside</a>
+        </div>
+        <div class="hero-stats">
+          <div class="hs"><b>19</b><span>subjects tracked</span></div>
+          <div class="hs"><b>24</b><span>sub-groups · A1–F4</span></div>
+          <div class="hs"><b>9</b><span>dashboard modules</span></div>
+          <div class="hs"><b>100%</b><span>offline &amp; private</span></div>
+        </div>
+      </div>
+
+      <div class="hero-preview" aria-hidden="true">
+        <div class="preview">
+          <div class="pv-bar"><i></i><i></i><i></i><span>AttendMate Pro — Today</span></div>
+          <div class="pv-body">
+            <div class="pv-side">
+              <i class="on" style="width:74%"></i><i style="width:60%"></i><i style="width:66%"></i><i style="width:52%"></i><i style="width:64%"></i><i style="width:46%"></i><i style="width:58%"></i>
+            </div>
+            <div class="pv-main">
+              <div class="pv-cards">
+                <div class="pv-card">
+                  <svg width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="none" stroke="var(--soft)" stroke-width="5"/><circle cx="20" cy="20" r="16" fill="none" stroke="#059669" stroke-width="5" stroke-dasharray="100.5" stroke-dashoffset="15.9" stroke-linecap="round" transform="rotate(-90 20 20)"/></svg>
+                  <div><div class="t">Theory</div><div class="v">84.2%</div></div>
+                </div>
+                <div class="pv-card">
+                  <svg width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="none" stroke="var(--soft)" stroke-width="5"/><circle cx="20" cy="20" r="16" fill="none" stroke="#0284c7" stroke-width="5" stroke-dasharray="100.5" stroke-dashoffset="9" stroke-linecap="round" transform="rotate(-90 20 20)"/></svg>
+                  <div><div class="t">Clinical</div><div class="v">91.0%</div></div>
+                </div>
+                <div class="pv-card">
+                  <svg width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="none" stroke="var(--soft)" stroke-width="5"/><circle cx="20" cy="20" r="16" fill="none" stroke="#d97706" stroke-width="5" stroke-dasharray="100.5" stroke-dashoffset="37" stroke-linecap="round" transform="rotate(-90 20 20)"/></svg>
+                  <div><div class="t">Streak</div><div class="v">12 days</div></div>
+                </div>
+              </div>
+              <div class="pv-rows">
+                <div class="pv-row"><span class="nm">Gen. Medicine</span><span class="bar"><span style="display:block;height:100%;width:86%;border-radius:99px;background:var(--grad)"></span></span><span class="pc" style="color:var(--ok)">86%</span></div>
+                <div class="pv-row"><span class="nm">Obs-Gynae</span><span class="bar"><span style="display:block;height:100%;width:92%;border-radius:99px;background:var(--grad)"></span></span><span class="pc" style="color:var(--ok)">92%</span></div>
+                <div class="pv-row"><span class="nm">Gen. Surgery</span><span class="bar"><span style="display:block;height:100%;width:73%;border-radius:99px;background:var(--warn)"></span></span><span class="pc" style="color:var(--warn)">73%</span></div>
+                <div class="pv-row"><span class="nm">Ophthalmology</span><span class="bar"><span style="display:block;height:100%;width:64%;border-radius:99px;background:var(--bad)"></span></span><span class="pc" style="color:var(--bad)">64%</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="sec" id="features">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="kick">Features</div>
+        <h2>Everything the college portal doesn't tell you</h2>
+        <p>Built as a ground-up upgrade of AttendMate, grounded in the real timetable, the official posting rosters and the 75% / 80% attendance rules.</p>
+      </div>
+      <div class="feat-grid">
+        <div class="feat"><span class="ic" data-icon="steth"></span><h3>Roster resolver</h3><p>Type your roll number once — A1–F4 resolution maps every allied, specialty and major clinical posting block, with dates, straight from the official Phase-III (Part-2) schedule.</p></div>
+        <div class="feat"><span class="ic" data-icon="target"></span><h3>Safe-bunk planner</h3><p>Exact "can skip N classes" and "must attend N" math per subject, separately for theory (75%) and clinical (80%) modes — including the % cost of the very next miss.</p></div>
+        <div class="feat"><span class="ic" data-icon="flame"></span><h3>Priority advisor</h3><p>Every subject is auto-tiered into Don't Miss / Be Careful / Safe to Miss as your data grows, so triage takes seconds before a busy day.</p></div>
+        <div class="feat"><span class="ic" data-icon="calendar"></span><h3>Calendar heatmap</h3><p>Month-at-a-glance attendance colours, assessment windows and perfect-day streaks — tap any day to jump straight into it.</p></div>
+        <div class="feat"><span class="ic" data-icon="chart"></span><h3>Analytics &amp; projection</h3><p>Trend line across your last 15 days, weekday performance, a subject leaderboard and a session-end projection to the Sentup exam.</p></div>
+        <div class="feat"><span class="ic" data-icon="check"></span><h3>Offline &amp; recoverable</h3><p>One file, zero dependencies, works without internet. 40-step undo and JSON export/import mean your record is always yours — nothing leaves your device.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec alt" id="how">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="kick">How it works</div>
+        <h2>Three steps to total clarity</h2>
+        <p>Set-up takes under a minute. After that, marking a day is two taps.</p>
+      </div>
+      <div class="steps">
+        <div class="step"><h3>Sign in with Gmail + roll number</h3><p>A Google-style local sign-in saves your name, email and roll number in this browser only — and your roll instantly resolves your posting sub-group.</p></div>
+        <div class="step"><h3>Mark each day in seconds</h3><p>Today's view follows the master timetable: tap Present / Absent per class, mark all present, declare holidays, bulk-fill past days or add make-up classes.</p></div>
+        <div class="step"><h3>Follow the advice</h3><p>Check the advisor before you bunk: it tells you the exact number of safe skips left, or how many classes you must attend to recover a target.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec" id="roster">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="kick">Roster</div>
+        <h2>Your roll number is the key</h2>
+        <p>The batch of 100 is split into six groups and 24 sub-groups. Each sub-group rotates through Allied, Specialty and Major postings on official dates.</p>
+      </div>
+      <div class="roster-band">
+        <div>
+          <h3>Group map — Phase-III (Part-2), Batch 2023</h3>
+          <p>Sign in with your roll number and every posting block, timeline and clinical slot in the app is resolved automatically. Minor rotations cycle DR · RD · AN · PS; mid rotations PE · OR · EN · OP; major postings IM · SU · OG.</p>
+        </div>
+        <div class="grp-chips" aria-label="Groups">
+          <span class="g"><b>A</b><span>Roll 1–16</span></span>
+          <span class="g"><b>B</b><span>Roll 17–32</span></span>
+          <span class="g"><b>C</b><span>Roll 33–49</span></span>
+          <span class="g"><b>D</b><span>Roll 50–66</span></span>
+          <span class="g"><b>E</b><span>Roll 67–83</span></span>
+          <span class="g"><b>F</b><span>Roll 84–100</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec alt" id="faq">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="kick">FAQ</div>
+        <h2>Straight answers</h2>
+      </div>
+      <div class="faq">
+        <details><summary>Is this the official NSMCH app?</summary><div class="ans">No. AttendMate Pro is an unofficial, student-built study tool. It replicates and upgrades the AttendMate concept using the published Phase-III (Part-2) timetable, assessment calendar and posting rosters. Always confirm critical dates with the college.</div></details>
+        <details><summary>Does the Google sign-in send my data to Google?</summary><div class="ans">No. The sign-in is a local simulation: your email, name and roll number are stored only in this browser's localStorage. Nothing is transmitted anywhere — the file has zero network calls.</div></details>
+        <details><summary>Where does my attendance data live?</summary><div class="ans">Entirely in your browser (localStorage), with a JSON export option in Settings. Clearing browser data erases it, so export a backup regularly. Moving to a new device or browser? Import the JSON there.</div></details>
+        <details><summary>What if a posting or timetable entry looks wrong for my group?</summary><div class="ans">The rosters are entered from the official schedule, but errors can happen and dates can shift. Verify with your class coordinator, and use the swap button on any clinical slot to credit the correct department.</div></details>
+        <details><summary>Can I use it on my phone?</summary><div class="ans">Yes — the whole site is responsive, from the landing page to the dashboard. On phones a tab strip replaces the sidebar. It works fully offline once the file is saved on the device.</div></details>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="wrap">
+      <div class="cta-band">
+        <h2>Stop guessing. Start knowing.</h2>
+        <p>Open the dashboard, sign in with your Gmail and roll number, and let AttendMate Pro do the attendance arithmetic for the rest of the session.</p>
+        <a href="#app" class="btn-hero" data-go-app>Open the dashboard
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></a>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="inner">
+      <div><span class="brand-mark" id="site-foot-mark" aria-hidden="true"></span><b>AttendMate Pro</b> · unofficial student tool for NSMCH Bihta, Patna — Phase-III (Part-2), Batch 2023, Session 2026–27.</div>
+      <div>Not affiliated with NSMCH or Aryabhatta Knowledge University · Data stays on your device</div>
+    </div>
+  </footer>
+</section>
+
+<!-- ================= APP (route: #app) ================= -->
+<div class="app" id="app-shell">
   <!-- Desktop sidebar -->
   <aside class="sidebar">
     <div class="brand">
@@ -367,6 +753,9 @@ footer{padding:20px clamp(14px,3vw,28px) 30px;color:var(--muted);font-size:11.5p
     <div class="tabsbar" id="nav-mobile"></div>
 
     <header class="topbar">
+      <button class="icon-btn" id="btn-site-home" title="Back to homepage" aria-label="Back to homepage">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/></svg>
+      </button>
       <h2 class="page-title" id="page-title">Today</h2>
       <button class="icon-btn" id="btn-undo" title="Undo last action" style="display:none">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
@@ -389,7 +778,7 @@ footer{padding:20px clamp(14px,3vw,28px) 30px;color:var(--muted);font-size:11.5p
       </div>
     </header>
 
-    <main class="content">
+    <main class="content" id="app-content" tabindex="-1">
       <!-- ============ TODAY ============ -->
       <section class="view active" id="view-today">
         <div class="card tight">
@@ -629,7 +1018,7 @@ footer{padding:20px clamp(14px,3vw,28px) 30px;color:var(--muted);font-size:11.5p
   </div>
 </div>
 
-<div id="toast"><span id="toast-msg"></span><button id="toast-undo" style="display:none">Undo</button></div>
+<div id="toast" role="status" aria-live="polite"><span id="toast-msg"></span><button id="toast-undo" style="display:none">Undo</button></div>
 
 <!-- ============ LOGIN WINDOW (Google-style, local-only) ============ -->
 <div class="login-overlay" id="login-overlay" style="display:none">
@@ -1191,7 +1580,11 @@ function switchTab(tab) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   const view = document.getElementById('view-' + tab);
   if (view) view.classList.add('active');
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    const on = b.dataset.tab === tab;
+    b.classList.toggle('active', on);
+    if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+  });
   document.getElementById('page-title').textContent = VIEW_TITLES[tab] || '';
   window.scrollTo({ top: 0 });
   renderAll();
@@ -1199,7 +1592,10 @@ function switchTab(tab) {
 
 function applyTheme() {
   document.documentElement.setAttribute('data-theme', state.profile.theme);
-  document.getElementById('theme-icon').innerHTML = state.profile.theme === 'dark' ? icon('sun') : icon('moon');
+  const ic = state.profile.theme === 'dark' ? icon('sun') : icon('moon');
+  document.getElementById('theme-icon').innerHTML = ic;
+  const icSite = document.getElementById('theme-icon-site');
+  if (icSite) icSite.innerHTML = ic;
 }
 
 function renderAll() {
@@ -1338,6 +1734,9 @@ function wireLogin() {
   });
   document.addEventListener('click', e => {
     if (!menu.contains(e.target)) menu.classList.remove('open');
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') menu.classList.remove('open');
   });
   document.getElementById('acct-settings').addEventListener('click', () => {
     menu.classList.remove('open');
@@ -2077,8 +2476,38 @@ function wireEvents() {
 }
 
 /* =====================================================================
-   6. INIT
+   6. SITE ROUTER (#home landing · #app dashboard) & INIT
    ===================================================================== */
+let lastRoute = null;
+function applyRoute() {
+  const r = location.hash === '#app' ? 'app' : 'home';
+  const site = document.getElementById('site');
+  const app = document.getElementById('app-shell');
+  if (r === 'app') { site.style.display = 'none'; app.style.display = ''; }
+  else { site.style.display = ''; app.style.display = 'none'; }
+  document.title = r === 'app' ? 'Dashboard — AttendMate Pro' : 'AttendMate Pro — NSMCH Phase-III Attendance Tracker';
+  if (r !== lastRoute) window.scrollTo({ top: 0 });
+  lastRoute = r;
+  if (r === 'app' && !isSignedIn()) showLogin();
+  else if (r === 'home') hideLogin();
+}
+
+function wireSite() {
+  document.getElementById('site-brand-mark').innerHTML = icon('cap', 18);
+  document.getElementById('site-foot-mark').innerHTML = icon('cap', 13);
+  document.querySelectorAll('.ic[data-icon]').forEach(el => { el.innerHTML = icon(el.dataset.icon, 21); });
+  document.getElementById('btn-theme-site').addEventListener('click', () => {
+    state.profile.theme = state.profile.theme === 'dark' ? 'light' : 'dark';
+    saveState(); applyTheme();
+    toast(state.profile.theme === 'dark' ? 'Dark mode on' : 'Light mode on');
+  });
+  document.getElementById('btn-site-home').addEventListener('click', () => { location.hash = '#home'; });
+}
+
+/* fail loud but gracefully: keep the app usable if a render ever throws */
+window.addEventListener('error', () => { try { toast('Something went wrong — your data is safe'); } catch (e) { } });
+window.addEventListener('unhandledrejection', () => { try { toast('Something went wrong — your data is safe'); } catch (e) { } });
+
 function init() {
   loadState();
   document.getElementById('brand-mark').innerHTML = icon('cap', 20);
@@ -2089,9 +2518,13 @@ function init() {
   document.getElementById('fill-to').value = shiftDate(todayIso, -1);
   wireEvents();
   wireLogin();
+  wireSite();
   switchTab(state.activeTab || 'today');
-  if (!isSignedIn()) showLogin();
+  // default route: signed-in users land directly on the dashboard, everyone else on the site
+  if (!location.hash || location.hash === '#') history.replaceState(null, '', isSignedIn() ? '#app' : '#home');
+  applyRoute();
 }
+window.addEventListener('hashchange', applyRoute);
 init();
 </script>
 </body>
