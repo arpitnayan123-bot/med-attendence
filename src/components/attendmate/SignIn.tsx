@@ -1,45 +1,84 @@
 "use client";
 // Landing page = sign-in. Originkit "Dither Reveal" animation fills the
 // screen on a dark background; a minimal glass sign-in card sits on top.
+// Accounts are real (server-side, bcrypt + JWT cookie sessions); a
+// "device only" path keeps the app fully usable offline-first.
 import { useState } from "react";
-import { ArrowRight, GraduationCap, Loader2 } from "lucide-react";
+import { ArrowRight, CloudUpload, Loader2, ShieldCheck } from "lucide-react";
 import DitherReveal from "@/components/originkit/ui/dither-reveal";
 import { BrandWord } from "./bits";
 import { useAttendMate } from "@/lib/attendmate/storage";
+import { apiExists } from "@/lib/attendmate/sync";
 import { getGroupInfo } from "@/lib/attendmate/engine";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function SignIn({ onDone, nav }: { onDone: () => void; nav: (to: string) => void }) {
-  const { state, setState } = useAttendMate();
-  const [step, setStep] = useState<"email" | "profile">("email");
+  const { state, setState, signIn, signUp } = useAttendMate();
+  const [step, setStep] = useState<"email" | "login" | "register">("email");
+  const [deviceOnly, setDeviceOnly] = useState(false);
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [name, setName] = useState(state.profile.name || "");
   const [roll, setRoll] = useState<string>(state.profile.rollNo > 1 ? String(state.profile.rollNo) : "");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
-  const submitEmail = () => {
+  const finish = () => {
+    setBusy(true);
+    setTimeout(onDone, 300);
+  };
+
+  const submitEmail = async () => {
     if (!EMAIL_RE.test(email)) { setErr("Enter a valid email address"); return; }
     setErr("");
     setBusy(true);
-    setTimeout(() => { setBusy(false); setStep("profile"); }, 450); // Google-style brief pause
+    try {
+      const exists = await apiExists(email.trim().toLowerCase());
+      setDeviceOnly(false);
+      setStep(exists ? "login" : "register");
+    } catch {
+      // server unreachable — offer the offline device-only path
+      setErr("Can't reach the sync server right now — you can continue on this device only.");
+      setDeviceOnly(true);
+      setStep("register");
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const submitProfile = () => {
+  const submitLogin = async () => {
+    if (!password) { setErr("Enter your password"); return; }
+    setErr("");
+    setBusy(true);
+    const r = await signIn(email.trim().toLowerCase(), password);
+    setBusy(false);
+    if (r.ok) finish();
+    else setErr(r.error || "Invalid email or password");
+  };
+
+  const submitRegister = async () => {
     const n = name.trim();
     const r = parseInt(roll, 10);
     if (!n) { setErr("Enter your name"); return; }
     if (!(r >= 1 && r <= 100)) { setErr("Roll number must be between 1 and 100"); return; }
+    if (!deviceOnly && password.length < 8) { setErr("Password must be at least 8 characters"); return; }
     setErr("");
-    const gi = getGroupInfo(r);
-    setState((prev) => ({
-      ...prev,
-      profile: { ...prev.profile, name: n, email: email.trim(), rollNo: gi.rollNo },
-    }));
     setBusy(true);
-    setTimeout(onDone, 350);
+    if (deviceOnly) {
+      setState((prev) => ({ ...prev, profile: { ...prev.profile, name: n, email: email.trim(), rollNo: r } }));
+      setBusy(false);
+      finish();
+      return;
+    }
+    const res = await signUp(email.trim().toLowerCase(), n, r, password);
+    setBusy(false);
+    if (res.ok) finish();
+    else setErr(res.error || "Registration failed");
   };
+
+  const gi = roll !== "" && parseInt(roll, 10) >= 1 && parseInt(roll, 10) <= 100 ? getGroupInfo(parseInt(roll, 10)) : null;
+  const canEnter = step === "email" ? submitEmail : step === "login" ? submitLogin : submitRegister;
 
   return (
     <div className="relative min-h-screen bg-black text-white">
@@ -62,37 +101,33 @@ export default function SignIn({ onDone, nav }: { onDone: () => void; nav: (to: 
       <div className="relative z-10 flex min-h-screen flex-col">
         <header className="flex items-center justify-between px-5 py-4 sm:px-8">
           <BrandWord size={34} />
-          <span className="hidden rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-[11px] font-semibold text-white/80 backdrop-blur sm:inline-flex">
-            NSMCH Bihta · Phase-III (Part-2) · 2026–27
+          <span className="hidden items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-[11px] font-semibold text-white/80 backdrop-blur sm:inline-flex">
+            <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> Encrypted sync · stored on this device too
           </span>
         </header>
 
         <main className="flex flex-1 items-center justify-center px-4 py-8">
           <div className="w-full max-w-[400px] rounded-3xl border border-white/15 bg-black/45 p-7 shadow-2xl shadow-black/60 backdrop-blur-2xl sm:p-8">
-            {step === "email" ? (
+            {step === "email" && (
               <>
                 <div className="mb-6 flex flex-col items-center text-center">
                   <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/15 bg-white/10">
-                    <GraduationCap className="h-6 w-6" />
+                    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z" /><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5" /></svg>
                   </span>
                   <h1 className="text-[22px] font-bold tracking-tight">Sign in</h1>
-                  <p className="mt-1.5 text-[13px] text-white/60">to continue to AttendMate Pro</p>
+                  <p className="mt-1.5 text-[13px] text-white/60">to sync AttendMate Pro across devices</p>
                 </div>
                 <label className="mb-1 block text-xs font-semibold text-white/70" htmlFor="lm-email">Email</label>
                 <input
-                  id="lm-email"
-                  type="email"
-                  value={email}
-                  autoComplete="email"
-                  autoFocus
+                  id="lm-email" type="email" value={email} autoComplete="email" autoFocus
                   onChange={(e) => setEmail(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && submitEmail()}
+                  onKeyDown={(e) => e.key === "Enter" && void canEnter()}
                   placeholder="you@gmail.com"
                   className="w-full rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-[14px] text-white placeholder-white/35 outline-none transition focus:border-violet-400/70 focus:bg-white/15"
                 />
                 {err && <p className="mt-2 text-xs font-medium text-rose-400">{err}</p>}
                 <button
-                  onClick={submitEmail}
+                  onClick={() => void canEnter()}
                   className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-500 py-3 text-[14px] font-bold shadow-lg shadow-violet-600/40 transition hover:brightness-110 active:scale-[.99]"
                 >
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Next <ArrowRight className="h-4 w-4" /></>}
@@ -102,52 +137,99 @@ export default function SignIn({ onDone, nav }: { onDone: () => void; nav: (to: 
                   <span>Help · Privacy · Terms</span>
                 </div>
               </>
-            ) : (
+            )}
+
+            {step === "login" && (
               <>
                 <div className="mb-6 flex flex-col items-center text-center">
                   <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/15 bg-white/10 text-lg font-bold">
                     {email.trim().charAt(0).toUpperCase()}
                   </span>
                   <h1 className="text-[20px] font-bold tracking-tight">{email}</h1>
-                  <p className="mt-1.5 text-[13px] text-white/60">Create your local dashboard profile</p>
+                  <p className="mt-1.5 text-[13px] text-white/60">Welcome back — enter your password</p>
+                </div>
+                <label className="mb-1 block text-xs font-semibold text-white/70" htmlFor="lm-pass">Password</label>
+                <input
+                  id="lm-pass" type="password" value={password} autoComplete="current-password" autoFocus
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && void canEnter()}
+                  placeholder="••••••••"
+                  className="w-full rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-[14px] text-white placeholder-white/35 outline-none transition focus:border-violet-400/70 focus:bg-white/15"
+                />
+                {err && <p className="mt-2 text-xs font-medium text-rose-400">{err}</p>}
+                <button
+                  onClick={() => void canEnter()}
+                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-500 py-3 text-[14px] font-bold shadow-lg shadow-violet-600/40 transition hover:brightness-110 active:scale-[.99]"
+                >
+                  {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Sign in <ArrowRight className="h-4 w-4" /></>}
+                </button>
+                <div className="mt-6 flex items-center justify-between border-t border-white/10 pt-4 text-[11px] text-white/45">
+                  <button onClick={() => { setStep("email"); setPassword(""); setErr(""); }} className="hover:text-white/80">← Not you?</button>
+                  <span>Sync restores your full dashboard</span>
+                </div>
+              </>
+            )}
+
+            {step === "register" && (
+              <>
+                <div className="mb-6 flex flex-col items-center text-center">
+                  <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/15 bg-white/10 text-lg font-bold">
+                    {email.trim().charAt(0).toUpperCase()}
+                  </span>
+                  <h1 className="text-[20px] font-bold tracking-tight">{email}</h1>
+                  <p className="mt-1.5 text-[13px] text-white/60">
+                    {deviceOnly ? "Offline mode — profile stays on this device" : "Create your account — data syncs & backs up"}
+                  </p>
                 </div>
                 <label className="mb-1 block text-xs font-semibold text-white/70" htmlFor="lm-name">Full name</label>
                 <input
-                  id="lm-name"
-                  value={name}
-                  autoFocus
+                  id="lm-name" value={name} autoFocus
                   onChange={(e) => setName(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && submitProfile()}
                   placeholder="e.g. Arjun Kumar"
                   className="w-full rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-[14px] text-white placeholder-white/35 outline-none transition focus:border-violet-400/70 focus:bg-white/15"
                 />
                 <label className="mb-1 mt-4 block text-xs font-semibold text-white/70" htmlFor="lm-roll">Roll number <span className="font-normal text-white/45">· 1–100</span></label>
                 <input
-                  id="lm-roll"
-                  type="number"
-                  min={1}
-                  max={100}
-                  value={roll}
+                  id="lm-roll" type="number" min={1} max={100} value={roll}
                   onChange={(e) => setRoll(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && submitProfile()}
+                  onKeyDown={(e) => e.key === "Enter" && void canEnter()}
                   placeholder="e.g. 23"
                   className="w-full rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-[14px] text-white placeholder-white/35 outline-none transition focus:border-violet-400/70 focus:bg-white/15"
                 />
-                {roll !== "" && parseInt(roll, 10) >= 1 && parseInt(roll, 10) <= 100 && (
-                  <p className="mt-2 text-[11px] font-semibold text-violet-300">
-                    → Group {getGroupInfo(parseInt(roll, 10)).group} · Sub-group {getGroupInfo(parseInt(roll, 10)).subGroup}
-                  </p>
+                {gi && (
+                  <p className="mt-2 text-[11px] font-semibold text-violet-300">→ Group {gi.group} · Sub-group {gi.subGroup}</p>
+                )}
+                {!deviceOnly && (
+                  <>
+                    <label className="mb-1 mt-4 block text-xs font-semibold text-white/70" htmlFor="lm-newpass">Password <span className="font-normal text-white/45">· min 8 characters</span></label>
+                    <input
+                      id="lm-newpass" type="password" value={password} autoComplete="new-password"
+                      onChange={(e) => setPassword(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && void canEnter()}
+                      placeholder="••••••••"
+                      className="w-full rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-[14px] text-white placeholder-white/35 outline-none transition focus:border-violet-400/70 focus:bg-white/15"
+                    />
+                    <p className="mt-2 flex items-center gap-1.5 text-[11px] text-emerald-300">
+                      <CloudUpload className="h-3.5 w-3.5" />
+                      Everything you&apos;ve already logged on this device will be imported to your account.
+                    </p>
+                  </>
                 )}
                 {err && <p className="mt-2 text-xs font-medium text-rose-400">{err}</p>}
                 <button
-                  onClick={submitProfile}
-                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-500 py-3 text-[14px] font-bold shadow-lg shadow-violet-600/40 transition hover:brightness-110 active:scale-[.99]"
+                  onClick={() => void canEnter()}
+                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-500 py-3 text-[14px] font-bold shadow-lg shadow-violet-600/40 transition hover:brightness-110 active:scale-[.99]"
                 >
-                  {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Create dashboard <ArrowRight className="h-4 w-4" /></>}
+                  {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>{deviceOnly ? "Continue on this device" : "Create account"} <ArrowRight className="h-4 w-4" /></>}
                 </button>
-                <div className="mt-6 flex items-center justify-between border-t border-white/10 pt-4 text-[11px] text-white/45">
-                  <button onClick={() => { setStep("email"); setErr(""); }} className="hover:text-white/80">← Change email</button>
-                  <span>Stored only on this device</span>
+                <div className="mt-5 flex items-center justify-between border-t border-white/10 pt-4 text-[11px] text-white/45">
+                  <button onClick={() => { setStep("email"); setErr(""); setPassword(""); }} className="hover:text-white/80">← Change email</button>
+                  <button
+                    onClick={() => { setDeviceOnly((v) => !v); setErr(""); }}
+                    className="font-semibold text-white/60 transition hover:text-white"
+                  >
+                    {deviceOnly ? "Create an account instead" : "Use this device only"}
+                  </button>
                 </div>
               </>
             )}
@@ -163,7 +245,7 @@ export default function SignIn({ onDone, nav }: { onDone: () => void; nav: (to: 
               </span>
             ))}
           </nav>
-          <p className="text-[11px] text-white/35">Unofficial, offline-first · your data never leaves this device</p>
+          <p className="text-[11px] text-white/35">Unofficial · offline-first · your attendance never leaves your devices</p>
         </footer>
       </div>
     </div>

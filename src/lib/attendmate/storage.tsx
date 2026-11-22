@@ -1,9 +1,16 @@
 "use client";
-// AttendMate Pro — client state: localStorage persistence (schema-compatible
-// with the original app's attendmate_pro_v2), 40-step undo, theme handling.
+// AttendMate Pro — client state + sync bridge.
+// localStorage persistence (schema-compatible with the original app's
+// attendmate_pro_v2), 40-step undo, theme handling, and a production sync
+// layer: every mutation is diffed into keyed server ops, queued (offline-first)
+// and flushed to /api/sync when an account is signed in.
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
 import { AppState, STORAGE_KEY, SlotEntry, MarkStatus, MASTER_TIMETABLE } from "./data";
 import { todayISO, getClinicalPostingForDate, shiftDate } from "./engine";
+import {
+  SyncStatus, ServerOp, enqueueOps, readPendingOps, writePendingOps, pendingCount,
+  clearQueue, pullAndMerge, apiMe, apiLogin, apiRegister, apiLogout, apiPush, apiWipeServerData,
+} from "./sync";
 
 function MASTER_SLOTS(dow: number) { return MASTER_TIMETABLE[dow] || []; }
 function resolvePostingCached(iso: string, subGroup: string): string | null {
@@ -68,6 +75,59 @@ export function applyThemeClass(theme: "light" | "dark") {
   document.documentElement.style.colorScheme = theme;
 }
 
+/* ---------- mutation diffing → server ops ---------- */
+const PROFILE_FIELDS = ["name", "email", "rollNo", "theoryTarget", "clinicalTarget", "theme"] as const;
+
+function diffOps(prev: AppState, next: AppState): ServerOp[] {
+  const ops: ServerOp[] = [];
+  if (prev.logs !== next.logs) {
+    const dates = new Set([...Object.keys(prev.logs), ...Object.keys(next.logs)]);
+    for (const date of dates) {
+      const a = prev.logs[date] || {};
+      const b = next.logs[date] || {};
+      const slots = new Set([...Object.keys(a), ...Object.keys(b)]);
+      for (const slotId of slots) {
+        if (a[slotId] === b[slotId]) continue;
+        const e = b[slotId];
+        if (!e) ops.push({ t: "log.del", date, slotId });
+        else ops.push({ t: "log.set", date, slotId, status: e.status, subject: e.subject ?? null, kind: e.kind ?? null });
+      }
+    }
+  }
+  if (prev.baseline !== next.baseline) {
+    const codes = new Set([...Object.keys(prev.baseline), ...Object.keys(next.baseline)]);
+    for (const code of codes) {
+      if (prev.baseline[code] === next.baseline[code]) continue;
+      const b = next.baseline[code];
+      ops.push({
+        t: "baseline.set", code,
+        b: b ? { tp: b.theoryPresent || 0, tt: b.theoryTotal || 0, cp: b.clinicalPresent || 0, ct: b.clinicalTotal || 0 } : null,
+      });
+    }
+  }
+  if (prev.aetcomDone !== next.aetcomDone) {
+    for (const id of Object.keys(next.aetcomDone)) {
+      if (prev.aetcomDone[id] !== next.aetcomDone[id]) ops.push({ t: "module.set", key: `aetcom:${id}`, done: Boolean(next.aetcomDone[id]) });
+    }
+  }
+  if (prev.pandemicDone !== next.pandemicDone) {
+    for (const id of Object.keys(next.pandemicDone)) {
+      if (prev.pandemicDone[id] !== next.pandemicDone[id]) ops.push({ t: "module.set", key: `pandemic:${id}`, done: Boolean(next.pandemicDone[id]) });
+    }
+  }
+  const patch: Partial<{ name: string; rollNo: number; theoryTarget: number; clinicalTarget: number; theme: string }> = {};
+  let hasPatch = false;
+  for (const f of PROFILE_FIELDS) {
+    if (prev.profile[f] !== next.profile[f] && f !== "email") {
+      (patch as Record<string, unknown>)[f] = next.profile[f];
+      hasPatch = true;
+    }
+  }
+  if (hasPatch) ops.push({ t: "profile.set", patch });
+  return ops;
+}
+
+/* ---------- context ---------- */
 export interface UndoSnapshot { label: string; state: AppState }
 
 export interface AttendMateCtx {
@@ -83,9 +143,17 @@ export interface AttendMateCtx {
   canUndo: boolean;
   lastAction: string | null;
   lastActionAt: number;
-  resetAll: () => void;
+  resetAll: () => Promise<void>;
   importState: (json: string) => boolean;
   setTheme: (theme: "light" | "dark") => void;
+  /* sync */
+  authed: boolean;
+  syncStatus: SyncStatus;
+  pending: number;
+  signIn: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  signUp: (email: string, name: string, rollNo: number, password: string) => Promise<{ ok: boolean; error?: string }>;
+  signOut: () => Promise<void>;
+  retrySync: () => void;
 }
 const Ctx = createContext<AttendMateCtx | null>(null);
 
@@ -94,9 +162,16 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
   const [canUndo, setCanUndo] = useState(false);
   const [lastAction, setLastAction] = useState<string | null>(null);
   const [lastActionAt, setLastActionAt] = useState(0);
+  const [authed, setAuthed] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>("local");
+  const [pending, setPending] = useState(0);
   const undoRef = useRef<UndoSnapshot[]>([]);
   const hydrated = useRef(false);
   const stateRef = useRef<AppState>(state);
+  const authedRef = useRef(false);
+  const inFlight = useRef(false);
+  const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => { stateRef.current = state; }, [state]);
 
   const note = useCallback((label: string) => {
@@ -104,22 +179,86 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
     setLastActionAt(Date.now());
   }, []);
 
-  useEffect(() => {
-    const loaded = loadStored();
-    const theme = getStoredTheme();
-    applyThemeClass(theme);
-    // One-time rehydration from localStorage (external system). SSR rendered
-    // the default state; this sync must happen post-mount to avoid mismatches.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setStateRaw({ ...loaded, profile: { ...loaded.profile, theme } });
-    hydrated.current = true;
-  }, []);
-
   const persist = useCallback((next: AppState) => {
     saveStored(next);
     setCanUndo(undoRef.current.length > 0);
   }, []);
 
+  const refreshPending = useCallback(() => setPending(pendingCount()), []);
+
+  /* ---------- flush loop ---------- */
+  const flush = useCallback(async () => {
+    if (!authedRef.current || inFlight.current) return;
+    const ops = readPendingOps();
+    if (ops.length === 0) { setSyncStatus("synced"); return; }
+    inFlight.current = true;
+    setSyncStatus("saving");
+    const startedAt = Date.now();
+    try {
+      await apiPush(ops.map((e) => e.op));
+      // drop the ops we just pushed, unless they were re-touched mid-flight
+      const pushedKeys = new Set(ops.map((e) => e.key));
+      const rest = readPendingOps().filter((e) => !pushedKeys.has(e.key) || e.at > startedAt);
+      writePendingOps(rest);
+      refreshPending();
+      setSyncStatus(rest.length === 0 ? "synced" : "queued");
+    } catch (err) {
+      const status = (err as Error & { status?: number }).status;
+      if (status === 401) {
+        authedRef.current = false;
+        setAuthed(false);
+        setSyncStatus("local");
+      } else if (status && status < 500) {
+        setSyncStatus("error"); // bad request — needs human attention, queue kept
+      } else {
+        setSyncStatus("offline");
+        if (retryTimer.current) clearTimeout(retryTimer.current);
+        retryTimer.current = setTimeout(() => { void flush(); }, 8000);
+      }
+    } finally {
+      inFlight.current = false;
+    }
+  }, [refreshPending]);
+
+  const scheduleFlush = useCallback(() => {
+    if (!authedRef.current) return;
+    setSyncStatus("queued");
+    refreshPending();
+    if (flushTimer.current) clearTimeout(flushTimer.current);
+    flushTimer.current = setTimeout(() => { void flush(); }, 900);
+  }, [flush, refreshPending]);
+
+  /* ---------- boot: hydrate local, then reconcile with the server ---------- */
+  useEffect(() => {
+    const loaded = loadStored();
+    const theme = getStoredTheme();
+    applyThemeClass(theme);
+    setStateRaw({ ...loaded, profile: { ...loaded.profile, theme } });
+    hydrated.current = true;
+    refreshPending();
+
+    (async () => {
+      const user = await apiMe();
+      if (!user) { setSyncStatus("local"); return; }
+      authedRef.current = true;
+      setAuthed(true);
+      const merge = await pullAndMerge(loadStored());
+      if (merge) {
+        setStateRaw({ ...merge.state, profile: { ...merge.state.profile, theme: getStoredTheme() } });
+        setSyncStatus(merge.importedOps > 0 || pendingCount() > 0 ? "queued" : "synced");
+      } else {
+        setSyncStatus("offline");
+      }
+      refreshPending();
+      void flush();
+    })();
+
+    const onOnline = () => void flush();
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, []);
+
+  /* ---------- state mutation (with op diffing) ---------- */
   const setState = useCallback((updater: (prev: AppState) => AppState, undoLabel?: string) => {
     setStateRaw((prev) => {
       if (undoLabel) {
@@ -128,10 +267,16 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
       }
       const next = updater(prev);
       persist(next);
+      const ops = diffOps(prev, next);
+      if (authedRef.current && ops.length > 0) {
+        enqueueOps(ops);
+        // schedule outside the updater to avoid side effects mid-render
+        setTimeout(scheduleFlush, 0);
+      }
       return next;
     });
     if (undoLabel) note(undoLabel);
-  }, [persist, note]);
+  }, [persist, note, scheduleFlush]);
 
   const markSlot = useCallback((iso: string, slotId: string, status: MarkStatus, subject?: string, kind?: "theory" | "clinical") => {
     setState((prev) => {
@@ -225,13 +370,28 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
     if (!snap) return;
     setStateRaw(snap.state);
     persist(snap.state);
+    const ops = diffOps(stateRef.current, snap.state);
+    if (authedRef.current && ops.length > 0) {
+      enqueueOps(ops);
+      setTimeout(scheduleFlush, 0);
+    }
     setCanUndo(undoRef.current.length > 0);
     note("Last action undone");
-  }, [persist, note]);
+  }, [persist, note, scheduleFlush]);
 
-  const resetAll = useCallback(() => {
-    setState(() => createDefaultState(), "Reset");
-  }, [setState]);
+  const resetAll = useCallback(async () => {
+    if (authedRef.current) {
+      try { await apiWipeServerData(); } catch { /* best effort — local reset proceeds */ }
+    }
+    clearQueue();
+    refreshPending();
+    setStateRaw(createDefaultState());
+    saveStored(createDefaultState());
+    undoRef.current = [];
+    setCanUndo(false);
+    setSyncStatus(authedRef.current ? "synced" : "local");
+    note("All data erased");
+  }, [note, refreshPending]);
 
   const importState = useCallback((json: string): boolean => {
     try {
@@ -248,10 +408,60 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
     setState((prev) => ({ ...prev, profile: { ...prev.profile, theme } }));
   }, [setState]);
 
+  /* ---------- auth flows ---------- */
+  const signIn = useCallback(async (email: string, password: string) => {
+    try {
+      const user = await apiLogin(email, password);
+      authedRef.current = true;
+      setAuthed(true);
+      const merge = await pullAndMerge(loadStored());
+      if (merge) {
+        setStateRaw({ ...merge.state, profile: { ...merge.state.profile, email: user.email, theme: getStoredTheme() } });
+      }
+      setSyncStatus(pendingCount() > 0 ? "queued" : "synced");
+      refreshPending();
+      void flush();
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: (err as Error).message || "Sign-in failed" };
+    }
+  }, [flush, refreshPending]);
+
+  const signUp = useCallback(async (email: string, name: string, rollNo: number, password: string) => {
+    try {
+      const user = await apiRegister(email, name, rollNo, password);
+      authedRef.current = true;
+      setAuthed(true);
+      // First-time migration: server is empty, so pullAndMerge queues all
+      // local-only records and the flush imports them.
+      const merge = await pullAndMerge(loadStored());
+      if (merge) {
+        setStateRaw({ ...merge.state, profile: { ...merge.state.profile, email: user.email, theme: getStoredTheme() } });
+      }
+      setSyncStatus("queued");
+      refreshPending();
+      void flush();
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: (err as Error).message || "Registration failed" };
+    }
+  }, [flush, refreshPending]);
+
+  const signOut = useCallback(async () => {
+    try { await apiLogout(); } catch { /* session may already be gone */ }
+    authedRef.current = false;
+    setAuthed(false);
+    setSyncStatus("local");
+    note("Signed out — data stays on this device");
+  }, [note]);
+
+  const retrySync = useCallback(() => { void flush(); }, [flush]);
+
   const value = useMemo<AttendMateCtx>(() => ({
     state, setState, markSlot, bulkMarkDay, copyPreviousDay, addExtraClass, removeSlot,
     bulkFill, undo, canUndo, lastAction, lastActionAt, resetAll, importState, setTheme,
-  }), [state, setState, markSlot, bulkMarkDay, copyPreviousDay, addExtraClass, removeSlot, bulkFill, undo, canUndo, lastAction, lastActionAt, resetAll, importState, setTheme]);
+    authed, syncStatus, pending, signIn, signUp, signOut, retrySync,
+  }), [state, setState, markSlot, bulkMarkDay, copyPreviousDay, addExtraClass, removeSlot, bulkFill, undo, canUndo, lastAction, lastActionAt, resetAll, importState, setTheme, authed, syncStatus, pending, signIn, signUp, signOut, retrySync]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

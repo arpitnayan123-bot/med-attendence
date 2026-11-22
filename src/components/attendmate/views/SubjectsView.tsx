@@ -4,7 +4,7 @@
 import { useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { useAttendMate } from "@/lib/attendmate/storage";
-import { SUBJECTS, SUBJECT_MAP } from "@/lib/attendmate/data";
+import { SUBJECTS, Subject } from "@/lib/attendmate/data";
 import { computeSubjectStats, calcBunkInfo, classifySkipPriority, getGroupInfo } from "@/lib/attendmate/engine";
 import { Ring, TierPill } from "../bits";
 
@@ -17,13 +17,14 @@ export default function SubjectsView() {
   const subGroup = getGroupInfo(state.profile.rollNo).subGroup;
 
   const tiered = useMemo(() => {
-    const tiers: Record<"dont" | "careful" | "safe", typeof SUBJECTS> = { dont: [], careful: [], safe: [] };
+    type Tiered = Subject & { _pct: number | null; _pill: string; _reason: string };
+    const tiers: Record<"dont" | "careful" | "safe", Tiered[]> = { dont: [], careful: [], safe: [] };
     for (const s of SUBJECTS) {
       const st = stats[s.code];
       const pr = mode === "clinical" ? st.clinical.present : st.theory.present;
       const tt = mode === "clinical" ? st.clinical.total : st.theory.total;
       const pr2 = classifySkipPriority(s, pr, tt, target, mode);
-      tiers[pr2.tier].push({ ...s, _pct: tt > 0 ? (pr / tt) * 100 : null, _pill: pr2.pill, _reason: pr2.reason } as typeof s & { _pct: number | null; _pill: string; _reason: string });
+      tiers[pr2.tier].push({ ...s, _pct: tt > 0 ? (pr / tt) * 100 : null, _pill: pr2.pill, _reason: pr2.reason });
     }
     return tiers;
   }, [stats, mode, target]);

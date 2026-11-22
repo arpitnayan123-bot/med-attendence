@@ -120,7 +120,7 @@ export function computeSubjectStats(state: AppState): SubjectStats {
       const entry = dayLog[slotId];
       if (!entry || !entry.status || entry.status === "cancelled") continue;
       const code = entry.subject;
-      if (!stats[code]) continue;
+      if (!code || !stats[code]) continue;
       const isClinical = slotId.endsWith("-cp") || entry.kind === "clinical";
       if (isClinical) {
         stats[code].clinical.total += 1;

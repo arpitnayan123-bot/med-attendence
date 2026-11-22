@@ -221,7 +221,7 @@ export function ModulesView() {
 
 /* ================= SETTINGS ================= */
 export function SettingsView() {
-  const { state, setState, resetAll, importState, setTheme } = useAttendMate();
+  const { state, setState, resetAll, importState, setTheme, authed, syncStatus, pending, signOut, retrySync } = useAttendMate();
   const fileRef = useRef<HTMLInputElement>(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const [msg, setMsg] = useState("");
@@ -245,21 +245,49 @@ export function SettingsView() {
     const reader = new FileReader();
     reader.onload = () => {
       const ok = importState(String(reader.result));
-      setMsg(ok ? "Backup imported successfully." : "That file doesn't look like an AttendMate Pro backup.");
+      setMsg(ok ? "Backup imported successfully — syncing to your account." : "That file doesn't look like an AttendMate Pro backup.");
     };
     reader.readAsText(file);
   };
 
-  const signOut = () => {
+  const signOutEverywhere = async () => {
+    await signOut();
     setState((p) => ({ ...p, profile: { ...p.profile, name: "", email: "", rollNo: 1 } }), "Sign out");
     window.location.hash = "/";
   };
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
+      <section className="rounded-2xl border bg-card p-5 shadow-sm lg:col-span-2">
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="text-[15px] font-extrabold">Account &amp; sync</h2>
+          {authed ? (
+            <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
+              syncStatus === "synced" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+              : syncStatus === "saving" ? "bg-violet-600/10 text-violet-600 dark:text-violet-300"
+              : syncStatus === "queued" ? "bg-violet-600/10 text-violet-600 dark:text-violet-300"
+              : syncStatus === "offline" ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+              : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
+            }`}>
+              {syncStatus === "synced" ? "Synced to server" : syncStatus === "saving" ? "Saving…" : syncStatus === "queued" ? `Queued (${pending})` : syncStatus === "offline" ? "Offline — will retry" : "Sync error"}
+            </span>
+          ) : (
+            <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-bold text-muted-foreground">Local only — no account</span>
+          )}
+          {(syncStatus === "offline" || syncStatus === "error") && (
+            <button onClick={retrySync} className="rounded-xl border bg-background px-3.5 py-2 text-[12px] font-bold text-muted-foreground transition hover:text-violet-600">Retry now</button>
+          )}
+        </div>
+        <p className="mt-1.5 max-w-[70ch] text-xs text-muted-foreground">
+          {authed
+            ? "Every change is queued locally (so the app works in hostel dead-zones) and synced to your account — encrypted in transit, hashed at rest. Sign in on another device to restore everything."
+            : "You're using AttendMate Pro without an account: data lives in this browser only. Create an account from the sign-in page to sync across devices and back up automatically."}
+        </p>
+      </section>
+
       <section className="rounded-2xl border bg-card p-5 shadow-sm">
         <h2 className="text-[15px] font-extrabold">Profile</h2>
-        <p className="text-xs text-muted-foreground">Stored only in this browser — nothing is transmitted.</p>
+        <p className="text-xs text-muted-foreground">{authed ? "Changes sync to your account automatically." : "Stored only in this browser — nothing is transmitted."}</p>
         <div className="mt-4 space-y-3">
           <label className="block text-[11px] font-semibold text-muted-foreground">Full name
             <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -321,8 +349,8 @@ export function SettingsView() {
             onChange={(e) => { const f = e.target.files?.[0]; if (f) importBackup(f); e.target.value = ""; }} />
           {confirmReset ? (
             <span className="inline-flex items-center gap-2 rounded-xl border border-rose-500/50 bg-rose-500/5 px-3 py-2 text-[12px] font-bold text-rose-600 dark:text-rose-300">
-              Erase all data?
-              <button onClick={() => { resetAll(); setConfirmReset(false); setMsg("All data erased."); window.location.hash = "/"; }}
+              Erase all data{authed ? " (device + server)" : ""}?
+              <button onClick={() => { void resetAll().then(() => setMsg("All data erased.")); setConfirmReset(false); }}
                 className="rounded-lg bg-rose-500 px-3 py-1.5 text-[11.5px] font-bold text-white">Yes, erase</button>
               <button onClick={() => setConfirmReset(false)} className="rounded-lg border px-3 py-1.5 text-[11.5px] font-bold">Cancel</button>
             </span>
@@ -331,7 +359,7 @@ export function SettingsView() {
               <RotateCcw className="h-4 w-4" /> Reset all data
             </button>
           )}
-          <button onClick={signOut} className="inline-flex items-center gap-1.5 rounded-xl border bg-background px-4 py-2.5 text-[12.5px] font-bold transition hover:border-violet-500 hover:text-violet-600">
+          <button onClick={() => void signOutEverywhere()} className="inline-flex items-center gap-1.5 rounded-xl border bg-background px-4 py-2.5 text-[12.5px] font-bold transition hover:border-violet-500 hover:text-violet-600">
             <LogOut className="h-4 w-4" /> Sign out
           </button>
         </div>

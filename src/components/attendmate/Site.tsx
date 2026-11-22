@@ -341,11 +341,17 @@ export function FaqPage({ nav }: { nav: (to: string) => void }) {
       <PageHero kick="FAQ" title={<>Straight <span className="bg-gradient-to-r from-violet-600 to-fuchsia-500 bg-clip-text text-transparent">answers</span></>}
         lead="The questions batchmates actually ask before trusting an app with their attendance record." />
       <section className="mx-auto max-w-3xl space-y-8 px-5 pb-8">
-        {FAQS.map(([cat, items]) => (
+        {FAQS.map((group) => {
+          const cat = group[0] as string;
+          const items = group[1] as readonly (readonly [string, string])[];
+          return (
           <div key={cat}>
             <h2 className="mb-2.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-muted-foreground">{cat}</h2>
             <div className="space-y-2.5">
-              {items.map(([q, a]) => (
+              {items.map((qa) => {
+                const q = qa[0];
+                const a = qa[1];
+                return (
                 <details key={q} className="group rounded-2xl border bg-card px-5 py-1 shadow-sm open:border-violet-500/40">
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-3 py-3.5 text-[14px] font-bold">
                     {q}
@@ -353,10 +359,12 @@ export function FaqPage({ nav }: { nav: (to: string) => void }) {
                   </summary>
                   <p className="pb-4 text-[12.5px] leading-relaxed text-muted-foreground">{a}</p>
                 </details>
-              ))}
+                );
+              })}
             </div>
           </div>
-        ))}
+          );
+        })}
       </section>
       <CTA nav={nav} />
     </>

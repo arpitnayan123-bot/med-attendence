@@ -4,7 +4,7 @@
 import { ComponentType } from "react";
 import {
   Home, CalendarDays, BookOpen, LineChart, Clock, Stethoscope, GraduationCap,
-  ClipboardCheck, Settings, Undo2, Sun, Moon, LogIn,
+  ClipboardCheck, Settings, Undo2, Sun, Moon, LogIn, Cloud, CloudOff, CloudUpload, Loader2, TriangleAlert,
 } from "lucide-react";
 import { useAttendMate, isSignedIn } from "@/lib/attendmate/storage";
 import { getGroupInfo } from "@/lib/attendmate/engine";
@@ -33,7 +33,17 @@ const VIEW_MAP: Record<string, ComponentType> = {
 };
 
 export default function Dashboard({ nav }: { nav: (to: string) => void }) {
-  const { state, setState, undo, canUndo, lastAction, lastActionAt, setTheme } = useAttendMate();
+  const { state, setState, undo, canUndo, lastAction, lastActionAt, setTheme, authed, syncStatus, pending, retrySync } = useAttendMate();
+
+  const SYNC_MAP = {
+    synced: { Icon: Cloud, cls: "text-emerald-500", label: "Synced" },
+    saving: { Icon: Loader2, cls: "text-violet-500 animate-spin", label: "Saving…" },
+    queued: { Icon: CloudUpload, cls: "text-violet-500", label: "Pending sync" },
+    offline: { Icon: CloudOff, cls: "text-amber-500", label: "Offline — retrying" },
+    error: { Icon: TriangleAlert, cls: "text-rose-500", label: "Sync error — retry" },
+    local: null,
+  } as const;
+  const syncMeta = SYNC_MAP[syncStatus];
 
   if (!isSignedIn(state)) {
     return (
@@ -100,6 +110,17 @@ export default function Dashboard({ nav }: { nav: (to: string) => void }) {
                 className="relative inline-flex h-9 items-center gap-1 rounded-xl border bg-card px-2.5 text-muted-foreground transition hover:text-violet-600">
                 <Undo2 className="h-4 w-4" />
                 <span className="rounded-full bg-violet-600 px-1.5 text-[10px] font-bold text-white">+</span>
+              </button>
+            )}
+            {syncMeta && (
+              <button
+                onClick={() => (syncStatus === "offline" || syncStatus === "error" ? retrySync() : undefined)}
+                title={`Server sync: ${syncMeta.label}${pending > 0 ? ` (${pending})` : ""}`}
+                aria-label={`Server sync: ${syncMeta.label}${pending > 0 ? ` (${pending})` : ""}`}
+                className="inline-flex h-9 items-center gap-1.5 rounded-xl border bg-card px-2.5 text-[11px] font-bold text-muted-foreground transition hover:text-foreground"
+              >
+                <syncMeta.Icon className={`h-4 w-4 ${syncMeta.cls}`} />
+                <span className="hidden lg:inline">{syncMeta.label}{pending > 0 && syncStatus !== "saving" ? ` (${pending})` : ""}</span>
               </button>
             )}
             <button
