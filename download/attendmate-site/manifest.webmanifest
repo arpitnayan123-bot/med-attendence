@@ -1,0 +1,13 @@
+{
+  "name": "AttendMate Pro — NSMCH Phase-III Attendance Tracker",
+  "short_name": "AttendMate",
+  "description": "Offline-first attendance tracker for NSMCH Bihta Phase-III (Part-2): roster resolver, safe-bunk planner, heatmap calendar and analytics.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f6fc",
+  "theme_color": "#4f46e5",
+  "icons": [
+    { "src": "assets/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

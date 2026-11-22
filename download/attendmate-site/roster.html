@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Posting roster — AttendMate Pro</title>
+<meta name="description" content="Look up your NSMCH Phase-III (Part-2) clinical posting roster by roll number: A–F groups, A1–F4 sub-groups, all official rotation windows for allied, specialty, major and exam-oriented clinical blocks.">
+<meta property="og:title" content="AttendMate Pro — Posting roster explorer">
+<meta property="og:description" content="Enter your roll number to resolve your posting sub-group and see every official rotation window of the Phase-III (Part-2) clinical calendar.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#4f46e5">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="css/style.css">
+<script>try{var t=localStorage.getItem('attendmate_site_theme');if(!t){try{var s=JSON.parse(localStorage.getItem('attendmate_pro_v2')||'null');t=s&&s.profile&&s.profile.theme}catch(e){}if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}if(t==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<nav class="site-nav" aria-label="Main">
+  <div class="inner">
+    <a class="logo" href="index.html"><span class="brand-mark" data-icon="cap" aria-hidden="true"></span>AttendMate&nbsp;<span class="grad-text">Pro</span></a>
+    <div class="links">
+      <a href="features.html">Features</a>
+      <a href="how-it-works.html">Guide</a>
+      <a href="roster.html" aria-current="page">Roster</a>
+      <a href="faq.html">FAQ</a>
+      <a href="about.html">About</a>
+      <button class="icon-btn" id="theme-toggle" aria-label="Toggle dark mode"><span id="theme-toggle-icon"></span></button>
+      <a href="app.html" class="nav-cta">Open App</a>
+    </div>
+    <button class="nav-burger" id="nav-burger" aria-label="Open menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+  </div>
+  <div class="mobile-menu" id="mobile-menu">
+    <a href="features.html">Features</a>
+    <a href="how-it-works.html">Guide</a>
+    <a href="roster.html">Roster</a>
+    <a href="faq.html">FAQ</a>
+    <a href="about.html">About</a>
+    <a href="app.html" class="mm-cta">Open the dashboard</a>
+  </div>
+</nav>
+
+<main id="main">
+  <header class="page-hero">
+    <div class="wrap">
+      <div class="kick">Roster</div>
+      <h1>Your roll number is <span class="grad-text">the key</span></h1>
+      <p class="lead">The Phase-III (Part-2) batch of 100 is split into six groups (A–F) and 24 sub-groups (A1–F4). Each sub-group rotates through Allied, Specialty and Major postings on official dates — type your roll number and see your own calendar.</p>
+    </div>
+  </header>
+
+  <section class="sec" style="padding-top:clamp(20px,3vw,36px)">
+    <div class="wrap">
+      <div class="lookup reveal">
+        <div>
+          <h3>Roll-number lookup</h3>
+          <p>Resolves instantly on this page — no sign-in needed, nothing stored. In the dashboard, the same resolution drives your posting timeline and which department your clinical slot credits each day.</p>
+          <form class="lookup-form" id="lookup-form" autocomplete="off">
+            <label for="lookup-roll" style="position:absolute;left:-9999px">Roll number</label>
+            <input id="lookup-roll" type="number" min="1" max="100" placeholder="Roll no." inputmode="numeric">
+            <button type="submit">Resolve</button>
+          </form>
+        </div>
+        <div class="lookup-result" id="lookup-result" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec alt">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="kick">How credit works</div>
+        <h2>Who goes where, and when</h2>
+        <p>Minor rotations cycle four sub-groups at a time through the allied specialties; mid rotations move two sub-groups through the specialty departments; major postings take whole groups into Medicine, Surgery and Obs-Gynae. During the 10 AM – 1 PM posting slot, the department on duty for your sub-group receives the attendance credit.</p>
+      </div>
+      <div class="grp-chips" style="justify-content:center;gap:12px">
+        <span class="g" style="border:1px solid var(--line);border-radius:13px;padding:10px 16px;text-align:center;background:var(--card)"><b class="grad-text" style="display:block;font-size:16px">A</b><span style="font-size:10.5px;color:var(--muted);font-weight:700">Roll 1–16 · A1–A4</span></span>
+        <span class="g" style="border:1px solid var(--line);border-radius:13px;padding:10px 16px;text-align:center;background:var(--card)"><b class="grad-text" style="display:block;font-size:16px">B</b><span style="font-size:10.5px;color:var(--muted);font-weight:700">Roll 17–32 · B1–B4</span></span>
+        <span class="g" style="border:1px solid var(--line);border-radius:13px;padding:10px 16px;text-align:center;background:var(--card)"><b class="grad-text" style="display:block;font-size:16px">C</b><span style="font-size:10.5px;color:var(--muted);font-weight:700">Roll 33–49 · C1–C4</span></span>
+        <span class="g" style="border:1px solid var(--line);border-radius:13px;padding:10px 16px;text-align:center;background:var(--card)"><b class="grad-text" style="display:block;font-size:16px">D</b><span style="font-size:10.5px;color:var(--muted);font-weight:700">Roll 50–66 · D1–D4</span></span>
+        <span class="g" style="border:1px solid var(--line);border-radius:13px;padding:10px 16px;text-align:center;background:var(--card)"><b class="grad-text" style="display:block;font-size:16px">E</b><span style="font-size:10.5px;color:var(--muted);font-weight:700">Roll 67–83 · E1–E4</span></span>
+        <span class="g" style="border:1px solid var(--line);border-radius:13px;padding:10px 16px;text-align:center;background:var(--card)"><b class="grad-text" style="display:block;font-size:16px">F</b><span style="font-size:10.5px;color:var(--muted);font-weight:700">Roll 84–100 · F1–F4</span></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="kick">Official tables</div>
+        <h2>The full Phase-III (Part-2) rotation calendar</h2>
+        <p>Every window below is embedded in the dashboard too — the tables render from the same data, so this page doubles as the public reference.</p>
+      </div>
+      <div id="roster-tables"></div>
+      <div class="callout warn" style="margin-top:22px"><b>Dates do move.</b> These windows are transcribed from the official Phase-III (Part-2) schedule. If the department office revises a block, tell your class coordinator — and use the swap button on a clinical slot in the dashboard to credit the correct department for that day.</div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="cta-band">
+        <h2>See your roster inside a real tracker</h2>
+        <p>Sign in with your roll number in the dashboard and every posting block, timeline and clinical credit resolves automatically.</p>
+        <a href="app.html" class="btn-hero">Open the dashboard
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="cols">
+    <div>
+      <div class="fbrand"><span class="brand-mark" data-icon="cap" aria-hidden="true"></span>AttendMate Pro</div>
+      <p style="margin:0;max-width:36ch">Unofficial, offline-first attendance intelligence for NSMCH Bihta Phase-III (Part-2) students. Your data never leaves your device.</p>
+    </div>
+    <div>
+      <h4>Site</h4>
+      <a href="index.html">Home</a>
+      <a href="features.html">Features</a>
+      <a href="how-it-works.html">How it works</a>
+      <a href="faq.html">FAQ</a>
+      <a href="about.html">About</a>
+    </div>
+    <div>
+      <h4>Get started</h4>
+      <a href="app.html">Open the dashboard</a>
+      <a href="how-it-works.html#backups">Backups &amp; recovery</a>
+      <a href="faq.html#privacy">Privacy &amp; data</a>
+    </div>
+  </div>
+  <div class="fbottom">
+    <span>© <span id="site-year">2026</span> AttendMate Pro · student-built, not affiliated with NSMCH or Aryabhatta Knowledge University</span>
+    <span>Phase-III (Part-2) · Batch 2023 · Session 2026–27</span>
+  </div>
+</footer>
+<script src="js/site.js"></script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>About — AttendMate Pro</title>
+<meta name="description" content="Why AttendMate Pro exists, the principles behind it (offline-first, private, grounded in official NSMCH Phase-III Part-2 data) and an honest disclaimer.">
+<meta property="og:title" content="AttendMate Pro — About">
+<meta property="og:description" content="A student-built, offline-first attendance tracker for NSMCH Bihta Phase-III (Part-2). Background, principles and disclaimer.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#4f46e5">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="css/style.css">
+<script>try{var t=localStorage.getItem('attendmate_site_theme');if(!t){try{var s=JSON.parse(localStorage.getItem('attendmate_pro_v2')||'null');t=s&&s.profile&&s.profile.theme}catch(e){}if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}if(t==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<nav class="site-nav" aria-label="Main">
+  <div class="inner">
+    <a class="logo" href="index.html"><span class="brand-mark" data-icon="cap" aria-hidden="true"></span>AttendMate&nbsp;<span class="grad-text">Pro</span></a>
+    <div class="links">
+      <a href="features.html">Features</a>
+      <a href="how-it-works.html">Guide</a>
+      <a href="roster.html">Roster</a>
+      <a href="faq.html">FAQ</a>
+      <a href="about.html" aria-current="page">About</a>
+      <button class="icon-btn" id="theme-toggle" aria-label="Toggle dark mode"><span id="theme-toggle-icon"></span></button>
+      <a href="app.html" class="nav-cta">Open App</a>
+    </div>
+    <button class="nav-burger" id="nav-burger" aria-label="Open menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+  </div>
+  <div class="mobile-menu" id="mobile-menu">
+    <a href="features.html">Features</a>
+    <a href="how-it-works.html">Guide</a>
+    <a href="roster.html">Roster</a>
+    <a href="faq.html">FAQ</a>
+    <a href="about.html">About</a>
+    <a href="app.html" class="mm-cta">Open the dashboard</a>
+  </div>
+</nav>
+
+<main id="main">
+  <header class="page-hero">
+    <div class="wrap">
+      <div class="kick">About</div>
+      <h1>Built by a student, <span class="grad-text">for the batch</span></h1>
+      <p class="lead">AttendMate Pro began as a replica of the AttendMate tool used in Phase-III (Part-2) at NSMCH Bihta — and grew into a ground-up rebuild with real analytics, because "75% required" tells you nothing about today's decision.</p>
+    </div>
+  </header>
+
+  <section class="sec" style="padding-top:clamp(20px,3vw,36px)">
+    <div class="wrap">
+      <div class="article">
+        <h2>Why it exists</h2>
+        <p>Attendance in a clinical phase is genuinely hard to reason about. Postings move your whole sub-group every fortnight, theory runs at 75% while clinical runs at 80%, extra and cancelled classes bend the denominators, and the only tool most students have is mental arithmetic at 8:55 AM. AttendMate Pro takes the official schedule — the master Monday–Saturday timetable, the A1–F4 posting rosters, the assessment calendar — and keeps applying it to <b>your</b> running numbers, so every skip or save is an informed choice rather than a gamble.</p>
+        <h2>The principles</h2>
+        <p><b>Offline-first.</b> The whole site is static files. Host it anywhere, save it to a laptop, open it in a hostel with no wifi — nothing breaks, because nothing phones home.</p>
+        <p><b>Private by architecture.</b> No accounts, no servers, no analytics. Your email, roll number and every mark live in your browser's localStorage; the JSON export exists so you — not a vendor — own the copy that matters.</p>
+        <p><b>Grounded in official data.</b> The rosters and exam windows in this site are transcriptions of the Phase-III (Part-2) schedule, not guesses. When the college revises dates, the data is meant to be corrected rather than worked around.</p>
+        <p><b>Honest arithmetic.</b> Advice states its assumptions: projections say "if your current rate holds"; simulators touch preview numbers only, never your log; cancelled classes stop counting instead of quietly punishing you.</p>
+        <h2>Disclaimer</h2>
+        <p>AttendMate Pro is an unofficial tool by a student, for students. It is <b>not</b> affiliated with, endorsed by, or produced on behalf of Nalanda Medical College &amp; Hospital (NSMCH), Patna, or Aryabhatta Knowledge University. Attendance rules used here (75% theory / 80% clinical) reflect the published Phase-III (Part-2) requirements as understood at build time; the college's word always wins. Screenshots on this site were captured with demo data and contain no real student's record.</p>
+        <div class="callout ok"><b>Contribute:</b> found a roster error, or the timetable changed? The fix belongs in the data — every date in <a href="roster.html">the roster tables</a> is stored in plain arrays in <code>js/site.js</code> and in the dashboard itself, deliberately easy for any batchmate to correct.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="cta-band">
+        <h2>Put it to work this semester</h2>
+        <p>The dashboard is one click away, and it will still work in December when the wifi isn't.</p>
+        <a href="app.html" class="btn-hero">Open the dashboard
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="cols">
+    <div>
+      <div class="fbrand"><span class="brand-mark" data-icon="cap" aria-hidden="true"></span>AttendMate Pro</div>
+      <p style="margin:0;max-width:36ch">Unofficial, offline-first attendance intelligence for NSMCH Bihta Phase-III (Part-2) students. Your data never leaves your device.</p>
+    </div>
+    <div>
+      <h4>Site</h4>
+      <a href="index.html">Home</a>
+      <a href="features.html">Features</a>
+      <a href="how-it-works.html">How it works</a>
+      <a href="roster.html">Posting roster</a>
+      <a href="faq.html">FAQ</a>
+    </div>
+    <div>
+      <h4>Get started</h4>
+      <a href="app.html">Open the dashboard</a>
+      <a href="how-it-works.html#backups">Backups &amp; recovery</a>
+      <a href="faq.html#privacy">Privacy &amp; data</a>
+    </div>
+  </div>
+  <div class="fbottom">
+    <span>© <span id="site-year">2026</span> AttendMate Pro · student-built, not affiliated with NSMCH or Aryabhatta Knowledge University</span>
+    <span>Phase-III (Part-2) · Batch 2023 · Session 2026–27</span>
+  </div>
+</footer>
+<script src="js/site.js"></script>
+</body>
+</html>

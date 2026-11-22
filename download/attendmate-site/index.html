@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AttendMate Pro — Attendance intelligence for NSMCH medical school</title>
+<meta name="description" content="AttendMate Pro turns the official NSMCH Phase-III (Part-2) timetable and posting roster into a private, offline attendance command centre: safe-bunk planning, calendar heatmap, analytics.">
+<meta property="og:title" content="AttendMate Pro — Attendance intelligence for medical school">
+<meta property="og:description" content="Offline-first attendance tracker for NSMCH Bihta Phase-III (Part-2): roster resolver, safe-bunk planner, heatmap calendar and analytics.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#4f46e5">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="css/style.css">
+<script>try{var t=localStorage.getItem('attendmate_site_theme');if(!t){try{var s=JSON.parse(localStorage.getItem('attendmate_pro_v2')||'null');t=s&&s.profile&&s.profile.theme}catch(e){}if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}if(t==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<nav class="site-nav" aria-label="Main">
+  <div class="inner">
+    <a class="logo" href="index.html"><span class="brand-mark" data-icon="cap" aria-hidden="true"></span>AttendMate&nbsp;<span class="grad-text">Pro</span></a>
+    <div class="links">
+      <a href="features.html">Features</a>
+      <a href="how-it-works.html">Guide</a>
+      <a href="roster.html">Roster</a>
+      <a href="faq.html">FAQ</a>
+      <a href="about.html">About</a>
+      <button class="icon-btn" id="theme-toggle" aria-label="Toggle dark mode"><span id="theme-toggle-icon"></span></button>
+      <a href="app.html" class="nav-cta">Open App</a>
+    </div>
+    <button class="nav-burger" id="nav-burger" aria-label="Open menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+  </div>
+  <div class="mobile-menu" id="mobile-menu">
+    <a href="features.html">Features</a>
+    <a href="how-it-works.html">Guide</a>
+    <a href="roster.html">Roster</a>
+    <a href="faq.html">FAQ</a>
+    <a href="about.html">About</a>
+    <a href="app.html" class="mm-cta">Open the dashboard</a>
+  </div>
+</nav>
+
+<main id="main">
+  <header class="hero">
+    <div class="inner">
+      <div>
+        <span class="pill"><span class="dot"></span> NSMCH Bihta · Phase-III (Part-2) · Batch 2023 · 2026–27</span>
+        <h1>Attendance, <span class="grad-text">engineered</span> for medical school.</h1>
+        <p class="sub">AttendMate Pro turns the official NSMCH Phase-III (Part-2) timetable and posting roster into a private, offline command centre — know exactly which classes you can skip, which you can't, and where every posting takes you next.</p>
+        <div class="hero-cta">
+          <a href="app.html" class="btn-hero">Open the dashboard
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></a>
+          <a href="features.html" class="btn-hero ghost">See what's inside</a>
+        </div>
+        <div class="hero-stats">
+          <div class="hs"><b class="grad-text">13</b><span>subjects + clinical postings</span></div>
+          <div class="hs"><b class="grad-text">24</b><span>sub-groups · A1–F4</span></div>
+          <div class="hs"><b class="grad-text">1,356</b><span>curriculum hours mapped</span></div>
+          <div class="hs"><b class="grad-text">100%</b><span>offline &amp; private</span></div>
+        </div>
+      </div>
+
+      <div class="hero-preview" aria-hidden="true">
+        <div class="preview">
+          <div class="pv-bar"><i></i><i></i><i></i><span>AttendMate Pro — Today</span></div>
+          <div class="pv-body">
+            <div class="pv-side">
+              <i class="on" style="width:74%"></i><i style="width:60%"></i><i style="width:66%"></i><i style="width:52%"></i><i style="width:64%"></i><i style="width:46%"></i><i style="width:58%"></i>
+            </div>
+            <div class="pv-main">
+              <div class="pv-cards">
+                <div class="pv-card">
+                  <svg width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="none" stroke="var(--soft)" stroke-width="5"/><circle cx="20" cy="20" r="16" fill="none" stroke="#059669" stroke-width="5" stroke-dasharray="100.5" stroke-dashoffset="15.9" stroke-linecap="round" transform="rotate(-90 20 20)"/></svg>
+                  <div><div class="t">Theory</div><div class="v">84.2%</div></div>
+                </div>
+                <div class="pv-card">
+                  <svg width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="none" stroke="var(--soft)" stroke-width="5"/><circle cx="20" cy="20" r="16" fill="none" stroke="#0284c7" stroke-width="5" stroke-dasharray="100.5" stroke-dashoffset="9" stroke-linecap="round" transform="rotate(-90 20 20)"/></svg>
+                  <div><div class="t">Clinical</div><div class="v">91.0%</div></div>
+                </div>
+                <div class="pv-card">
+                  <svg width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="none" stroke="var(--soft)" stroke-width="5"/><circle cx="20" cy="20" r="16" fill="none" stroke="#d97706" stroke-width="5" stroke-dasharray="100.5" stroke-dashoffset="37" stroke-linecap="round" transform="rotate(-90 20 20)"/></svg>
+                  <div><div class="t">Streak</div><div class="v">12 days</div></div>
+                </div>
+              </div>
+              <div class="pv-rows">
+                <div class="pv-row"><span class="nm">Gen. Medicine</span><span class="bar"><span style="display:block;height:100%;width:86%;border-radius:99px;background:var(--grad)"></span></span><span class="pc" style="color:var(--ok)">86%</span></div>
+                <div class="pv-row"><span class="nm">Obs-Gynae</span><span class="bar"><span style="display:block;height:100%;width:92%;border-radius:99px;background:var(--grad)"></span></span><span class="pc" style="color:var(--ok)">92%</span></div>
+                <div class="pv-row"><span class="nm">Gen. Surgery</span><span class="bar"><span style="display:block;height:100%;width:73%;border-radius:99px;background:var(--warn)"></span></span><span class="pc" style="color:var(--warn)">73%</span></div>
+                <div class="pv-row"><span class="nm">Ophthalmology</span><span class="bar"><span style="display:block;height:100%;width:64%;border-radius:99px;background:var(--bad)"></span></span><span class="pc" style="color:var(--bad)">64%</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="kick">Highlights</div>
+        <h2>Answers before you ask the question</h2>
+        <p>Three decisions every medical student faces daily — can I skip, what should I prioritise, and where am I supposed to be? AttendMate Pro answers all three with numbers, not vibes.</p>
+      </div>
+      <div class="feat-grid">
+        <div class="feat reveal"><span class="ic" data-icon="steth"></span><h3>Roster resolver</h3><p>Type your roll number once — A1–F4 resolution maps every allied, specialty and major clinical posting block with dates, straight from the official Phase-III (Part-2) schedule.</p></div>
+        <div class="feat reveal"><span class="ic" data-icon="target"></span><h3>Safe-bunk planner</h3><p>Exact "can skip N classes" and "must attend N" math per subject, separately for theory (75%) and clinical (80%) modes — including the % cost of the very next miss.</p></div>
+        <div class="feat reveal"><span class="ic" data-icon="flame"></span><h3>Priority advisor</h3><p>Every subject is auto-tiered into Don't Miss / Be Careful / Safe to Miss as your data grows, so morning triage takes seconds — even on a six-hour clinical day.</p></div>
+      </div>
+      <p style="text-align:center;margin:26px 0 0"><a href="features.html" class="btn-hero ghost">Explore all features</a></p>
+    </div>
+  </section>
+
+  <section class="sec alt">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="kick">Inside the app</div>
+        <h2>A dashboard that follows your real week</h2>
+        <p>Built around the master Monday–Saturday timetable (9 AM – 5 PM), the 75% / 80% rules and the official posting calendar. The screenshots below run on demo data.</p>
+      </div>
+      <div class="shots">
+        <figure class="shot reveal">
+          <img src="assets/screenshots/dashboard-today.png" alt="AttendMate Pro Today view with scheduled classes, advice chips and overall rings" loading="lazy">
+          <figcaption><b>Today</b> — every scheduled class from the master timetable, with per-subject advice before you mark.</figcaption>
+        </figure>
+        <figure class="shot reveal">
+          <img src="assets/screenshots/dashboard-analytics.png" alt="AttendMate Pro Analytics view with trend line, rings and subject leaderboard" loading="lazy">
+          <figcaption><b>Analytics</b> — trend line, weekday performance and a projection to the Sentup exam.</figcaption>
+        </figure>
+        <figure class="shot reveal">
+          <img src="assets/screenshots/dashboard-calendar.png" alt="AttendMate Pro calendar heatmap with monthly attendance colours" loading="lazy">
+          <figcaption><b>Calendar</b> — month heatmap with assessment windows and perfect-day streaks.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="kick">How it works</div>
+        <h2>Three steps to total clarity</h2>
+        <p>Set-up takes under a minute. After that, marking a day is two taps.</p>
+      </div>
+      <div class="steps">
+        <div class="step reveal"><h3>Sign in with Gmail + roll number</h3><p>A local, Google-style sign-in saves your name, email and roll number in this browser only — and your roll instantly resolves your posting sub-group.</p></div>
+        <div class="step reveal"><h3>Mark each day in seconds</h3><p>Today's view follows the master timetable: tap Present / Absent per class, mark all present, declare holidays, bulk-fill past days or add make-up classes.</p></div>
+        <div class="step reveal"><h3>Follow the advice</h3><p>Check the advisor before you bunk: exact safe skips left, or how many classes you must attend to recover a target.</p></div>
+      </div>
+      <p style="text-align:center;margin:26px 0 0"><a href="how-it-works.html" class="btn-hero ghost">Read the full guide</a></p>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="cta-band">
+        <h2>Stop guessing. Start knowing.</h2>
+        <p>Open the dashboard, sign in with your Gmail and roll number, and let AttendMate Pro do the attendance arithmetic for the rest of the session.</p>
+        <a href="app.html" class="btn-hero">Open the dashboard
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="cols">
+    <div>
+      <div class="fbrand"><span class="brand-mark" data-icon="cap" aria-hidden="true"></span>AttendMate Pro</div>
+      <p style="margin:0;max-width:36ch">Unofficial, offline-first attendance intelligence for NSMCH Bihta Phase-III (Part-2) students. Your data never leaves your device.</p>
+    </div>
+    <div>
+      <h4>Site</h4>
+      <a href="features.html">Features</a>
+      <a href="how-it-works.html">How it works</a>
+      <a href="roster.html">Posting roster</a>
+      <a href="faq.html">FAQ</a>
+      <a href="about.html">About</a>
+    </div>
+    <div>
+      <h4>Get started</h4>
+      <a href="app.html">Open the dashboard</a>
+      <a href="how-it-works.html#backups">Backups &amp; recovery</a>
+      <a href="faq.html#privacy">Privacy &amp; data</a>
+    </div>
+  </div>
+  <div class="fbottom">
+    <span>© <span id="site-year">2026</span> AttendMate Pro · student-built, not affiliated with NSMCH or Aryabhatta Knowledge University</span>
+    <span>Phase-III (Part-2) · Batch 2023 · Session 2026–27</span>
+  </div>
+</footer>
+<script src="js/site.js"></script>
+</body>
+</html>

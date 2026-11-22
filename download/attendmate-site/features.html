@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Features — AttendMate Pro</title>
+<meta name="description" content="Every AttendMate Pro feature in depth: roster resolver, safe-bunk planner, priority advisor, calendar heatmap, analytics with session projection, baselines, undo and offline JSON backups.">
+<meta property="og:title" content="AttendMate Pro — Features">
+<meta property="og:description" content="Roster resolver, safe-bunk planner, priority advisor, heatmap calendar, analytics and offline backups — grounded in the official NSMCH Phase-III (Part-2) schedule.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#4f46e5">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="css/style.css">
+<script>try{var t=localStorage.getItem('attendmate_site_theme');if(!t){try{var s=JSON.parse(localStorage.getItem('attendmate_pro_v2')||'null');t=s&&s.profile&&s.profile.theme}catch(e){}if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}if(t==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<nav class="site-nav" aria-label="Main">
+  <div class="inner">
+    <a class="logo" href="index.html"><span class="brand-mark" data-icon="cap" aria-hidden="true"></span>AttendMate&nbsp;<span class="grad-text">Pro</span></a>
+    <div class="links">
+      <a href="features.html" aria-current="page">Features</a>
+      <a href="how-it-works.html">Guide</a>
+      <a href="roster.html">Roster</a>
+      <a href="faq.html">FAQ</a>
+      <a href="about.html">About</a>
+      <button class="icon-btn" id="theme-toggle" aria-label="Toggle dark mode"><span id="theme-toggle-icon"></span></button>
+      <a href="app.html" class="nav-cta">Open App</a>
+    </div>
+    <button class="nav-burger" id="nav-burger" aria-label="Open menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+  </div>
+  <div class="mobile-menu" id="mobile-menu">
+    <a href="features.html">Features</a>
+    <a href="how-it-works.html">Guide</a>
+    <a href="roster.html">Roster</a>
+    <a href="faq.html">FAQ</a>
+    <a href="about.html">About</a>
+    <a href="app.html" class="mm-cta">Open the dashboard</a>
+  </div>
+</nav>
+
+<main id="main">
+  <header class="page-hero">
+    <div class="wrap">
+      <div class="kick">Features</div>
+      <h1>Everything the college portal <span class="grad-text">doesn't tell you</span></h1>
+      <p class="lead">AttendMate Pro is a ground-up upgrade of the AttendMate concept, grounded in the real Phase-III (Part-2) timetable, the official posting rosters and the 75% / 80% attendance rules. Here is exactly what it does.</p>
+    </div>
+  </header>
+
+  <section class="sec" style="padding-top:clamp(20px,3vw,36px)">
+    <div class="wrap">
+      <div class="feat-grid">
+        <div class="feat reveal"><span class="ic" data-icon="steth"></span><h3>Roster resolver</h3><p>Enter your roll number (1–100) and the app maps it to one of 24 sub-groups (A1–F4), then resolves every clinical posting for the whole session: which department credits your 10 AM – 1 PM posting slot on any date, your full rotation timeline, and days remaining in each block. The rosters cover Allied Specialty (DR · RD · AN · PS), Specialty (PE · OR · EN · OP), Major Clinical (IM · SU · OG) and the final exam-oriented classes.</p></div>
+        <div class="feat reveal"><span class="ic" data-icon="target"></span><h3>Safe-bunk planner</h3><p>For every subject and both modes, the planner computes exactly how many consecutive classes you can miss while staying above target — and, if you are below, how many you must attend in a row to recover. It also shows the precise percentage cost of the very next miss, so "one class won't hurt" is a claim you can check before making it.</p></div>
+        <div class="feat reveal"><span class="ic" data-icon="flame"></span><h3>Priority advisor</h3><p>With little or no data, subjects are tiered by structure: low-frequency subjects (like a 2-week posting or 0.5 slots/week) land in Don't Miss, while high-frequency majors with buffer land in Safe to Miss. As your log grows, live percentages take over and the tiers re-rank themselves every time you mark a class.</p></div>
+        <div class="feat reveal"><span class="ic" data-icon="calendar"></span><h3>Calendar heatmap</h3><p>A Monday-start month grid colours each logged day by its attendance percentage, marks Sunday holidays and dashed-border assessment windows from the official exam calendar, and shows the logged-day count, average and perfect-day streaks for the month. Tap any day to jump straight into it.</p></div>
+        <div class="feat reveal"><span class="ic" data-icon="chart"></span><h3>Analytics &amp; projection</h3><p>Six streak and volume stats, overall rings for theory, clinical and combined, a day-by-day trend line of your last 15 logged days against the target line, average performance per weekday, a full subject leaderboard, and a session-end projection: where theory and clinical percentages will land by the Sentup exam if your current rate holds.</p></div>
+        <div class="feat reveal"><span class="ic" data-icon="check"></span><h3>Offline &amp; recoverable</h3><p>The whole site is static files — no account, no server, no network calls. Every action pushes onto a 40-step undo stack, attendance history can be bulk-filled for past dates, prior records can be imported as per-subject baselines, and one click exports a JSON backup you can re-import anywhere.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec alt">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="kick">Comparison</div>
+        <h2>The notice board vs. AttendMate Pro</h2>
+        <p>The college tells you the rules once. AttendMate Pro keeps applying them to your own numbers, every single day.</p>
+      </div>
+      <div class="compare">
+        <div class="scroll-x">
+          <table>
+            <thead><tr><th>Question</th><th>Notice board / portal</th><th>AttendMate Pro</th></tr></thead>
+            <tbody>
+              <tr><td>"Can I skip today's lecture?"</td><td>A static 75% rule</td><td>Exact safe-skip count per subject, updated after every mark</td></tr>
+              <tr><td>"Where is my clinical posting?"</td><td>A PDF roster somewhere</td><td>Resolved for your roll number, with days-left counters</td></tr>
+              <tr><td>"How bad is my Surgery attendance?"</td><td>Nothing until reports</td><td>Live %, tier, must-attend recovery plan</td></tr>
+              <tr><td>"When are the internal assessments?"</td><td>Announced in class</td><td>Official dates on your calendar with countdowns</td></tr>
+              <tr><td>"Where will I end the session?"</td><td>—</td><td>Projection to Sentup at your current rate</td></tr>
+              <tr><td>"I made a mistake in marking"</td><td>—</td><td>40-step undo on every action</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="kick">Screens</div>
+        <h2>See the engine at work</h2>
+        <p>Captured from the dashboard running on demo data (three weeks of logs, roll no. 23 → sub-group B2).</p>
+      </div>
+      <div class="shots">
+        <figure class="shot reveal">
+          <img src="assets/screenshots/dashboard-subjects.png" alt="Subjects view with Don't Miss and Be Careful tiers" loading="lazy">
+          <figcaption><b>Subjects</b> — Don't Miss / Be Careful / Safe to Miss tiers with per-subject what-if simulators.</figcaption>
+        </figure>
+        <figure class="shot reveal">
+          <img src="assets/screenshots/dashboard-analytics.png" alt="Analytics view with projection and leaderboard" loading="lazy">
+          <figcaption><b>Analytics</b> — session-end projection to the Sentup exam and the subject leaderboard.</figcaption>
+        </figure>
+      </div>
+      <div class="callout" style="margin-top:26px"><b>A note on accuracy:</b> the timetable, rosters and exam dates are entered from the official Phase-III (Part-2) schedule. Colleges do move dates — always confirm critical assessments with your class coordinator, and use the swap button on any clinical slot to credit the correct department.</div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="cta-band">
+        <h2>Try every feature right now</h2>
+        <p>The dashboard loads with your data on day zero — no account, no setup beyond a roll number.</p>
+        <a href="app.html" class="btn-hero">Open the dashboard
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="cols">
+    <div>
+      <div class="fbrand"><span class="brand-mark" data-icon="cap" aria-hidden="true"></span>AttendMate Pro</div>
+      <p style="margin:0;max-width:36ch">Unofficial, offline-first attendance intelligence for NSMCH Bihta Phase-III (Part-2) students. Your data never leaves your device.</p>
+    </div>
+    <div>
+      <h4>Site</h4>
+      <a href="index.html">Home</a>
+      <a href="how-it-works.html">How it works</a>
+      <a href="roster.html">Posting roster</a>
+      <a href="faq.html">FAQ</a>
+      <a href="about.html">About</a>
+    </div>
+    <div>
+      <h4>Get started</h4>
+      <a href="app.html">Open the dashboard</a>
+      <a href="how-it-works.html#backups">Backups &amp; recovery</a>
+      <a href="faq.html#privacy">Privacy &amp; data</a>
+    </div>
+  </div>
+  <div class="fbottom">
+    <span>© <span id="site-year">2026</span> AttendMate Pro · student-built, not affiliated with NSMCH or Aryabhatta Knowledge University</span>
+    <span>Phase-III (Part-2) · Batch 2023 · Session 2026–27</span>
+  </div>
+</footer>
+<script src="js/site.js"></script>
+</body>
+</html>

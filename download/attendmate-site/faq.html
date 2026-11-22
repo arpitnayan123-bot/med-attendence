@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FAQ — AttendMate Pro</title>
+<meta name="description" content="AttendMate Pro FAQ: how the local sign-in works, where attendance data lives, roster accuracy, multi-device usage, attendance targets and more.">
+<meta property="og:title" content="AttendMate Pro — FAQ">
+<meta property="og:description" content="Straight answers about the offline attendance tracker for NSMCH Phase-III (Part-2): privacy, data storage, roster accuracy and usage.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#4f46e5">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="css/style.css">
+<script>try{var t=localStorage.getItem('attendmate_site_theme');if(!t){try{var s=JSON.parse(localStorage.getItem('attendmate_pro_v2')||'null');t=s&&s.profile&&s.profile.theme}catch(e){}if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}if(t==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<nav class="site-nav" aria-label="Main">
+  <div class="inner">
+    <a class="logo" href="index.html"><span class="brand-mark" data-icon="cap" aria-hidden="true"></span>AttendMate&nbsp;<span class="grad-text">Pro</span></a>
+    <div class="links">
+      <a href="features.html">Features</a>
+      <a href="how-it-works.html">Guide</a>
+      <a href="roster.html">Roster</a>
+      <a href="faq.html" aria-current="page">FAQ</a>
+      <a href="about.html">About</a>
+      <button class="icon-btn" id="theme-toggle" aria-label="Toggle dark mode"><span id="theme-toggle-icon"></span></button>
+      <a href="app.html" class="nav-cta">Open App</a>
+    </div>
+    <button class="nav-burger" id="nav-burger" aria-label="Open menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+  </div>
+  <div class="mobile-menu" id="mobile-menu">
+    <a href="features.html">Features</a>
+    <a href="how-it-works.html">Guide</a>
+    <a href="roster.html">Roster</a>
+    <a href="faq.html">FAQ</a>
+    <a href="about.html">About</a>
+    <a href="app.html" class="mm-cta">Open the dashboard</a>
+  </div>
+</nav>
+
+<main id="main">
+  <header class="page-hero">
+    <div class="wrap">
+      <div class="kick">FAQ</div>
+      <h1>Straight <span class="grad-text">answers</span></h1>
+      <p class="lead">The questions batchmates actually ask before trusting an app with their attendance record. If yours isn't here, the guide page covers the day-to-day workflow in depth.</p>
+    </div>
+  </header>
+
+  <section class="sec" style="padding-top:clamp(20px,3vw,36px)">
+    <div class="wrap">
+      <div class="faq-cat">General</div>
+      <div class="faq">
+        <details><summary>Is this the official NSMCH app?</summary><div class="ans">No. AttendMate Pro is an unofficial, student-built study tool. It replicates and upgrades the AttendMate concept using the published Phase-III (Part-2) timetable, assessment calendar and posting rosters. Always confirm critical dates with the college.</div></details>
+        <details><summary>What does it actually calculate?</summary><div class="ans">Per-subject attendance percentages for theory (75% target) and clinical (80% target) modes, exact safe-skip counts, must-attend recovery plans, the percentage cost of the next miss, day and month summaries, streaks, and a session-end projection to the Sentup exam at your current attendance rate.</div></details>
+        <details><summary>Can I change the 75% / 80% targets?</summary><div class="ans">Yes — Settings → Attendance targets accepts any value between 1 and 100 for each mode. All advice, tiers and projections recompute against your custom targets immediately.</div></details>
+        <details><summary>Does it cost anything?</summary><div class="ans">No. It is a free, offline static website with no ads and no accounts. Download it, open it, use it.</div></details>
+        <details><summary>Does it work on my phone?</summary><div class="ans">Yes — the whole site is responsive, from the landing pages to the dashboard. On phones a tab strip replaces the sidebar. It works fully offline once saved on the device.</div></details>
+      </div>
+
+      <div class="faq-cat" id="privacy">Privacy &amp; data</div>
+      <div class="faq">
+        <details><summary>Does the Google sign-in send my data to Google?</summary><div class="ans">No. The sign-in is a local simulation: your email, name and roll number are stored only in your browser's localStorage. Nothing is transmitted anywhere — the site makes zero network calls.</div></details>
+        <details><summary>Where does my attendance data live?</summary><div class="ans">Entirely in your browser (localStorage), with a JSON export option in Settings. Clearing browser data erases it, so export a backup regularly. Moving to a new device or browser? Import the JSON there.</div></details>
+        <details><summary>Can I use it on two devices?</summary><div class="ans">Yes, with a manual sync: export a backup JSON from device one and import it on device two. There is no server, so there is no automatic sync — by design, for privacy.</div></details>
+        <details><summary>What happens if I clear my browser data?</summary><div class="ans">Local profiles, logs, baselines and module progress are erased. If you exported a backup, import it and everything returns. If not, the 40-step undo can't help across a wipe — prevention is the export button.</div></details>
+      </div>
+
+      <div class="faq-cat">Roster &amp; accuracy</div>
+      <div class="faq">
+        <details><summary>What if a posting or timetable entry looks wrong for my group?</summary><div class="ans">The rosters are entered from the official schedule, but errors can happen and dates can shift. Verify with your class coordinator, and use the swap button on any clinical slot to credit the correct department for that day.</div></details>
+        <details><summary>How does my roll number decide anything?</summary><div class="ans">Rolls 1–16 are Group A, 17–32 Group B, 33–49 C, 50–66 D, 67–83 E, 84–100 F, with four sub-groups each (A1–F4). The sub-group determines which allied and specialty departments your minor and mid rotations assign; the parent group drives the major postings.</div></details>
+        <details><summary>Are holidays and exams accounted for?</summary><div class="ans">Sundays are the weekly holiday and stop counting automatically. The official internal assessments, the Sentup exam and the exam-oriented clinical classes appear on the calendar and in the analytics horizon.</div></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="cta-band">
+        <h2>Convinced? It takes a minute to start.</h2>
+        <p>Open the dashboard, sign in with your roll number, and the whole session's arithmetic is handled from there.</p>
+        <a href="app.html" class="btn-hero">Open the dashboard
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="cols">
+    <div>
+      <div class="fbrand"><span class="brand-mark" data-icon="cap" aria-hidden="true"></span>AttendMate Pro</div>
+      <p style="margin:0;max-width:36ch">Unofficial, offline-first attendance intelligence for NSMCH Bihta Phase-III (Part-2) students. Your data never leaves your device.</p>
+    </div>
+    <div>
+      <h4>Site</h4>
+      <a href="index.html">Home</a>
+      <a href="features.html">Features</a>
+      <a href="how-it-works.html">How it works</a>
+      <a href="roster.html">Posting roster</a>
+      <a href="about.html">About</a>
+    </div>
+    <div>
+      <h4>Get started</h4>
+      <a href="app.html">Open the dashboard</a>
+      <a href="how-it-works.html#backups">Backups &amp; recovery</a>
+      <a href="faq.html#privacy">Privacy &amp; data</a>
+    </div>
+  </div>
+  <div class="fbottom">
+    <span>© <span id="site-year">2026</span> AttendMate Pro · student-built, not affiliated with NSMCH or Aryabhatta Knowledge University</span>
+    <span>Phase-III (Part-2) · Batch 2023 · Session 2026–27</span>
+  </div>
+</footer>
+<script src="js/site.js"></script>
+</body>
+</html>
