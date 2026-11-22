@@ -129,3 +129,64 @@
 .animate-toast {
   animation: toast-fade 2.4s ease forwards;
 }
+
+/* AttendMate Pro — "Aurora Bento" landing motion system (respects reduced motion via .am-* consumers) */
+@keyframes am-aurora-a {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(9vw, 7vh, 0) scale(1.14); }
+}
+@keyframes am-aurora-b {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1.06); }
+  50% { transform: translate3d(-7vw, 9vh, 0) scale(0.94); }
+}
+@keyframes am-aurora-c {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(6vw, -6vh, 0) scale(1.12); }
+}
+@keyframes am-card-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes am-shake-x {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(2px); }
+  30%, 50%, 70% { transform: translateX(-3px); }
+  40%, 60% { transform: translateX(3px); }
+}
+@keyframes am-sheen {
+  0% { transform: translateX(-140%) skewX(-18deg); }
+  55%, 100% { transform: translateX(280%) skewX(-18deg); }
+}
+@keyframes am-float-y {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+@keyframes am-glow-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.am-anim, .am-anim * {
+  animation-play-state: running;
+}
+.am-card-in { animation: am-card-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.am-shake { animation: am-shake-x 0.45s ease both; }
+.am-float { animation: am-float-y 5.5s ease-in-out infinite; }
+.am-glow { animation: am-glow-pulse 3.2s ease-in-out infinite; }
+.am-sheen::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 34%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  filter: blur(6px);
+  animation: am-sheen 3.4s ease-in-out infinite;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .am-card-in, .am-shake, .am-float, .am-glow, .am-sheen::after {
+    animation: none !important;
+  }
+}
