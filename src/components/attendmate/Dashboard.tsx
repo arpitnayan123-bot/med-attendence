@@ -64,9 +64,16 @@ export default function Dashboard({ nav }: { nav: (to: string) => void }) {
   const subGroup = getGroupInfo(state.profile.rollNo).subGroup;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="relative min-h-screen overflow-x-clip bg-background">
+      {/* ambient wash — subtle color pools, theme-aware */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 z-0">
+        <div className="absolute -left-24 -top-32 h-96 w-96 rounded-full bg-violet-500/[0.09] blur-3xl dark:bg-violet-500/[0.17]" />
+        <div className="absolute -right-28 top-1/3 h-[26rem] w-[26rem] rounded-full bg-fuchsia-500/[0.07] blur-3xl dark:bg-fuchsia-500/[0.13]" />
+        <div className="absolute -bottom-40 left-1/3 h-96 w-96 rounded-full bg-emerald-500/[0.06] blur-3xl dark:bg-emerald-500/[0.10]" />
+      </div>
+
       {/* desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r bg-card md:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r bg-card/95 backdrop-blur md:flex">
         <div className="flex items-center gap-3 px-5 py-4">
           <BrandMark size={38} />
           <div>
@@ -81,7 +88,7 @@ export default function Dashboard({ nav }: { nav: (to: string) => void }) {
               onClick={() => setState((p) => ({ ...p, activeTab: id }))}
               className={`flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-[13.5px] font-semibold transition ${
                 state.activeTab === id
-                  ? "bg-violet-600/10 text-violet-700 dark:text-violet-300 shadow-[inset_3px_0_0_0] shadow-violet-600"
+                  ? "bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white shadow-md shadow-violet-600/30"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
@@ -95,7 +102,7 @@ export default function Dashboard({ nav }: { nav: (to: string) => void }) {
       </aside>
 
       {/* main column */}
-      <div className="md:pl-60">
+      <div className="relative z-10 md:pl-60">
         {/* topbar */}
         <header className="sticky top-0 z-20 flex items-center gap-2 border-b bg-background/85 px-4 py-3 backdrop-blur md:px-6">
           <div className="md:hidden"><BrandMark size={32} /></div>
@@ -147,7 +154,7 @@ export default function Dashboard({ nav }: { nav: (to: string) => void }) {
               key={id}
               onClick={() => setState((p) => ({ ...p, activeTab: id }))}
               className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-[12.5px] font-bold transition ${
-                state.activeTab === id ? "bg-violet-600 text-white shadow-md shadow-violet-600/30" : "text-muted-foreground hover:bg-muted"
+                state.activeTab === id ? "bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white shadow-md shadow-violet-600/30" : "text-muted-foreground hover:bg-muted"
               }`}
             >
               {label}

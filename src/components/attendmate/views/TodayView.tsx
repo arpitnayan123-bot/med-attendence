@@ -9,7 +9,7 @@ import {
 import {
   todayISO, shiftDate, getDayName, formatDisplayDate, getDayOfWeek,
   computeSubjectStats, classifySkipPriority, getClinicalPostingForDate,
-  getGroupInfo, daySummary, pctColorClass,
+  getGroupInfo, daySummary,
 } from "@/lib/attendmate/engine";
 import { TierPill, statusChip } from "../bits";
 
@@ -29,6 +29,23 @@ export default function TodayView() {
   const [extraSub, setExtraSub] = useState("IM");
   const [extraKind, setExtraKind] = useState<"theory" | "clinical">("theory");
 
+  /* hero helpers: greeting + Mon–Sun week strip around the selected date */
+  const hr = new Date().getHours();
+  const greeting = hr < 12 ? "Good morning" : hr < 17 ? "Good afternoon" : "Good evening";
+  const firstName = (state.profile.name || "doctor").trim().split(" ")[0];
+  const monday = shiftDate(iso, -((dow + 6) % 7));
+  const weekDays = Array.from({ length: 7 }, (_, i) => {
+    const dIso = shiftDate(monday, i);
+    return { iso: dIso, label: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][i], num: new Date(`${dIso}T00:00:00`).getDate() };
+  });
+  const ringFrac = sum.pct === null ? 0 : Math.min(sum.pct, 100) / 100;
+  const RING_C = 2 * Math.PI * 19;
+  const ringStroke =
+    sum.pct === null ? "rgba(255,255,255,0.75)"
+      : sum.pct >= state.profile.theoryTarget ? "#34d399"
+        : sum.pct >= state.profile.theoryTarget - 15 ? "#fbbf24"
+          : "#fb7185";
+
   const adviceFor = (slot: Slot) => {
     const code = slot.id.endsWith("-cp") ? (posting?.code || "CP") : slot.subject;
     const st = stats[code];
@@ -42,52 +59,82 @@ export default function TodayView() {
 
   return (
     <div className="space-y-5">
-      {/* date header */}
-      <section className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
-        <div className="flex flex-wrap items-center gap-3">
+      {/* hero header — gradient spotlight card */}
+      <section className="am-card-in relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-600 via-violet-700 to-fuchsia-600 p-4 text-white shadow-xl shadow-violet-600/25 sm:p-5">
+        <div aria-hidden className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
+        <div aria-hidden className="pointer-events-none absolute -bottom-28 left-1/4 h-56 w-56 rounded-full bg-fuchsia-300/20 blur-3xl" />
+        <div className="relative flex flex-wrap items-center gap-3">
           <button onClick={() => setState((p) => ({ ...p, selectedDate: shiftDate(iso, -1) }))} aria-label="Previous day"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border bg-background transition hover:text-violet-600"><ChevronLeft className="h-4 w-4" /></button>
+            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/25 bg-white/15 transition hover:bg-white/30"><ChevronLeft className="h-4 w-4" /></button>
           <button onClick={() => setState((p) => ({ ...p, selectedDate: shiftDate(iso, 1) }))} aria-label="Next day"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border bg-background transition hover:text-violet-600"><ChevronRight className="h-4 w-4" /></button>
+            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/25 bg-white/15 transition hover:bg-white/30"><ChevronRight className="h-4 w-4" /></button>
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h2 className="truncate text-lg font-extrabold tracking-tight">{getDayName(iso)}</h2>
-              <span className="text-sm text-muted-foreground">{formatDisplayDate(iso)}</span>
-              {iso === todayISO() && <span className="rounded-full bg-violet-600/10 px-2 py-0.5 text-[10px] font-bold text-violet-600 dark:text-violet-300">TODAY</span>}
+              <span className="text-sm font-semibold text-white/75">{formatDisplayDate(iso)}</span>
+              {iso === todayISO() && <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-extrabold tracking-wide">TODAY</span>}
             </div>
-            <p className="text-xs text-muted-foreground">{iso === todayISO() ? "Master timetable for today" : `Viewing ${getDayName(iso)}'s schedule`}</p>
+            <p className="mt-0.5 text-xs font-medium text-white/70">
+              {greeting}, {firstName} — {iso === todayISO() ? "here's your day" : `viewing ${getDayName(iso)}'s schedule`}
+            </p>
           </div>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-3">
             {iso !== todayISO() && (
               <button onClick={() => setState((p) => ({ ...p, selectedDate: todayISO() }))}
-                className="rounded-xl border bg-background px-3 py-2 text-xs font-bold text-muted-foreground transition hover:text-violet-600">Today</button>
+                className="rounded-xl border border-white/25 bg-white/15 px-3 py-2 text-xs font-bold transition hover:bg-white/30">Today</button>
             )}
-            <div className="text-right">
-              <div className={`text-xl font-extrabold leading-none ${pctColorClass(sum.pct, state.profile.theoryTarget)}`}>
+            <div className="relative h-14 w-14 shrink-0">
+              <svg viewBox="0 0 48 48" className="h-14 w-14 -rotate-90">
+                <circle cx="24" cy="24" r="19" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="6" />
+                <circle cx="24" cy="24" r="19" fill="none" stroke={ringStroke} strokeWidth="6" strokeLinecap="round"
+                  strokeDasharray={`${ringFrac * RING_C} ${RING_C}`} />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center text-[12px] font-extrabold">
                 {sum.pct === null ? "—" : `${sum.pct.toFixed(0)}%`}
               </div>
-              <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">day %</div>
             </div>
           </div>
         </div>
         {dow === 0 ? (
-          <div className="mt-4 rounded-xl border border-dashed bg-muted/50 p-3 text-center text-sm font-semibold text-muted-foreground">
+          <div className="relative mt-4 rounded-xl border border-dashed border-white/30 bg-white/10 p-3 text-center text-sm font-semibold text-white/85">
             Sunday — weekly holiday, nothing scheduled 🌙
           </div>
         ) : (
-          <div className="mt-4 flex flex-wrap gap-2 text-[11px] font-bold">
-            <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-emerald-600 dark:text-emerald-400">{sum.present} present</span>
-            <span className="rounded-full bg-rose-500/10 px-2.5 py-1 text-rose-600 dark:text-rose-400">{sum.absent} absent</span>
-            <span className="rounded-full bg-slate-500/10 px-2.5 py-1 text-slate-500">{sum.cancelled} cancelled</span>
-            <span className="rounded-full bg-muted px-2.5 py-1 text-muted-foreground">{sum.unlogged} unlogged</span>
+          <div className="relative mt-4 flex flex-wrap gap-2 text-[11px] font-bold">
+            <span className="rounded-full bg-white/15 px-2.5 py-1">{sum.present} present</span>
+            <span className="rounded-full bg-white/15 px-2.5 py-1">{sum.absent} absent</span>
+            <span className="rounded-full bg-white/15 px-2.5 py-1">{sum.cancelled} cancelled</span>
+            <span className="rounded-full bg-white/15 px-2.5 py-1">{sum.unlogged} unlogged</span>
           </div>
         )}
       </section>
 
+      {/* week strip — Mon…Sun quick jump */}
+      <div className="am-card-in flex gap-1.5 overflow-x-auto pb-1 [animation-delay:60ms] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {weekDays.map((d) => {
+          const active = d.iso === iso;
+          const wsum = daySummary(state, d.iso);
+          const logged = wsum.present + wsum.absent + wsum.cancelled > 0;
+          return (
+            <button key={d.iso} onClick={() => setState((p) => ({ ...p, selectedDate: d.iso }))}
+              aria-label={`Go to ${formatDisplayDate(d.iso)}`}
+              className={`flex min-w-[50px] flex-1 flex-col items-center gap-0.5 rounded-2xl border px-2 py-2 transition ${
+                active ? "border-violet-500 bg-gradient-to-b from-violet-600 to-fuchsia-500 text-white shadow-md shadow-violet-600/30"
+                  : "border-border bg-card text-muted-foreground hover:border-violet-400 hover:text-violet-600"
+              }`}
+            >
+              <span className="text-[10px] font-bold uppercase tracking-wide">{d.label}</span>
+              <span className="text-[14px] font-extrabold leading-none">{d.num}</span>
+              <span className={`h-1.5 w-1.5 rounded-full ${logged ? (active ? "bg-white" : "bg-emerald-500") : "bg-transparent"}`} />
+            </button>
+          );
+        })}
+      </div>
+
       {dow !== 0 && (
         <>
           {/* actions */}
-          <div className="flex flex-wrap gap-2">
+          <div className="am-card-in flex flex-wrap gap-2 [animation-delay:120ms]">
             <button onClick={() => bulkMarkDay(iso, "present", subGroup)}
               className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-500 px-4 py-2.5 text-[13px] font-bold text-white shadow-md shadow-violet-600/30 transition hover:brightness-110">
               <Check className="h-4 w-4" /> Mark all present
@@ -103,8 +150,8 @@ export default function TodayView() {
           </div>
 
           {/* slot list */}
-          <section className="overflow-hidden rounded-2xl border bg-card shadow-sm">
-            {slots.map((slot, idx) => {
+          <section className="am-card-in divide-y overflow-hidden rounded-2xl border bg-card shadow-sm [animation-delay:180ms]">
+            {slots.map((slot) => {
               const entry = state.logs[iso]?.[slot.id];
               const st = entry?.status;
               const isCP = slot.id.endsWith("-cp");
@@ -112,7 +159,7 @@ export default function TodayView() {
               const advice = adviceFor(slot);
               const subjMeta = credited && credited !== "CP" ? SUBJECT_MAP[credited] : null;
               return (
-                <div key={slot.id} className={`flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 sm:px-5 ${idx % 2 ? "bg-muted/30" : ""}`}>
+                <div key={slot.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 transition hover:bg-muted/50 sm:px-5">
                   <div className="w-[110px] shrink-0">
                     <div className="text-[13px] font-bold">{slot.time}</div>
                     <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{slot.type}</div>
@@ -174,7 +221,7 @@ export default function TodayView() {
               const e = state.logs[iso][id];
               const meta = e.subject ? SUBJECT_MAP[e.subject] : null;
               return (
-                <div key={id} className="flex items-center gap-3 border-t px-4 py-3 sm:px-5">
+                <div key={id} className="flex items-center gap-3 px-4 py-3 transition hover:bg-muted/50 sm:px-5">
                   <div className="w-[110px] shrink-0 text-[13px] font-bold text-violet-600 dark:text-violet-300">EXTRA</div>
                   <div className="min-w-0 flex-1 text-[13.5px] font-semibold">
                     {meta ? meta.name : e.subject} <span className="text-xs text-muted-foreground">({e.kind})</span>
@@ -188,7 +235,7 @@ export default function TodayView() {
           </section>
 
           {/* tools */}
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="am-card-in grid gap-4 lg:grid-cols-2 [animation-delay:240ms]">
             <section className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
               <h3 className="flex items-center gap-2 text-[14px] font-extrabold"><Repeat className="h-4 w-4 text-violet-600" /> Bulk-fill past days</h3>
               <p className="mt-1 text-xs text-muted-foreground">Marks whole past date range (skips Sundays and already-logged days). CP credits resolve from your official roster.</p>
