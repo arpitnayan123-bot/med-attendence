@@ -1,0 +1,1834 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AttendMate Pro — NSMCH Phase-III Attendance Tracker</title>
+<style>
+/* ================= DESIGN SYSTEM ================= */
+:root{
+  --bg:#f4f6fb; --card:#ffffff; --ink:#0f172a; --muted:#5b6b83; --line:#e3e8f2;
+  --soft:#f1f4fa; --brand:#4f46e5; --brand2:#7c3aed; --brand-soft:#eef0fe;
+  --ok:#059669; --ok-soft:#e7f7f0; --warn:#d97706; --warn-soft:#fdf3e3;
+  --bad:#e11d48; --bad-soft:#fdeaf0; --sky:#0284c7; --sky-soft:#e6f3fb;
+  --shadow:0 1px 2px rgba(15,23,42,.05),0 8px 24px -12px rgba(15,23,42,.12);
+  --radius:14px;
+}
+[data-theme="dark"]{
+  --bg:#0b1220; --card:#131a2c; --ink:#e7ecf6; --muted:#93a1b8; --line:#25304a;
+  --soft:#1a2338; --brand:#818cf8; --brand2:#a78bfa; --brand-soft:#1e2749;
+  --ok:#34d399; --ok-soft:#0e2f26; --warn:#fbbf24; --warn-soft:#2e2410;
+  --bad:#fb7185; --bad-soft:#331420; --sky:#38bdf8; --sky-soft:#0d2739;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -12px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans","Helvetica Neue",Arial,sans-serif;
+  background:var(--bg); color:var(--ink); font-size:15px; line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;cursor:pointer}
+input,select{font-family:inherit;font-size:14px;color:var(--ink)}
+a{color:var(--brand)}
+::-webkit-scrollbar{height:8px;width:8px}
+::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px}
+
+/* ================= LAYOUT ================= */
+.app{min-height:100vh}
+.sidebar{
+  position:fixed;inset:0 auto 0 0;width:238px;z-index:40;
+  background:var(--card);border-right:1px solid var(--line);
+  display:flex;flex-direction:column;padding:18px 14px;
+}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 8px 16px}
+.brand-mark{
+  width:38px;height:38px;border-radius:11px;flex:none;
+  background:linear-gradient(135deg,var(--brand),var(--brand2));
+  display:flex;align-items:center;justify-content:center;color:#fff;
+}
+.brand h1{font-size:17px;margin:0;line-height:1.2}
+.brand small{color:var(--muted);font-size:10.5px;font-weight:600;letter-spacing:.04em}
+.nav{display:flex;flex-direction:column;gap:3px;flex:1}
+.tab-btn{
+  display:flex;align-items:center;gap:10px;width:100%;
+  padding:9px 11px;border-radius:10px;border:none;background:none;
+  color:var(--muted);font-size:13.5px;font-weight:600;text-align:left;
+  transition:background .15s,color .15s;
+}
+.tab-btn svg{width:17px;height:17px;flex:none}
+.tab-btn:hover{background:var(--soft);color:var(--ink)}
+.tab-btn.active{background:var(--brand-soft);color:var(--brand)}
+.tab-btn .n-badge{margin-left:auto;font-size:10.5px;font-weight:700;background:var(--bad-soft);color:var(--bad);padding:1px 7px;border-radius:99px}
+.side-foot{border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:3px}
+.main{margin-left:238px;min-height:100vh;display:flex;flex-direction:column}
+@media(max-width:1023px){
+  .sidebar{display:none}
+  .main{margin-left:0}
+}
+.topbar{
+  position:sticky;top:0;z-index:30;
+  background:color-mix(in srgb,var(--bg) 82%,transparent);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+  padding:10px clamp(14px,3vw,28px);
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.topbar .page-title{font-size:17px;font-weight:800;margin:0 auto 0 0;display:flex;align-items:center;gap:8px}
+.tabsbar{display:none;gap:6px;overflow-x:auto;padding:8px clamp(14px,3vw,28px) 0;scrollbar-width:none}
+.tabsbar::-webkit-scrollbar{display:none}
+@media(max-width:1023px){.tabsbar{display:flex}}
+.tabsbar .tab-btn{width:auto;flex:none;padding:7px 13px;background:var(--card);border:1px solid var(--line);border-radius:99px}
+.content{padding:clamp(14px,3vw,28px);max-width:1160px;width:100%;margin:0 auto;flex:1}
+.view{display:none;flex-direction:column;gap:16px}
+.view.active{display:flex}
+
+/* ================= COMPONENTS ================= */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
+.card.tight{padding:14px}
+.card h2{font-size:15.5px;font-weight:800;margin:0 0 4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.card h2 svg{width:17px;height:17px;color:var(--brand)}
+.card .sub{color:var(--muted);font-size:12.5px;margin:0 0 12px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.spread{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.muted{color:var(--muted)}
+.small{font-size:12.5px}
+.xs{font-size:11.5px}
+.bold{font-weight:700}
+.hr{border:none;border-top:1px solid var(--line);margin:12px 0}
+
+.btn{
+  border:1px solid var(--line);background:var(--card);color:var(--ink);
+  padding:8px 13px;border-radius:10px;font-size:13px;font-weight:600;
+  display:inline-flex;align-items:center;gap:7px;transition:filter .15s,border-color .15s,background .15s;
+  white-space:nowrap;
+}
+.btn svg{width:15px;height:15px}
+.btn:hover{border-color:var(--brand);color:var(--brand)}
+.btn.primary{background:linear-gradient(135deg,var(--brand),var(--brand2));border-color:transparent;color:#fff}
+.btn.primary:hover{filter:brightness(1.08);color:#fff}
+.btn.ok{background:var(--ok-soft);border-color:transparent;color:var(--ok)}
+.btn.bad{background:var(--bad-soft);border-color:transparent;color:var(--bad)}
+.btn.warn{background:var(--warn-soft);border-color:transparent;color:var(--warn)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+.btn.ghost:hover{background:var(--soft);color:var(--ink)}
+.btn.sm{padding:5px 10px;font-size:12px;border-radius:8px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:2.5px 9px;border-radius:99px;background:var(--soft);color:var(--muted);white-space:nowrap}
+.chip.brand{background:var(--brand-soft);color:var(--brand)}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.bad{background:var(--bad-soft);color:var(--bad)}
+.chip.sky{background:var(--sky-soft);color:var(--sky)}
+.chip .dot{width:7px;height:7px;border-radius:99px;background:currentColor}
+
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:11.5px;font-weight:700;color:var(--muted);letter-spacing:.02em}
+.field input,.field select{
+  background:var(--card);border:1px solid var(--line);border-radius:9px;padding:8px 11px;font-size:14px;outline:none;
+}
+.field input:focus,.field select:focus{border-color:var(--brand)}
+.inl-input{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;width:74px;outline:none}
+.inl-input:focus{border-color:var(--brand)}
+
+.bar{height:8px;border-radius:99px;background:var(--soft);overflow:hidden}
+.bar>span{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--brand),var(--brand2));transition:width .4s}
+.bar.ok>span{background:var(--ok)}
+.bar.warn>span{background:var(--warn)}
+.bar.bad>span{background:var(--bad)}
+
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--card)}
+.seg button{border:none;background:none;padding:7px 12px;font-size:12.5px;font-weight:700;color:var(--muted);border-left:1px solid var(--line)}
+.seg button:first-child{border-left:none}
+.seg button.on{background:var(--brand);color:#fff}
+.seg button.on.present{background:var(--ok)}
+.seg button.on.absent{background:var(--bad)}
+.seg button.on.cancelled{background:#64748b}
+
+.slot{
+  border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--card);
+  display:flex;flex-direction:column;gap:8px;
+}
+@media(min-width:640px){.slot{flex-direction:row;align-items:center;justify-content:space-between}}
+.slot .t{min-width:0;display:flex;flex-direction:column;gap:5px}
+.slot .name{font-weight:700;font-size:14.5px}
+.slot .meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+
+.ring-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center}
+.ring-wrap .ring-label{position:absolute;text-align:center;line-height:1.15}
+.ring-label b{font-size:clamp(15px,4.4vw,21px)}
+.ring-label span{font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.03em}
+
+.stat{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--card);display:flex;flex-direction:column;gap:3px}
+.stat b{font-size:clamp(17px,4.5vw,22px);line-height:1.2}
+.stat span{font-size:11.5px;color:var(--muted);font-weight:600}
+
+/* calendar */
+.cal-head{display:flex;align-items:center;gap:8px;justify-content:space-between;margin-bottom:10px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-dow{font-size:10.5px;font-weight:800;color:var(--muted);text-align:center;padding:4px 0;letter-spacing:.05em}
+.cal-cell{
+  aspect-ratio:1;min-height:40px;border:1px solid var(--line);border-radius:10px;padding:4px 5px;
+  display:flex;flex-direction:column;gap:2px;align-items:flex-start;background:var(--card);
+  font-size:11px;font-weight:600;position:relative;overflow:hidden;
+}
+.cal-cell.out{opacity:.35}
+.cal-cell.today{border-color:var(--brand);box-shadow:0 0 0 1.5px var(--brand)}
+.cal-cell.exam{border-style:dashed;border-color:var(--bad)}
+.cal-cell.sel{background:var(--brand-soft);border-color:var(--brand)}
+.cal-cell .d{font-size:11px;font-weight:800}
+.cal-cell .p{font-size:9.5px;color:var(--muted);line-height:1.1}
+@media(max-width:520px){.cal-cell{padding:3px}.cal-cell .p{display:none}}
+
+/* timetable */
+.scroll-x{overflow-x:auto;margin:0 -4px;padding:0 4px}
+.tt{border-collapse:separate;border-spacing:4px;width:100%;min-width:720px}
+.tt th{font-size:11px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;padding:4px 6px;text-align:left}
+.tt td{background:var(--soft);border-radius:9px;padding:8px 9px;vertical-align:top;min-width:110px}
+.tt td.time{background:transparent;font-size:11px;font-weight:800;color:var(--muted);white-space:nowrap;min-width:0}
+.tt td b{font-size:12px;display:block;line-height:1.25}
+.tt td .chip{margin-top:4px}
+
+/* subject card */
+.subj{border:1px solid var(--line);border-radius:12px;padding:13px 14px;background:var(--card);display:flex;flex-direction:column;gap:9px}
+.subj .head{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+.subj .head .l{min-width:0}
+.subj .nm{font-weight:800;font-size:14px;line-height:1.25}
+.subj details{border-top:1px dashed var(--line);padding-top:9px}
+.subj summary{cursor:pointer;font-size:12px;font-weight:700;color:var(--brand);list-style:none;display:flex;align-items:center;gap:6px}
+.subj summary::-webkit-details-marker{display:none}
+.subj summary svg{width:13px;height:13px;transition:transform .2s}
+.subj details[open] summary svg{transform:rotate(180deg)}
+
+.tier-title{display:flex;align-items:center;gap:8px;margin:6px 0 -2px;font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.tier-title .line{flex:1;height:1px;background:var(--line)}
+
+/* timeline (postings) */
+.tl{position:relative;padding-left:22px;display:flex;flex-direction:column;gap:14px}
+.tl::before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:2px;background:var(--line)}
+.tl-item{position:relative}
+.tl-item::before{content:"";position:absolute;left:-20px;top:6px;width:11px;height:11px;border-radius:99px;background:var(--brand);border:2px solid var(--card)}
+.tl-item.past::before{background:var(--muted)}
+.tl-item.now::before{background:var(--ok);box-shadow:0 0 0 4px var(--ok-soft)}
+
+/* modules */
+.mod-item{border:1px solid var(--line);border-radius:11px;padding:11px 13px;background:var(--card)}
+.mod-item .q{display:flex;align-items:flex-start;gap:10px}
+.mod-check{
+  width:21px;height:21px;flex:none;margin-top:1px;border-radius:7px;border:1.5px solid var(--line);
+  background:var(--card);display:inline-flex;align-items:center;justify-content:center;color:transparent;
+}
+.mod-item.done .mod-check{background:var(--ok);border-color:var(--ok);color:#fff}
+.mod-item.done .mt{opacity:.6;text-decoration:line-through}
+.mod-check svg{width:13px;height:13px}
+.mod-item details{margin-top:8px}
+.mod-item summary{cursor:pointer;font-size:11.5px;font-weight:700;color:var(--brand);list-style:none}
+.mod-item summary::-webkit-details-marker{display:none}
+
+/* toast + undo */
+#toast{
+  position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);
+  background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:13px;font-weight:600;
+  opacity:0;pointer-events:none;transition:all .25s;z-index:90;max-width:min(92vw,480px);
+  display:flex;gap:12px;align-items:center;box-shadow:var(--shadow);
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast button{background:none;border:none;color:var(--brand2);font-weight:800;font-size:13px;padding:0}
+[data-theme="dark"] #toast button{color:#c4b5fd}
+
+.icon-btn{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--muted);display:inline-flex;align-items:center;justify-content:center;position:relative}
+.icon-btn:hover{color:var(--brand);border-color:var(--brand)}
+.icon-btn svg{width:16px;height:16px}
+.icon-btn .cnt{position:absolute;top:-6px;right:-6px;background:var(--brand);color:#fff;font-size:9.5px;font-weight:800;border-radius:99px;min-width:16px;height:16px;display:flex;align-items:center;justify-content:center;padding:0 3px}
+
+.alert{border-radius:12px;padding:11px 14px;display:flex;gap:10px;align-items:flex-start;font-size:13px}
+.alert svg{width:16px;height:17px;flex:none;margin-top:1px}
+.alert.bad{background:var(--bad-soft);color:var(--bad)}
+.alert.warn{background:var(--warn-soft);color:var(--warn)}
+.alert.ok{background:var(--ok-soft);color:var(--ok)}
+.alert.brand{background:var(--brand-soft);color:var(--brand)}
+
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:var(--muted);font-weight:600}
+.legend .sw{width:11px;height:11px;border-radius:4px;display:inline-block;vertical-align:-1px;margin-right:5px;border:1px solid var(--line)}
+
+/* analytics */
+.chart-line{width:100%;height:auto;display:block}
+.dow-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;align-items:end;height:130px}
+.dow-col{display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end}
+.dow-col .vbar{width:100%;max-width:42px;border-radius:7px 7px 3px 3px;background:linear-gradient(180deg,var(--brand),var(--brand2));min-height:3px;transition:height .4s}
+.dow-col span{font-size:10.5px;color:var(--muted);font-weight:700}
+.dow-col b{font-size:10.5px}
+
+footer{padding:20px clamp(14px,3vw,28px) 30px;color:var(--muted);font-size:11.5px;text-align:center}
+
+@media print{
+  .sidebar,.tabsbar,.topbar,.icon-btn,.btn,#toast{display:none !important}
+  body{background:#fff}
+  .main{margin-left:0}
+  .view{display:none !important}
+  .view.active{display:flex !important}
+  .card{box-shadow:none;break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Desktop sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark" id="brand-mark"></div>
+      <div>
+        <h1>AttendMate <span style="color:var(--brand)">Pro</span></h1>
+        <small>NSMCH BIHTA · PHASE-III (PART-2) · 2026–27</small>
+      </div>
+    </div>
+    <nav class="nav" id="nav-desktop"></nav>
+    <div class="side-foot">
+      <div class="xs muted" id="side-student" style="padding:2px 8px 6px"></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <!-- Mobile tab strip -->
+    <div class="tabsbar" id="nav-mobile"></div>
+
+    <header class="topbar">
+      <h2 class="page-title" id="page-title">Today</h2>
+      <button class="icon-btn" id="btn-undo" title="Undo last action" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+        <span class="cnt" id="undo-cnt">0</span>
+      </button>
+      <button class="icon-btn" id="btn-print" title="Print report">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      </button>
+      <button class="icon-btn" id="btn-theme" title="Toggle theme"><span id="theme-icon"></span></button>
+    </header>
+
+    <main class="content">
+      <!-- ============ TODAY ============ -->
+      <section class="view active" id="view-today">
+        <div class="card tight">
+          <div class="spread">
+            <div class="row">
+              <button class="icon-btn" id="day-prev" title="Previous day"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+              <div>
+                <div class="bold" id="day-title" style="font-size:15.5px">—</div>
+                <div class="xs muted" id="day-subtitle"></div>
+              </div>
+              <button class="icon-btn" id="day-next" title="Next day"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>
+              <button class="btn sm" id="day-today">Today</button>
+            </div>
+            <div class="row">
+              <button class="btn sm ok" id="btn-all-present"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Mark all present</button>
+              <button class="btn sm warn" id="btn-holiday">Holiday</button>
+              <button class="btn sm ghost" id="btn-copy-yesterday">Copy yesterday</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid3" id="today-rings"></div>
+        <div id="today-alerts" style="display:flex;flex-direction:column;gap:10px"></div>
+
+        <div class="card">
+          <div class="spread">
+            <h2 id="slots-heading">Scheduled classes</h2>
+            <span class="chip" id="day-progress"></span>
+          </div>
+          <p class="sub" id="day-summary"></p>
+          <div style="display:flex;flex-direction:column;gap:9px" id="today-slots"></div>
+          <div id="extra-class-form" style="margin-top:12px;border-top:1px dashed var(--line);padding-top:12px">
+            <div class="row" style="align-items:flex-end">
+              <div class="field"><label>Extra / make-up class</label>
+                <select id="extra-subject" style="min-width:210px"></select>
+              </div>
+              <div class="field"><label>Type</label>
+                <select id="extra-kind"><option value="theory">Theory</option><option value="clinical">Clinical</option></select>
+              </div>
+              <button class="btn primary sm" id="btn-add-extra">+ Add class</button>
+            </div>
+          </div>
+        </div>
+
+        <details class="card" id="bulk-fill-card">
+          <summary style="cursor:pointer;font-weight:800;font-size:14px;display:flex;align-items:center;gap:8px">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v18M3 12h18"/></svg>
+            Bulk-fill past days <span class="chip">catch up on old dates</span>
+          </summary>
+          <div class="row" style="margin-top:12px;align-items:flex-end">
+            <div class="field"><label>From</label><input type="date" id="fill-from"></div>
+            <div class="field"><label>To</label><input type="date" id="fill-to"></div>
+            <div class="field"><label>Mark as</label>
+              <select id="fill-status"><option value="present">Present</option><option value="absent">Absent</option></select>
+            </div>
+            <button class="btn primary sm" id="btn-fill">Fill days</button>
+          </div>
+          <p class="xs muted" style="margin:8px 0 0">Sundays are skipped; days that already have logs are left untouched.</p>
+        </details>
+      </section>
+
+      <!-- ============ CALENDAR ============ -->
+      <section class="view" id="view-calendar">
+        <div class="card">
+          <div class="cal-head">
+            <div class="row">
+              <button class="icon-btn" id="cal-prev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+              <b id="cal-title" style="font-size:16px">—</b>
+              <button class="icon-btn" id="cal-next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>
+            </div>
+            <div class="row">
+              <span class="chip brand" id="cal-stat-days">0 logged</span>
+              <span class="chip" id="cal-stat-avg">— avg</span>
+              <span class="chip ok" id="cal-stat-perfect">0 perfect</span>
+            </div>
+          </div>
+          <div class="cal-grid" id="cal-dows"></div>
+          <div class="cal-grid" id="cal-grid"></div>
+          <hr class="hr">
+          <div class="legend">
+            <span><span class="sw" style="background:var(--ok)"></span>≥ 90%</span>
+            <span><span class="sw" style="background:var(--warn)"></span>75–90%</span>
+            <span><span class="sw" style="background:var(--bad)"></span>&lt; 75%</span>
+            <span><span class="sw" style="background:var(--soft)"></span>Holiday / nothing due</span>
+            <span><span class="sw" style="background:none;border:1.5px dashed var(--bad)"></span>Assessment window</span>
+            <span class="xs muted">Tap a day to open it</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ SUBJECTS ============ -->
+      <section class="view" id="view-subjects">
+        <div class="card tight">
+          <div class="spread">
+            <div class="seg" id="subj-mode-seg">
+              <button data-mode="theory" class="on">Theory · 75%</button>
+              <button data-mode="clinical">Clinical · 80%</button>
+            </div>
+            <span class="xs muted">Targets are editable in Settings</span>
+          </div>
+        </div>
+        <div id="subj-tiers" style="display:flex;flex-direction:column;gap:14px"></div>
+      </section>
+
+      <!-- ============ ANALYTICS ============ -->
+      <section class="view" id="view-analytics">
+        <div class="grid3" id="an-stats"></div>
+        <div class="card">
+          <h2>Overall attendance rings</h2>
+          <p class="sub">Live percentage vs your targets across both modes</p>
+          <div class="grid3" id="an-rings"></div>
+        </div>
+        <div class="card">
+          <h2>Day-by-day trend</h2>
+          <p class="sub">Overall % of every logged day (most recent 15)</p>
+          <div id="an-trend"></div>
+        </div>
+        <div class="grid2">
+          <div class="card">
+            <h2>Performance by weekday</h2>
+            <p class="sub">Average overall % on each class day</p>
+            <div class="dow-grid" id="an-dow"></div>
+          </div>
+          <div class="card">
+            <h2>Session projection</h2>
+            <p class="sub">Where you'll land by the Sentup exam (11 Dec 2027) at your current rate</p>
+            <div id="an-projection" style="display:flex;flex-direction:column;gap:12px"></div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Subject leaderboard</h2>
+          <p class="sub" id="an-subj-sub">Ranked by overall %</p>
+          <div id="an-subjects" style="display:flex;flex-direction:column;gap:9px"></div>
+        </div>
+      </section>
+
+      <!-- ============ TIMETABLE ============ -->
+      <section class="view" id="view-timetable">
+        <div class="card">
+          <h2>Master weekly timetable</h2>
+          <p class="sub">Monday–Saturday, 9 AM – 5 PM · Sunday weekly holiday</p>
+          <div class="scroll-x"><table class="tt" id="tt-table"></table></div>
+        </div>
+        <div class="card">
+          <h2>Week at a glance</h2>
+          <p class="sub">Scheduled load per subject this week (theory slots + clinical posting)</p>
+          <div class="grid3" id="tt-loads"></div>
+        </div>
+      </section>
+
+      <!-- ============ POSTINGS ============ -->
+      <section class="view" id="view-postings">
+        <div id="posting-now"></div>
+        <div class="card">
+          <h2>My clinical rotation timeline</h2>
+          <p class="sub" id="tl-sub">Resolved from your roll number</p>
+          <div class="tl" id="posting-timeline"></div>
+        </div>
+      </section>
+
+      <!-- ============ EXAMS ============ -->
+      <section class="view" id="view-exams">
+        <div id="exam-hero"></div>
+        <div class="grid2" id="exam-cards"></div>
+      </section>
+
+      <!-- ============ MODULES ============ -->
+      <section class="view" id="view-modules">
+        <div class="grid2">
+          <div class="card">
+            <div class="spread" style="margin-bottom:4px">
+              <h2>AETCOM modules <span class="chip brand" id="aet-badge"></span></h2>
+              <span class="chip" id="aet-hrs"></span>
+            </div>
+            <p class="sub">Attitude, Ethics & Communication — Phase-II/III competency modules (52 hrs)</p>
+            <div class="bar" style="margin-bottom:12px" id="aet-bar"><span style="width:0%"></span></div>
+            <div style="display:flex;flex-direction:column;gap:8px" id="aet-list"></div>
+          </div>
+          <div class="card">
+            <div class="spread" style="margin-bottom:4px">
+              <h2>Pandemic modules <span class="chip sky" id="pan-badge"></span></h2>
+              <span class="chip" id="pan-hrs"></span>
+            </div>
+            <p class="sub">Pandemic management module (32 hrs) — triage to mental health</p>
+            <div class="bar" style="margin-bottom:12px" id="pan-bar"><span style="width:0%"></span></div>
+            <div style="display:flex;flex-direction:column;gap:8px" id="pan-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ SETTINGS ============ -->
+      <section class="view" id="view-settings">
+        <div class="card">
+          <h2>Student profile</h2>
+          <p class="sub">Your roll number drives the clinical-posting roster resolution</p>
+          <div class="row" style="align-items:flex-end">
+            <div class="field"><label>Name</label><input id="set-name" placeholder="Your name" style="width:200px"></div>
+            <div class="field"><label>Roll number (1–100)</label><input id="set-roll" type="number" min="1" max="100" style="width:110px"></div>
+            <div class="field"><label>Resolved group</label><span class="chip brand" id="set-group" style="padding:9px 14px">—</span></div>
+          </div>
+          <div class="row" style="margin-top:14px">
+            <button class="btn primary sm" id="btn-save-profile">Save profile</button>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Attendance targets</h2>
+          <p class="sub">Minimum required percentage for each mode</p>
+          <div class="row" style="align-items:flex-end">
+            <div class="field"><label>Theory target %</label><input id="set-ttarget" type="number" min="1" max="100" style="width:110px"></div>
+            <div class="field"><label>Clinical target %</label><input id="set-ctarget" type="number" min="1" max="100" style="width:110px"></div>
+            <button class="btn primary sm" id="btn-save-targets">Save targets</button>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Data</h2>
+          <p class="sub">Everything is stored offline in your browser (localStorage)</p>
+          <div class="row">
+            <button class="btn" id="btn-export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>Export backup (JSON)</button>
+            <button class="btn" id="btn-import"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5-5 5 5"/><path d="M12 5v10"/></svg>Import backup</button>
+            <input type="file" id="import-file" accept=".json,application/json" style="display:none">
+            <button class="btn bad" id="btn-reset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Reset all data</button>
+          </div>
+          <p class="xs muted" id="storage-info" style="margin-top:10px"></p>
+        </div>
+        <div class="card">
+          <h2>About AttendMate Pro</h2>
+          <p class="sub" style="margin-bottom:6px">Advanced offline replica &amp; upgrade of AttendMate for NSMCH Bihta, Patna — Phase-III (Part-2), Batch 2023, Session 2026–27.</p>
+          <div class="grid2" id="about-features"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      Built for medical students · NSMCH Bihta, Patna · Phase-III (Part-2) · Batch 2023 · Session 2026–27 — data stays on your device.
+    </footer>
+  </div>
+</div>
+
+<div id="toast"><span id="toast-msg"></span><button id="toast-undo" style="display:none">Undo</button></div>
+<script>
+"use strict";
+/* =====================================================================
+   1. GROUNDED NSMCH BIHTA PHASE-III (PART-2) BATCH 2023 DATA
+   ===================================================================== */
+const SUBJECTS = [
+  { code: 'IM', name: 'General Medicine', lecture: 95, sgl: 130, sdl: 55, total: 280, clinicalWeeks: 14, weeklySlots: 5, color: '#a855f7' },
+  { code: 'SU', name: 'General Surgery', lecture: 80, sgl: 140, sdl: 40, total: 260, clinicalWeeks: 10, weeklySlots: 5, color: '#eab308' },
+  { code: 'OG', name: 'Obs-Gynae', lecture: 80, sgl: 140, sdl: 40, total: 260, clinicalWeeks: 10, weeklySlots: 5, color: '#0ea5e9' },
+  { code: 'PE', name: 'Pediatrics', lecture: 30, sgl: 60, sdl: 30, total: 120, clinicalWeeks: 5, weeklySlots: 2, color: '#f59e0b' },
+  { code: 'OR', name: 'Orthopaedics + PMR', lecture: 25, sgl: 35, sdl: 25, total: 85, clinicalWeeks: 4, weeklySlots: 2, color: '#22c55e' },
+  { code: 'AETCOM', name: 'AETCOM Module', lecture: 30, sgl: 0, sdl: 22, total: 52, clinicalWeeks: 0, weeklySlots: 1, color: '#6366f1' },
+  { code: 'DR', name: 'Dermatology, Venereology & Leprosy', lecture: 15, sgl: 10, sdl: 15, total: 40, clinicalWeeks: 2, weeklySlots: 0.5, color: '#ec4899' },
+  { code: 'PS', name: 'Psychiatry', lecture: 15, sgl: 15, sdl: 15, total: 45, clinicalWeeks: 4, weeklySlots: 0.5, color: '#14b8a6' },
+  { code: 'EN', name: 'Otorhinolaryngology (ENT)', lecture: 15, sgl: 25, sdl: 15, total: 55, clinicalWeeks: 4, weeklySlots: 1, color: '#f97316' },
+  { code: 'OP', name: 'Ophthalmology', lecture: 15, sgl: 25, sdl: 15, total: 55, clinicalWeeks: 4, weeklySlots: 1, color: '#fb7185' },
+  { code: 'RD', name: 'Radiodiagnosis & Radiotherapy', lecture: 8, sgl: 15, sdl: 15, total: 38, clinicalWeeks: 2, weeklySlots: 0.5, color: '#8b5cf6' },
+  { code: 'AN', name: 'Anesthesiology', lecture: 8, sgl: 15, sdl: 15, total: 38, clinicalWeeks: 3, weeklySlots: 0.5, color: '#06b6d4' },
+  { code: 'PM', name: 'Pandemic Module', lecture: 28, sgl: 0, sdl: 0, total: 28, clinicalWeeks: 0, weeklySlots: 1, color: '#64748b' }
+];
+const SUBJECT_MAP = Object.fromEntries(SUBJECTS.map(s => [s.code, s]));
+
+const SUBGROUP_RANGES = [
+  { group: 'A', sub: 'A1', min: 1, max: 4 }, { group: 'A', sub: 'A2', min: 5, max: 8 },
+  { group: 'A', sub: 'A3', min: 9, max: 12 }, { group: 'A', sub: 'A4', min: 13, max: 16 },
+  { group: 'B', sub: 'B1', min: 17, max: 20 }, { group: 'B', sub: 'B2', min: 21, max: 24 },
+  { group: 'B', sub: 'B3', min: 25, max: 28 }, { group: 'B', sub: 'B4', min: 29, max: 32 },
+  { group: 'C', sub: 'C1', min: 33, max: 36 }, { group: 'C', sub: 'C2', min: 37, max: 40 },
+  { group: 'C', sub: 'C3', min: 41, max: 44 }, { group: 'C', sub: 'C4', min: 45, max: 49 },
+  { group: 'D', sub: 'D1', min: 50, max: 53 }, { group: 'D', sub: 'D2', min: 54, max: 57 },
+  { group: 'D', sub: 'D3', min: 58, max: 61 }, { group: 'D', sub: 'D4', min: 62, max: 66 },
+  { group: 'E', sub: 'E1', min: 67, max: 70 }, { group: 'E', sub: 'E2', min: 71, max: 74 },
+  { group: 'E', sub: 'E3', min: 75, max: 78 }, { group: 'E', sub: 'E4', min: 79, max: 83 },
+  { group: 'F', sub: 'F1', min: 84, max: 87 }, { group: 'F', sub: 'F2', min: 88, max: 91 },
+  { group: 'F', sub: 'F3', min: 92, max: 95 }, { group: 'F', sub: 'F4', min: 96, max: 100 }
+];
+
+/* Master weekly timetable — 1=Mon .. 6=Sat */
+const MASTER_TIMETABLE = {
+  1: [
+    { id: 'mon-09', time: '09:00 – 10:00', subject: 'OG', label: 'Obstetrics & Gynaecology (OG)', type: 'theory' },
+    { id: 'mon-cp', time: '10:00 – 13:00', subject: 'CP', label: 'Clinical Posting', type: 'clinical' },
+    { id: 'mon-14', time: '14:00 – 15:00', subject: 'EN', label: 'Otorhinolaryngology (EN)', type: 'theory' },
+    { id: 'mon-15', time: '15:00 – 16:00', subject: 'IM', label: 'General Medicine (IM) — Lecture/SGD/Skill', type: 'theory' },
+    { id: 'mon-16', time: '16:00 – 17:00', subject: 'IM', label: 'General Medicine (IM) — Lecture/SGD/Skill', type: 'theory' }
+  ],
+  2: [
+    { id: 'tue-09', time: '09:00 – 10:00', subject: 'PS', altSubject: 'DR', label: 'Psychiatry (PS) / Dermatology (DR)', type: 'theory' },
+    { id: 'tue-cp', time: '10:00 – 13:00', subject: 'CP', label: 'Clinical Posting', type: 'clinical' },
+    { id: 'tue-14', time: '14:00 – 15:00', subject: 'OR', label: 'Orthopedics (OR)', type: 'theory' },
+    { id: 'tue-15', time: '15:00 – 16:00', subject: 'OG', label: 'Obstetrics & Gynaecology (OG) — Lecture/SGD/Skill', type: 'theory' },
+    { id: 'tue-16', time: '16:00 – 17:00', subject: 'OG', label: 'Obstetrics & Gynaecology (OG) — Lecture/SGD/Skill', type: 'theory' }
+  ],
+  3: [
+    { id: 'wed-09', time: '09:00 – 10:00', subject: 'IM', label: 'General Medicine (IM)', type: 'theory' },
+    { id: 'wed-cp', time: '10:00 – 13:00', subject: 'CP', label: 'Clinical Posting', type: 'clinical' },
+    { id: 'wed-14', time: '14:00 – 15:00', subject: 'RD', altSubject: 'AN', label: 'Radiodiagnosis (RD) / Anesthesiology (AN)', type: 'theory' },
+    { id: 'wed-15', time: '15:00 – 16:00', subject: 'OG', label: 'Obstetrics & Gynaecology (OG)', type: 'theory' },
+    { id: 'wed-16', time: '16:00 – 17:00', subject: 'SU', label: 'Gen. Surgery (SU)', type: 'theory' }
+  ],
+  4: [
+    { id: 'thu-09', time: '09:00 – 10:00', subject: 'PE', label: 'Pediatrics (PE)', type: 'theory' },
+    { id: 'thu-cp', time: '10:00 – 13:00', subject: 'CP', label: 'Clinical Posting', type: 'clinical' },
+    { id: 'thu-14', time: '14:00 – 15:00', subject: 'OG', label: 'Obstetrics & Gynaecology (OG)', type: 'theory' },
+    { id: 'thu-15', time: '15:00 – 16:00', subject: 'SU', label: 'Gen. Surgery (SU) — Lecture/SGD/Skill', type: 'theory' },
+    { id: 'thu-16', time: '16:00 – 17:00', subject: 'SU', label: 'Gen. Surgery (SU) — Lecture/SGD/Skill', type: 'theory' }
+  ],
+  5: [
+    { id: 'fri-09', time: '09:00 – 10:00', subject: 'SU', label: 'Gen. Surgery (SU)', type: 'theory' },
+    { id: 'fri-cp', time: '10:00 – 13:00', subject: 'CP', label: 'Clinical Posting', type: 'clinical' },
+    { id: 'fri-14', time: '14:00 – 15:00', subject: 'IM', label: 'General Medicine (IM)', type: 'theory' },
+    { id: 'fri-15', time: '15:00 – 16:00', subject: 'PE', label: 'Pediatrics (PE)', type: 'theory' },
+    { id: 'fri-16', time: '16:00 – 17:00', subject: 'OP', label: 'Ophthalmology (OP)', type: 'theory' }
+  ],
+  6: [
+    { id: 'sat-09', time: '09:00 – 10:00', subject: 'OR', label: 'Orthopedics (OR)', type: 'theory' },
+    { id: 'sat-cp', time: '10:00 – 13:00', subject: 'CP', label: 'Clinical Posting', type: 'clinical' },
+    { id: 'sat-14', time: '14:00 – 15:00', subject: 'SU', label: 'Gen. Surgery (SU)', type: 'theory' },
+    { id: 'sat-15', time: '15:00 – 16:00', subject: 'IM', label: 'General Medicine (IM)', type: 'theory' },
+    { id: 'sat-16', time: '16:00 – 17:00', subject: 'PM', label: 'Pandemic Module', type: 'theory' }
+  ]
+};
+
+/* Clinical posting rosters — official dates */
+const MINOR_ROSTER = [
+  { start: '2026-10-10', end: '2026-10-28', DR: ['A1'], RD: ['A2'], AN: ['A3'], PS: ['A4'] },
+  { start: '2026-10-29', end: '2026-11-19', DR: ['A4'], RD: ['A1'], AN: ['A2'], PS: ['A3'] },
+  { start: '2026-11-20', end: '2026-12-03', DR: ['A3'], RD: ['A4'], AN: ['A1'], PS: ['A2'] },
+  { start: '2026-12-04', end: '2026-12-17', DR: ['A2'], RD: ['A3'], AN: ['A4'], PS: ['A1'] },
+  { start: '2026-12-18', end: '2027-01-09', DR: ['F1'], RD: ['F2'], AN: ['F3'], PS: ['F4'] },
+  { start: '2027-01-11', end: '2027-01-23', DR: ['F4'], RD: ['F1'], AN: ['F2'], PS: ['F3'] },
+  { start: '2027-01-25', end: '2027-02-13', DR: ['F3'], RD: ['F4'], AN: ['F1'], PS: ['F2'] },
+  { start: '2027-02-15', end: '2027-02-27', DR: ['F2'], RD: ['F3'], AN: ['F4'], PS: ['F1'] },
+  { start: '2027-03-01', end: '2027-03-13', DR: ['E1'], RD: ['E2'], AN: ['E3'], PS: ['E4'] },
+  { start: '2027-03-22', end: '2027-04-03', DR: ['E4'], RD: ['E1'], AN: ['E2'], PS: ['E3'] },
+  { start: '2027-04-05', end: '2027-04-17', DR: ['E3'], RD: ['E4'], AN: ['E1'], PS: ['E2'] },
+  { start: '2027-04-19', end: '2027-05-01', DR: ['E2'], RD: ['E3'], AN: ['E4'], PS: ['E1'] },
+  { start: '2027-05-03', end: '2027-05-15', DR: ['D1'], RD: ['D2'], AN: ['D3'], PS: ['D4'] },
+  { start: '2027-05-17', end: '2027-05-31', DR: ['D4'], RD: ['D1'], AN: ['D2'], PS: ['D3'] },
+  { start: '2027-06-10', end: '2027-06-23', DR: ['D3'], RD: ['D4'], AN: ['D1'], PS: ['D2'] },
+  { start: '2027-06-24', end: '2027-07-07', DR: ['D2'], RD: ['D3'], AN: ['D4'], PS: ['D1'] },
+  { start: '2027-07-08', end: '2027-07-24', DR: ['C1'], RD: ['C2'], AN: ['C3'], PS: ['C4'] },
+  { start: '2027-08-02', end: '2027-08-14', DR: ['C4'], RD: ['C1'], AN: ['C2'], PS: ['C3'] },
+  { start: '2027-08-16', end: '2027-08-28', DR: ['C3'], RD: ['C4'], AN: ['C1'], PS: ['C2'] },
+  { start: '2027-09-06', end: '2027-09-18', DR: ['C2'], RD: ['C3'], AN: ['C4'], PS: ['C1'] },
+  { start: '2027-09-20', end: '2027-10-02', DR: ['B1'], RD: ['B2'], AN: ['B3'], PS: ['B4'] },
+  { start: '2027-10-04', end: '2027-10-20', DR: ['B4'], RD: ['B1'], AN: ['B2'], PS: ['B3'] },
+  { start: '2027-10-21', end: '2027-11-13', DR: ['B3'], RD: ['B4'], AN: ['B1'], PS: ['B2'] },
+  { start: '2027-11-15', end: '2027-11-27', DR: ['B2'], RD: ['B3'], AN: ['B4'], PS: ['B1'] }
+];
+const MID_ROSTER = [
+  { start: '2026-10-10', end: '2026-11-19', PE: ['B1','B2'], OR: ['B3','B4'], EN: ['C1','C2'], OP: ['C3','C4'] },
+  { start: '2026-11-20', end: '2026-12-17', PE: ['B3','B4'], OR: ['B1','B2'], EN: ['C3','C4'], OP: ['C1','C2'] },
+  { start: '2026-12-18', end: '2027-01-23', PE: ['A1','A2'], OR: ['A3','A4'], EN: ['B1','B2'], OP: ['B3','B4'] },
+  { start: '2027-01-25', end: '2027-02-27', PE: ['A3','A4'], OR: ['A1','A2'], EN: ['B3','B4'], OP: ['B1','B2'] },
+  { start: '2027-03-01', end: '2027-04-03', PE: ['F1','F2'], OR: ['F3','F4'], EN: ['A1','A2'], OP: ['A3','A4'] },
+  { start: '2027-04-05', end: '2027-05-01', PE: ['F3','F4'], OR: ['F1','F2'], EN: ['A3','A4'], OP: ['A1','A2'] },
+  { start: '2027-05-03', end: '2027-05-31', PE: ['E1','E2'], OR: ['E3','E4'], EN: ['F1','F2'], OP: ['F3','F4'] },
+  { start: '2027-06-10', end: '2027-07-07', PE: ['E3','E4'], OR: ['E1','E2'], EN: ['F3','F4'], OP: ['F1','F2'] },
+  { start: '2027-07-08', end: '2027-08-14', PE: ['D1','D2'], OR: ['D3','D4'], EN: ['E1','E2'], OP: ['E3','E4'] },
+  { start: '2027-08-16', end: '2027-09-18', PE: ['D3','D4'], OR: ['D1','D2'], EN: ['E3','E4'], OP: ['E1','E2'] },
+  { start: '2027-09-20', end: '2027-10-20', PE: ['C1','C2'], OR: ['C3','C4'], EN: ['D1','D2'], OP: ['D3','D4'] },
+  { start: '2027-10-21', end: '2027-11-27', PE: ['C3','C4'], OR: ['C1','C2'], EN: ['D3','D4'], OP: ['D1','D2'] }
+];
+const MAJOR_ROSTER = [
+  { start: '2026-10-10', end: '2026-12-17', IM: ['D'], SU: ['E'], OG: ['F'] },
+  { start: '2026-12-18', end: '2027-02-27', IM: ['C'], SU: ['D'], OG: ['E'] },
+  { start: '2027-03-01', end: '2027-05-01', IM: ['B'], SU: ['C'], OG: ['D'] },
+  { start: '2027-05-03', end: '2027-07-07', IM: ['A'], SU: ['B'], OG: ['C'] },
+  { start: '2027-07-08', end: '2027-09-18', IM: ['F'], SU: ['A'], OG: ['B'] },
+  { start: '2027-09-20', end: '2027-11-27', IM: ['E'], SU: ['F'], OG: ['A'] }
+];
+const EXAM_CLINICAL_ROSTER = [
+  { start: '2027-11-29', end: '2027-12-04', IM: ['A','B'], SU: ['C','D'], OG: ['E','F'], note: 'Exam Oriented Clinical Class' },
+  { start: '2027-12-06', end: '2027-12-10', IM: ['E','F'], SU: ['A','B'], OG: ['C','D'], note: 'Exam Oriented Clinical Class' },
+  { start: '2028-01-03', end: '2028-01-08', IM: ['C','D'], SU: ['E','F'], OG: ['A','B'], note: 'Exam Oriented Clinical Class' }
+];
+
+const AETCOM_MODULES = [
+  { id: '4.1', title: '4.1 (A & B): The Foundation of Communication-5', hours: '5 hrs (1+2+2)', dept: 'General Medicine and Allied Subjects', topic: 'A: Demonstrate ability to communicate to patients in a patient, respectful, nonthreatening, non-judgmental and empathetic manner. B: Communicate diagnostic and therapeutic options to patient and family in a simulated environment.' },
+  { id: '4.2', title: '4.2: Case Studies in Medico-legal and Ethical Situations', hours: '6 hrs (1+3-SDL+1+1)', dept: 'Obs/ Gynaecology', topic: 'Identify, discuss and defend medico-legal, socioeconomic and ethical issues as it pertains to abortion / Medical Termination of Pregnancy and reproductive rights.' },
+  { id: '4.3', title: '4.3: Case Studies in Medico-legal and Ethical Situations', hours: '6 hrs (1+3-SDL+1+1)', dept: 'General Medicine and Allied Subjects', topic: 'Identify and discuss medico-legal, socio-economic and ethical issues as it pertains to organ donation.' },
+  { id: '4.4', title: '4.4 (A & B): Case Studies in Ethics, Empathy & Doctor-Patient Relationship', hours: '6 hrs (1+3-SDL+1+1)', dept: 'General Surgery and Allied Subjects', topic: 'A: Demonstrate empathy in patient encounters. B: Communicate care options to patient and family with a terminal illness in a simulated environment.' },
+  { id: '4.5', title: '4.5: Case Studies in Ethics: The Doctor-Industry Relationship', hours: '6 hrs (1+3-SDL+1+1)', dept: 'General Surgery and Allied Subjects', topic: 'Identify, discuss and defend medico-legal, socio-cultural, professional and ethical issues in physician-industry relationships.' },
+  { id: '4.6', title: '4.6: Case Studies in Ethics: The Doctor-Industry Relationship', hours: '6 hrs (1+3-SDL+1+1)', dept: 'General Surgery and Allied Subjects', topic: 'Identify conflicts of interest in patient care and professional relationships and describe the correct response to these conflicts.' },
+  { id: '4.7', title: '4.7: Case Studies in Ethics and Patient Autonomy', hours: '6 hrs (1+3-SDL+1+1)', dept: 'Obs/ Gynaecology', topic: 'Identify conflicts of interest in patient care and professional relationships and describe the correct response to these conflicts.' },
+  { id: '4.8', title: '4.8 (A & B): Dealing with Death', hours: '6 hrs (1+3-SDL+1+1)', dept: 'Obs/ Gynaecology', topic: 'A: Identify conflicts of interest in patient care and professional relationships and describe the correct response to these conflicts. B: Demonstrate empathy to patient and family with a terminal illness in a simulated environment.' },
+  { id: '4.9', title: '4.9 (A & B): Medical Negligence', hours: '5 hrs (1+3-SDL+1)', dept: 'Paediatrics', topic: 'A: Identify, discuss and defend medico-legal, socio-cultural, professional and ethical issues pertaining to medical negligence. B: Identify, discuss and defend medico-legal, socio-cultural, professional and ethical issues pertaining to malpractice.' }
+];
+const PANDEMIC_MODULES = [
+  { id: 'P4.1', title: 'Module 4.1 — Triage Concept', hours: '6 Hrs (2+1+2+1)', dept: 'General Medicine', topic: 'Care of patients during pandemics: Triage concept' },
+  { id: 'P4.2', title: 'Module 4.2 — Resuscitation', hours: '8 hrs (2+4+1+1)', dept: 'Anaesthesiology', topic: 'Emergency procedures during pandemics: Resuscitation' },
+  { id: 'P4.3', title: 'Module 4.3 — Managing Death', hours: '2 hrs (1+1)', dept: 'Anaesthesiology', topic: 'Managing death during pandemics' },
+  { id: 'P4.4', title: 'Module 4.4 — Information Management', hours: '4 hrs (2+1+1)', dept: 'General Medicine', topic: 'Information management during pandemics' },
+  { id: 'P4.5', title: 'Module 4.5 — Intensive Care Management', hours: '4 hrs (1+1+1+1)', dept: 'Anaesthesiology', topic: 'Intensive care management during pandemics' },
+  { id: 'P4.6', title: 'Module 4.6 — Palliative Care', hours: '4 hrs (1+1+1+1)', dept: 'General Medicine', topic: 'Palliative Care during pandemics' },
+  { id: 'P4.7', title: 'Module 4.7 — Mental Health Issues', hours: '4 hrs (1+1+1+1)', dept: 'Psychiatry', topic: 'Mental Health Issues During Pandemic' }
+];
+const EXAMS = [
+  { id: 'ia1a', name: '1st (A) Internal Assessment', subjects: 'General Medicine, General Surgery, Obstetrics and Gynecology', start: '2027-02-01', end: '2027-02-06' },
+  { id: 'ia1b', name: '1st (B) Internal Assessment', subjects: 'Pediatrics, Ophthalmology & ENT', start: '2027-03-15', end: '2027-03-20' },
+  { id: 'ia2a', name: '2nd (A) Internal Assessment', subjects: 'General Medicine, General Surgery, Obstetrics and Gynecology', start: '2027-07-26', end: '2027-07-31' },
+  { id: 'ia2b', name: '2nd (B) Internal Assessment', subjects: 'Pediatrics, Ophthalmology & ENT', start: '2027-08-30', end: '2027-09-04' },
+  { id: 'sentup', name: 'Sentup / Pre-University Exam', subjects: 'General Medicine, General Surgery (25% Orthopedics), Obstetrics and Gynecology, Pediatrics, Ophthalmology & ENT', start: '2027-12-11', end: '2027-12-24' }
+];
+
+/* =====================================================================
+   2. STATE & PERSISTENCE
+   ===================================================================== */
+const STORAGE_KEY = 'attendmate_pro_v2';
+const SESSION_END = '2027-12-24';   // sentup exam end — projection horizon
+
+function getTodayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function createDefaultState() {
+  return {
+    profile: { name: '', rollNo: 1, theoryTarget: 75, clinicalTarget: 80, theme: 'light' },
+    logs: {},          // { 'YYYY-MM-DD': { [slotId]: { status, subject, kind?, custom? } } }
+    baseline: {},      // { code: { theoryPresent, theoryTotal, clinicalPresent, clinicalTotal } }
+    aetcomDone: {},
+    pandemicDone: {},
+    selectedDate: getTodayISO(),
+    activeTab: 'today',
+    subjMode: 'theory'
+  };
+}
+let state = createDefaultState();
+let undoStack = [];
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      state = { ...createDefaultState(), ...parsed, profile: { ...createDefaultState().profile, ...(parsed.profile || {}) } };
+    }
+  } catch (e) { /* fall back to defaults */ }
+  if (!state.selectedDate) state.selectedDate = getTodayISO();
+  undoStack = [];
+}
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* storage unavailable */ }
+}
+function pushUndo() {
+  undoStack.push(JSON.stringify(state));
+  if (undoStack.length > 40) undoStack.shift();
+  updateUndoBtn();
+}
+function doUndo() {
+  if (!undoStack.length) return;
+  state = JSON.parse(undoStack.pop());
+  saveState(); updateUndoBtn(); renderAll();
+  toast('Last action undone');
+}
+function updateUndoBtn() {
+  const btn = document.getElementById('btn-undo');
+  btn.style.display = undoStack.length ? 'inline-flex' : 'none';
+  document.getElementById('undo-cnt').textContent = Math.min(undoStack.length, 9) + (undoStack.length > 9 ? '+' : '');
+}
+
+/* =====================================================================
+   3. HELPERS — DATES, ROLL/GROUP, POSTINGS, BUNK MATH
+   ===================================================================== */
+function parseISO(iso) { const p = iso.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); }
+function formatDisplayDate(iso) { return parseISO(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); }
+function getDayName(iso) { return parseISO(iso).toLocaleDateString('en-IN', { weekday: 'long' }); }
+function getDayOfWeek(iso) { return parseISO(iso).getDay(); }
+function shiftDate(iso, delta) {
+  const d = parseISO(iso); d.setDate(d.getDate() + delta);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function daysBetween(isoA, isoB) { return Math.round((parseISO(isoB) - parseISO(isoA)) / 86400000); }
+
+function getGroupInfo(rollNo) {
+  const r = Math.max(1, Math.min(100, parseInt(rollNo, 10) || 1));
+  const found = SUBGROUP_RANGES.find(item => r >= item.min && r <= item.max) || SUBGROUP_RANGES[0];
+  return { rollNo: r, group: found.group, subGroup: found.sub };
+}
+
+function getClinicalPostingForDate(isoDate, subGroup) {
+  const group = subGroup.charAt(0);
+  for (const row of MINOR_ROSTER) {
+    if (isoDate >= row.start && isoDate <= row.end) {
+      for (const dept of ['DR', 'RD', 'AN', 'PS']) {
+        if (row[dept].includes(subGroup)) return { code: dept, name: SUBJECT_MAP[dept].name, start: row.start, end: row.end, block: 'Allied Specialty' };
+      }
+    }
+  }
+  for (const row of MID_ROSTER) {
+    if (isoDate >= row.start && isoDate <= row.end) {
+      for (const dept of ['PE', 'OR', 'EN', 'OP']) {
+        if (row[dept].includes(subGroup)) return { code: dept, name: SUBJECT_MAP[dept].name, start: row.start, end: row.end, block: 'Specialty Rotation' };
+      }
+    }
+  }
+  for (const row of MAJOR_ROSTER) {
+    if (isoDate >= row.start && isoDate <= row.end) {
+      for (const dept of ['IM', 'SU', 'OG']) {
+        if (row[dept].includes(group)) return { code: dept, name: SUBJECT_MAP[dept].name, start: row.start, end: row.end, block: 'Major Clinical' };
+      }
+    }
+  }
+  for (const row of EXAM_CLINICAL_ROSTER) {
+    if (isoDate >= row.start && isoDate <= row.end) {
+      for (const dept of ['IM', 'SU', 'OG']) {
+        if (row[dept].includes(group)) return { code: dept, name: `${SUBJECT_MAP[dept].name} (Exam Oriented)`, start: row.start, end: row.end, block: 'Exam Oriented' };
+      }
+    }
+  }
+  return null;
+}
+
+function getPersonalRosterTimeline(subGroup) {
+  const group = subGroup.charAt(0);
+  const list = [];
+  for (const row of MINOR_ROSTER) for (const dept of ['DR', 'RD', 'AN', 'PS'])
+    if (row[dept].includes(subGroup)) list.push({ code: dept, name: SUBJECT_MAP[dept].name, start: row.start, end: row.end, block: 'Allied (2 wks)' });
+  for (const row of MID_ROSTER) for (const dept of ['PE', 'OR', 'EN', 'OP'])
+    if (row[dept].includes(subGroup)) list.push({ code: dept, name: SUBJECT_MAP[dept].name, start: row.start, end: row.end, block: 'Specialty' });
+  for (const row of MAJOR_ROSTER) for (const dept of ['IM', 'SU', 'OG'])
+    if (row[dept].includes(group)) list.push({ code: dept, name: SUBJECT_MAP[dept].name, start: row.start, end: row.end, block: 'Major Clinical' });
+  for (const row of EXAM_CLINICAL_ROSTER) for (const dept of ['IM', 'SU', 'OG'])
+    if (row[dept].includes(group)) list.push({ code: dept, name: `${SUBJECT_MAP[dept].name} (Exam Oriented)`, start: row.start, end: row.end, block: 'Exam Oriented' });
+  list.sort((a, b) => a.start.localeCompare(b.start));
+  return list;
+}
+
+function computeSubjectStats() {
+  const stats = {};
+  for (const s of SUBJECTS) {
+    const b = state.baseline[s.code] || {};
+    stats[s.code] = {
+      theoryPresent: parseInt(b.theoryPresent, 10) || 0,
+      theoryTotal: parseInt(b.theoryTotal, 10) || 0,
+      clinicalPresent: parseInt(b.clinicalPresent, 10) || 0,
+      clinicalTotal: parseInt(b.clinicalTotal, 10) || 0
+    };
+  }
+  for (const dateStr of Object.keys(state.logs)) {
+    const dayLog = state.logs[dateStr];
+    if (!dayLog) continue;
+    for (const slotId of Object.keys(dayLog)) {
+      const entry = dayLog[slotId];
+      if (!entry || !entry.status || entry.status === 'cancelled') continue;
+      const code = entry.subject;
+      if (!stats[code]) continue;
+      const isClinical = slotId.endsWith('-cp') || entry.kind === 'clinical';
+      if (isClinical) { stats[code].clinicalTotal += 1; if (entry.status === 'present') stats[code].clinicalPresent += 1; }
+      else { stats[code].theoryTotal += 1; if (entry.status === 'present') stats[code].theoryPresent += 1; }
+    }
+  }
+  return stats;
+}
+
+function calcBunkInfo(present, total, targetPct) {
+  if (total <= 0) return { pct: null, status: 'empty', message: 'No classes logged yet', canBunk: 0, mustAttend: 0 };
+  const pct = (present / total) * 100;
+  const t = targetPct / 100;
+  if (pct >= targetPct) {
+    const canBunk = Math.floor((present - t * total) / t);
+    const status = canBunk >= 2 ? 'safe' : 'borderline';
+    const message = canBunk > 0
+      ? `Can safely skip ${canBunk} next ${canBunk === 1 ? 'class' : 'classes'}`
+      : 'On target — avoid skipping next class';
+    return { pct, status, message, canBunk, mustAttend: 0 };
+  }
+  const denom = 1 - t;
+  const mustAttend = denom > 0 ? Math.ceil((t * total - present) / denom) : 0;
+  return { pct, status: 'danger', message: `Attend next ${mustAttend} ${mustAttend === 1 ? 'class' : 'classes'} to hit ${targetPct}%`, canBunk: 0, mustAttend };
+}
+
+function classifySkipPriority(subj, present, total, targetPct, mode) {
+  const bunk = calcBunkInfo(present, total, targetPct);
+  const isLowFreq = mode === 'clinical' ? subj.clinicalWeeks <= 3 : subj.weeklySlots <= 1;
+  const isHighFreq = mode === 'clinical' ? subj.clinicalWeeks >= 10 : subj.weeklySlots >= 5;
+  const dropOnOneMiss = total > 0 ? ((present / total) - (present / (total + 1))) * 100 : null;
+
+  if (total === 0) {
+    if (isLowFreq) return { tier: 'dont', pill: "Don't Miss", reason: mode === 'clinical'
+      ? `Short ${subj.clinicalWeeks}-wk posting — every day counts`
+      : `Only ${subj.weeklySlots}/wk (${subj.lecture}L hrs) — very little margin` };
+    if (isHighFreq) return { tier: 'safe', pill: 'High-Freq Buffer', reason: mode === 'clinical'
+      ? `${subj.clinicalWeeks}-wk major posting — log counts to see exact skips`
+      : `${subj.weeklySlots} classes/wk (${subj.total} hrs) — highest skip flexibility` };
+    return { tier: 'careful', pill: 'Moderate', reason: mode === 'clinical'
+      ? `${subj.clinicalWeeks}-wk posting — log counts to see exact skips`
+      : `${subj.weeklySlots} classes/wk — limited cushion` };
+  }
+  if (bunk.status === 'danger' || bunk.canBunk === 0) return { tier: 'dont', pill: "Don't Miss", reason: bunk.status === 'danger'
+    ? `${bunk.pct.toFixed(1)}% · Attend next ${bunk.mustAttend} to hit ${targetPct}%`
+    : `${bunk.pct.toFixed(1)}% · 0 skips left (1 miss drops -${dropOnOneMiss.toFixed(1)}%)` };
+  if (isLowFreq && bunk.canBunk <= 2) return { tier: 'dont', pill: 'Low-Freq Risk', reason:
+    `${bunk.pct.toFixed(1)}% · Only ${bunk.canBunk} skip left (${subj.weeklySlots}/wk, -${dropOnOneMiss.toFixed(1)}%/miss)` };
+  if (bunk.canBunk <= 2) return { tier: 'careful', pill: `Tight (${bunk.canBunk} left)`, reason:
+    `${bunk.pct.toFixed(1)}% · Max ${bunk.canBunk} safe ${bunk.canBunk === 1 ? 'skip' : 'skips'} (-${dropOnOneMiss.toFixed(1)}%/miss)` };
+  return { tier: 'safe', pill: `Can Skip ${bunk.canBunk}`, reason:
+    `${bunk.pct.toFixed(1)}% · Can safely skip ${bunk.canBunk} ${bunk.canBunk === 1 ? 'class' : 'classes'} (-${dropOnOneMiss.toFixed(1)}%/miss)` };
+}
+
+/* overall stats across all subjects */
+function overallStats() {
+  const stats = computeSubjectStats();
+  let tP = 0, tT = 0, cP = 0, cT = 0;
+  for (const s of SUBJECTS) { tP += stats[s.code].theoryPresent; tT += stats[s.code].theoryTotal; cP += stats[s.code].clinicalPresent; cT += stats[s.code].clinicalTotal; }
+  return { tP, tT, cP, cT };
+}
+
+/* day-level summary from raw logs */
+function daySummary(iso) {
+  const dayLog = state.logs[iso];
+  let present = 0, absent = 0, cancelled = 0, unlogged = 0, slots = [];
+  const dow = getDayOfWeek(iso);
+  if (dow !== 0) slots = MASTER_TIMETABLE[dow] || [];
+  const custom = dayLog ? Object.keys(dayLog).filter(id => id.startsWith('x-')) : [];
+  const totalSlots = slots.length + custom.length;
+  for (const s of slots) {
+    const st = dayLog && dayLog[s.id] && dayLog[s.id].status;
+    if (!st) unlogged++;
+    else if (st === 'present') present++;
+    else if (st === 'absent') absent++;
+    else cancelled++;
+  }
+  for (const id of custom) {
+    const st = dayLog[id].status;
+    if (!st) unlogged++; else if (st === 'present') present++; else if (st === 'absent') absent++; else cancelled++;
+  }
+  const logged = present + absent + cancelled;
+  const judged = present + absent;
+  return { present, absent, cancelled, unlogged, logged, judged, totalSlots,
+    pct: judged > 0 ? (present / judged) * 100 : null, isHoliday: totalSlots > 0 && cancelled === totalSlots, dow };
+}
+
+/* consecutive perfect-day streaks */
+function streakInfo() {
+  const dates = Object.keys(state.logs).sort();
+  const isPerfect = iso => { const d = daySummary(iso); return d.judged > 0 && d.absent === 0; };
+  let best = 0, cur = 0, curStreak = 0;
+  for (const iso of dates) {
+    if (isPerfect(iso)) { cur++; best = Math.max(best, cur); } else cur = 0;
+  }
+  // current streak: walk back from today (allow today unlogged → start from yesterday)
+  let probe = getTodayISO();
+  if (!(state.logs[probe] && daySummary(probe).judged > 0)) probe = shiftDate(probe, -1);
+  while (state.logs[probe] && isPerfect(probe)) { curStreak++; probe = shiftDate(probe, -1); }
+  const perfectDays = dates.filter(isPerfect).length;
+  return { best, current: curStreak, perfectDays, totalLoggedDays: dates.length };
+}
+
+/* scheduled (not yet logged) slots from today to SESSION_END — projection */
+function scheduledRemaining(todayIso) {
+  let remT = 0, remC = 0;
+  let d = todayIso;
+  while (d <= SESSION_END) {
+    const dow = getDayOfWeek(d);
+    if (dow !== 0 && !state.logs[d]) { remT += 4; remC += 1; }
+    d = shiftDate(d, 1);
+  }
+  return { remT, remC };
+}
+
+let toastTimer = null;
+function toast(msg, showUndo) {
+  const el = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  document.getElementById('toast-undo').style.display = showUndo && undoStack.length ? 'inline' : 'none';
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+/* tiny inline icon set */
+const ICONS = {
+  home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
+  calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
+  chart: '<path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 5-6"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>',
+  steth: '<path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6 6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/><path d="M8 15v1a6 6 0 0 0 6 6 6 6 0 0 0 6-6v-4"/><circle cx="20" cy="10" r="2"/>',
+  cap: '<path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/>',
+  check: '<circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 5-5"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+  flame: '<path d="M12 2c1 4-4 6-4 10a4 4 0 0 0 8 0c0-1-.5-2-1-3-1.5 1.5-3 .5-3-1 0-2 1-3 0-6z"/><path d="M8.5 14.5C7 16 7 19 9.5 21"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.3 11.3 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+  alert: '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4m0 4h.01"/>',
+  swap: '<path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/>',
+  target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/>'
+};
+function icon(name, size) {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"${size ? ` style="width:${size}px;height:${size}px"` : ''}>${ICONS[name] || ''}</svg>`;
+}
+
+/* SVG progress ring */
+function ringSVG(pct, opts) {
+  const o = opts || {};
+  const size = o.size || 92, stroke = o.stroke || 9, color = o.color || 'var(--brand)';
+  const r = (size - stroke) / 2, C = 2 * Math.PI * r;
+  const p = Math.max(0, Math.min(100, pct == null ? 0 : pct));
+  const off = C * (1 - p / 100);
+  return `<div class="ring-wrap" style="width:${size}px;height:${size}px">
+    <svg width="${size}" height="${size}" style="transform:rotate(-90deg)">
+      <circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="var(--soft)" stroke-width="${stroke}"/>
+      <circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}"
+        stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" stroke-linecap="round"/>
+    </svg>
+    <div class="ring-label" style="width:${size - stroke * 2}px"><b style="font-size:${size * 0.22}px">${pct == null ? '—' : pct.toFixed(1) + '%'}</b>
+    <span>${o.label || ''}</span></div>
+  </div>`;
+}
+function pctColor(pct, target) {
+  if (pct == null) return 'var(--muted)';
+  if (pct >= target + 4.5) return 'var(--ok)';
+  if (pct >= target) return 'var(--ok)';
+  if (pct >= target - 7.5) return 'var(--warn)';
+  return 'var(--bad)';
+}
+function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+</script>
+<script>
+/* =====================================================================
+   4. RENDERING
+   ===================================================================== */
+const TABS = [
+  ['today', 'Today', 'home'], ['calendar', 'Calendar', 'calendar'], ['subjects', 'Subjects', 'book'],
+  ['analytics', 'Analytics', 'chart'], ['timetable', 'Timetable', 'clock'], ['postings', 'Postings', 'steth'],
+  ['exams', 'Exams', 'cap'], ['modules', 'Modules', 'check'], ['settings', 'Settings', 'gear']
+];
+const VIEW_TITLES = Object.fromEntries(TABS.map(t => [t[0], t[1]]));
+const todayIso = getTodayISO();
+
+function buildNav() {
+  for (const [container, vertical] of [['nav-desktop', true], ['nav-mobile', false]]) {
+    const el = document.getElementById(container);
+    el.innerHTML = TABS.map(([id, label, ic]) => {
+      const alertBadge = id === 'subjects' ? '<span class="n-badge" id="badge-subjects" style="display:none"></span>' : '';
+      return `<button class="tab-btn" data-tab="${id}">${icon(ic)}<span>${label}</span>${alertBadge}</button>`;
+    }).join('');
+  }
+  document.querySelectorAll('.tab-btn').forEach(btn =>
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+}
+function switchTab(tab) {
+  state.activeTab = tab;
+  saveState();
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const view = document.getElementById('view-' + tab);
+  if (view) view.classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.getElementById('page-title').textContent = VIEW_TITLES[tab] || '';
+  window.scrollTo({ top: 0 });
+  renderAll();
+}
+
+function applyTheme() {
+  document.documentElement.setAttribute('data-theme', state.profile.theme);
+  document.getElementById('theme-icon').innerHTML = state.profile.theme === 'dark' ? icon('sun') : icon('moon');
+}
+
+function renderAll() {
+  const st = computeSubjectStats();
+  updateHeaderChips(st);
+  if (state.activeTab === 'today') renderToday(st);
+  else if (state.activeTab === 'calendar') renderCalendar();
+  else if (state.activeTab === 'subjects') renderSubjects(st);
+  else if (state.activeTab === 'analytics') renderAnalytics(st);
+  else if (state.activeTab === 'timetable') renderTimetable();
+  else if (state.activeTab === 'postings') renderPostings();
+  else if (state.activeTab === 'exams') renderExams();
+  else if (state.activeTab === 'modules') renderModules();
+  else if (state.activeTab === 'settings') renderSettings();
+}
+
+function updateHeaderChips(st) {
+  const gi = getGroupInfo(state.profile.rollNo);
+  document.getElementById('side-student').innerHTML =
+    (state.profile.name ? esc(state.profile.name) + ' · ' : '') + `Roll ${gi.rollNo} · Sub-group ${gi.subGroup}`;
+  // at-risk badge on Subjects tab
+  const target = state.profile.theoryTarget;
+  let atRisk = 0;
+  for (const s of SUBJECTS) {
+    const bunk = calcBunkInfo(st[s.code].theoryPresent, st[s.code].theoryTotal, target);
+    if (bunk.status === 'danger') atRisk++;
+  }
+  const badge = document.getElementById('badge-subjects');
+  if (badge) { badge.textContent = atRisk; badge.style.display = atRisk ? 'inline' : 'none'; }
+}
+
+/* ================= TODAY ================= */
+function slotAdviceChips(code, isClinical, st) {
+  const subj = SUBJECT_MAP[code];
+  const target = isClinical ? state.profile.clinicalTarget : state.profile.theoryTarget;
+  const p = isClinical ? st.clinicalPresent : st.theoryPresent;
+  const t = isClinical ? st.clinicalTotal : st.theoryTotal;
+  const advice = classifySkipPriority(subj, p, t, target, isClinical ? 'clinical' : 'theory');
+  const cls = advice.tier === 'dont' ? 'bad' : advice.tier === 'careful' ? 'warn' : 'ok';
+  const bunk = calcBunkInfo(p, t, target);
+  const pctTxt = bunk.pct == null ? 'No classes logged yet'
+    : `<span class="bold" style="color:${pctColor(bunk.pct, target)}">${bunk.pct.toFixed(1)}%</span> (${p}/${t}) · ${bunk.message}`;
+  return `<div class="meta"><span class="chip ${cls}">${advice.pill}</span></div>
+    <div class="xs muted">${pctTxt}</div>`;
+}
+
+function renderToday(st) {
+  const iso = state.selectedDate;
+  const gi = getGroupInfo(state.profile.rollNo);
+  const dow = getDayOfWeek(iso);
+  const posting = getClinicalPostingForDate(iso, gi.subGroup);
+  document.getElementById('day-title').textContent = formatDisplayDate(iso);
+  document.getElementById('day-subtitle').textContent = `${getDayName(iso)}${iso === todayIso ? ' · Today' : ''}` +
+    (dow === 0 ? ' · Weekly holiday' : '');
+
+  // rings
+  const os = overallStats();
+  const day = daySummary(iso);
+  document.getElementById('today-rings').innerHTML = `
+    <div class="card tight" style="display:flex;align-items:center;gap:14px">
+      ${ringSVG(os.tT > 0 ? (os.tP / os.tT) * 100 : null, { label: 'Theory', color: pctColor(os.tT ? (os.tP / os.tT) * 100 : null, state.profile.theoryTarget) })}
+      <div><div class="bold small">Theory overall</div><div class="xs muted">${os.tP}/${os.tT} logged · target ${state.profile.theoryTarget}%</div>
+      <div class="xs" style="color:${os.tT && (os.tP / os.tT) * 100 >= state.profile.theoryTarget ? 'var(--ok)' : 'var(--bad)'}">${os.tT ? calcBunkInfo(os.tP, os.tT, state.profile.theoryTarget).message : 'Start logging to unlock advice'}</div></div>
+    </div>
+    <div class="card tight" style="display:flex;align-items:center;gap:14px">
+      ${ringSVG(os.cT > 0 ? (os.cP / os.cT) * 100 : null, { label: 'Clinical', color: pctColor(os.cT ? (os.cP / os.cT) * 100 : null, state.profile.clinicalTarget) })}
+      <div><div class="bold small">Clinical overall</div><div class="xs muted">${os.cP}/${os.cT} logged · target ${state.profile.clinicalTarget}%</div>
+      <div class="xs" style="color:${os.cT && (os.cP / os.cT) * 100 >= state.profile.clinicalTarget ? 'var(--ok)' : 'var(--bad)'}">${os.cT ? calcBunkInfo(os.cP, os.cT, state.profile.clinicalTarget).message : 'Postings credit the active department'}</div></div>
+    </div>
+    <div class="card tight" style="display:flex;align-items:center;gap:14px">
+      ${ringSVG(day.pct, { label: 'This day', color: pctColor(day.pct, state.profile.theoryTarget), size: 84 })}
+      <div><div class="bold small">Day status</div><div class="xs muted">${day.logged}/${day.totalSlots} slots logged${day.absent ? ` · ${day.absent} absent` : ''}</div>
+      <div class="xs muted">${day.totalSlots === 0 ? 'Nothing due' : day.isHoliday ? 'Marked holiday' : day.unlogged ? `${day.unlogged} still unlogged` : 'Fully logged ✓'}</div></div>
+    </div>`;
+
+  // alerts
+  const alerts = [];
+  if (dow !== 0 && posting) {
+    alerts.push(`<div class="alert brand">${icon('steth')}<div><b>Today's posting:</b> ${esc(posting.name)} (${posting.block}) · ${formatDisplayDate(posting.start)} → ${formatDisplayDate(posting.end)}. Clinical slot credits <b>${posting.code}</b>.</div></div>`);
+  }
+  if (dow === 0) alerts.push(`<div class="alert ok">${icon('check')}<div>Sunday — weekly holiday. Use the arrows to log past days.</div></div>`);
+  const risky = SUBJECTS.map(s => {
+    const tb = calcBunkInfo(st[s.code].theoryPresent, st[s.code].theoryTotal, state.profile.theoryTarget);
+    const cb = calcBunkInfo(st[s.code].clinicalPresent, st[s.code].clinicalTotal, state.profile.clinicalTarget);
+    return { s, tb, cb };
+  }).filter(x => x.tb.status === 'danger' || x.cb.status === 'danger');
+  if (risky.length) {
+    alerts.push(`<div class="alert bad">${icon('alert')}<div><b>${risky.length} subject${risky.length > 1 ? 's' : ''} below target:</b> ` +
+      risky.slice(0, 4).map(x => `${x.s.name} (${x.tb.status === 'danger' ? `theory ${x.tb.pct.toFixed(0)}%, attend ${x.tb.mustAttend}` : `clinical ${x.cb.pct.toFixed(0)}%, attend ${x.cb.mustAttend}`})`).join(' · ') +
+      (risky.length > 4 ? ` +${risky.length - 4} more` : '') + '.</div></div>');
+  }
+  const nextExam = EXAMS.find(e => e.end >= todayIso);
+  if (nextExam) {
+    const dd = daysBetween(todayIso, nextExam.start);
+    alerts.push(`<div class="alert warn">${icon('cap')}<div><b>Next exam:</b> ${esc(nextExam.name)} — ${dd <= 0 ? 'running now' : `in ${dd} day${dd === 1 ? '' : 's'}`} (${formatDisplayDate(nextExam.start)}–${formatDisplayDate(nextExam.end)}).</div></div>`);
+  }
+  const alertBox = document.getElementById('today-alerts');
+  alertBox.innerHTML = alerts.join('');
+  alertBox.style.display = alerts.length ? 'flex' : 'none';
+
+  // slots
+  const heading = document.getElementById('slots-heading');
+  const prog = document.getElementById('day-progress');
+  const dayLog = state.logs[iso] || {};
+  if (dow === 0) {
+    heading.innerHTML = 'No scheduled classes';
+    prog.style.display = 'none';
+    document.getElementById('today-slots').innerHTML =
+      `<div style="border:1.5px dashed var(--line);border-radius:12px;padding:34px;text-align:center" class="muted">
+        ${icon('sun', 30)}<div class="bold" style="margin-top:8px;color:var(--ink)">Sunday — weekly holiday</div>
+        <div class="xs">Jump to another day to log, or add a make-up class below.</div></div>`;
+  } else {
+    const slots = MASTER_TIMETABLE[dow] || [];
+    const marked = slots.filter(s => dayLog[s.id] && dayLog[s.id].status).length;
+    heading.innerHTML = 'Scheduled classes';
+    prog.style.display = 'inline-flex';
+    prog.textContent = `${marked}/${slots.length} logged`;
+    document.getElementById('today-slots').innerHTML = slots.map(s => slotRowHTML(iso, s, st, posting)).join('');
+  }
+
+  // custom extra classes for this date
+  const customIds = Object.keys(dayLog).filter(id => id.startsWith('x-'));
+  const extraBox = document.getElementById('extra-class-form');
+  if (customIds.length) {
+    const rows = customIds.map(id => {
+      const e = dayLog[id];
+      const subj = SUBJECT_MAP[e.subject] || { name: e.subject, color: '#6366f1' };
+      const status = e.status || '';
+      const isClin = e.kind === 'clinical';
+      return `<div class="slot" style="border-style:dashed">
+        <div class="t"><div class="meta"><span class="chip brand">Extra class</span><span class="chip ${isClin ? 'sky' : 'brand'}">${isClin ? 'Clinical' : 'Theory'}</span></div>
+          <div class="name">${esc(subj.name)} <span class="xs muted">(${e.subject})</span></div></div>
+        <div class="row">
+          <div class="seg">
+            <button data-mark-slot="${id}" data-mark-subj="${e.subject}" data-mark-kind="${e.kind}" data-mark-status="present" class="${status === 'present' ? 'on present' : ''}">Present</button>
+            <button data-mark-slot="${id}" data-mark-subj="${e.subject}" data-mark-kind="${e.kind}" data-mark-status="absent" class="${status === 'absent' ? 'on absent' : ''}">Absent</button>
+            <button data-mark-slot="${id}" data-mark-subj="${e.subject}" data-mark-kind="${e.kind}" data-mark-status="cancelled" class="${status === 'cancelled' ? 'on cancelled' : ''}">Cancel</button>
+          </div>
+          <button class="btn sm ghost" data-del-extra="${id}">Remove</button>
+        </div></div>`;
+    }).join('');
+    document.getElementById('today-slots').insertAdjacentHTML('beforeend', rows);
+  }
+  extraBox.style.display = dow === 0 && !customIds.length ? '' : '';
+}
+
+function slotRowHTML(iso, slot, st, posting) {
+  const dayLog = state.logs[iso] || {};
+  const saved = dayLog[slot.id] || {};
+  const isClinical = slot.type === 'clinical';
+  const activeSubj = saved.subject || (isClinical ? (posting ? posting.code : 'IM') : slot.subject);
+  const subjObj = SUBJECT_MAP[activeSubj] || { name: activeSubj, color: '#6366f1' };
+  const status = saved.status || '';
+  const titleText = isClinical
+    ? (posting ? `Clinical Posting — ${posting.name}` : 'Clinical Posting (General)')
+    : slot.label;
+  const st2 = st[activeSubj] || { theoryPresent: 0, theoryTotal: 0, clinicalPresent: 0, clinicalTotal: 0 };
+  const typeChip = isClinical ? '<span class="chip sky">Clinical (3 hrs)</span>' : '<span class="chip brand">Theory / SGD</span>';
+  const altBtn = slot.altSubject
+    ? `<button class="btn sm" data-swap-slot="${slot.id}" title="Switch department for this class">${icon('swap', 13)} ${activeSubj === slot.subject ? slot.altSubject : slot.subject}</button>`
+    : '';
+  const segBtn = s => `<button data-mark-slot="${slot.id}" data-mark-subj="${activeSubj}" data-mark-status="${s}" class="${status === s ? 'on ' + s : ''}">${s === 'present' ? 'Present' : s === 'absent' ? 'Absent' : 'Cancel'}</button>`;
+  return `<div class="slot">
+    <div class="t">
+      <div class="meta"><span class="chip">${slot.time}</span>${typeChip}${altBtn}</div>
+      <div class="name">${esc(titleText)} <span class="xs muted" style="color:var(--muted)">· ${activeSubj}</span></div>
+      ${slotAdviceChips(activeSubj, isClinical, st2)}
+    </div>
+    <div class="seg">${segBtn('present')}${segBtn('absent')}${segBtn('cancelled')}</div>
+  </div>`;
+}
+
+/* ================= CALENDAR ================= */
+let calCursor = null; // {y, m}
+function renderCalendar() {
+  if (!calCursor) { const d = parseISO(state.selectedDate); calCursor = { y: d.getFullYear(), m: d.getMonth() }; }
+  const first = new Date(calCursor.y, calCursor.m, 1);
+  const start = new Date(first); start.setDate(1 - ((first.getDay() + 6) % 7)); // week starts Monday
+  document.getElementById('cal-title').textContent = first.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+  document.getElementById('cal-dows').innerHTML = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => `<div class="cal-dow">${d}</div>`).join('');
+
+  let logged = 0, pctSum = 0, pctN = 0, perfect = 0;
+  const cells = [];
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(start); d.setDate(start.getDate() + i);
+    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const inMonth = d.getMonth() === calCursor.m;
+    const exam = EXAMS.find(e => iso >= e.start && iso <= e.end);
+    const ds = daySummary(iso);
+    if (inMonth && ds.logged > 0) { logged++; if (ds.pct != null) { pctSum += ds.pct; pctN++; } if (ds.judged > 0 && ds.absent === 0) perfect++; }
+    let bg = '', fg = '';
+    if (ds.isHoliday) { bg = 'var(--soft)'; }
+    else if (ds.pct != null) {
+      const c = pctColor(ds.pct, state.profile.theoryTarget);
+      bg = `color-mix(in srgb, ${c} 16%, var(--card))`; fg = c;
+    }
+    const post = inMonth && getDayOfWeek(iso) !== 0 ? null : null;
+    cells.push(`<button class="cal-cell ${inMonth ? '' : 'out'} ${iso === todayIso ? 'today' : ''} ${exam ? 'exam' : ''} ${iso === state.selectedDate ? 'sel' : ''}"
+      style="${bg ? `background:${bg};` : ''}${fg ? `color:${fg};` : ''}" data-cal-day="${iso}" title="${formatDisplayDate(iso)}${ds.pct != null ? ' · ' + ds.pct.toFixed(0) + '%' : ''}${exam ? ' · ' + esc(exam.name) : ''}">
+      <span class="d" style="color:${inMonth ? (fg || 'var(--ink)') : 'var(--muted)'}">${d.getDate()}</span>
+      <span class="p" style="color:var(--muted)">${ds.judged > 0 ? ds.pct.toFixed(0) + '%' : ds.isHoliday ? 'Holiday' : exam ? 'Exam' : ''}</span>
+    </button>`);
+  }
+  document.getElementById('cal-grid').innerHTML = cells.join('');
+  document.getElementById('cal-stat-days').textContent = `${logged} logged`;
+  document.getElementById('cal-stat-avg').textContent = pctN ? `avg ${(pctSum / pctN).toFixed(1)}%` : '— avg';
+  document.getElementById('cal-stat-perfect').textContent = `${perfect} perfect`;
+  document.querySelectorAll('[data-cal-day]').forEach(b => b.addEventListener('click', () => {
+    state.selectedDate = b.dataset.calDay;
+    saveState(); switchTab('today');
+  }));
+}
+
+/* ================= SUBJECTS ================= */
+const simPreviews = {}; // key: code+'-'+mode → {p,t}
+function renderSubjects(st) {
+  const mode = state.subjMode;
+  document.querySelectorAll('#subj-mode-seg button').forEach(b => b.classList.toggle('on', b.dataset.mode === mode));
+  const target = mode === 'clinical' ? state.profile.clinicalTarget : state.profile.theoryTarget;
+  const tiers = { dont: [], careful: [], safe: [] };
+  for (const s of SUBJECTS) {
+    const p = mode === 'clinical' ? st[s.code].clinicalPresent : st[s.code].theoryPresent;
+    const t = mode === 'clinical' ? st[s.code].clinicalTotal : st[s.code].theoryTotal;
+    const advice = classifySkipPriority(s, p, t, target, mode);
+    tiers[advice.tier].push({ s, p, t, advice });
+  }
+  const tierMeta = {
+    dont: { label: "Don't Miss — at or under target", cls: 'bad' },
+    careful: { label: 'Be Careful — little margin left', cls: 'warn' },
+    safe: { label: 'Safe to Miss — buffer available', cls: 'ok' }
+  };
+  const order = ['dont', 'careful', 'safe'];
+  document.getElementById('subj-tiers').innerHTML = order.map(tier => {
+    if (!tiers[tier].length) return '';
+    return `<div class="tier-title">${tierMeta[tier].label}<span class="line"></span><span class="chip ${tierMeta[tier].cls}">${tiers[tier].length}</span></div>
+      <div class="grid2">${tiers[tier].map(x => subjectCardHTML(x.s, x.p, x.t, x.advice, mode, target)).join('')}</div>`;
+  }).join('');
+
+  // wire interactions
+  document.querySelectorAll('#subj-mode-seg button').forEach(b => b.addEventListener('click', () => {
+    state.subjMode = b.dataset.mode; saveState(); Object.keys(simPreviews).forEach(k => delete simPreviews[k]); renderSubjects(computeSubjectStats());
+  }));
+  document.querySelectorAll('[data-sim-btn]').forEach(b => b.addEventListener('click', () => {
+    const [code, m, op] = b.dataset.simBtn.split('|');
+    const key = code + '-' + m;
+    const cur = simPreviews[key] || { p: b.dataset.p * 1, t: b.dataset.t * 1 };
+    if (op === 'p') cur.p++; else if (op === 'a') cur.t++; else if (op === 'm') { cur.t++; cur.p = Math.max(0, cur.p); }
+    simPreviews[key] = cur; renderSubjects(computeSubjectStats());
+  }));
+  document.querySelectorAll('[data-sim-reset]').forEach(b => b.addEventListener('click', () => {
+    delete simPreviews[b.dataset.simReset]; renderSubjects(computeSubjectStats());
+  }));
+  document.querySelectorAll('[data-baseline-save]').forEach(b => b.addEventListener('click', () => {
+    const code = b.dataset.baselineSave;
+    const g = id => parseInt(document.getElementById(id).value, 10) || 0;
+    pushUndo();
+    state.baseline[code] = { theoryPresent: g('bl-tp-' + code), theoryTotal: g('bl-tt-' + code), clinicalPresent: g('bl-cp-' + code), clinicalTotal: g('bl-ct-' + code) };
+    saveState(); toast(`Baseline saved for ${code}`); renderSubjects(computeSubjectStats());
+  }));
+}
+
+function subjectCardHTML(s, p, t, advice, mode, target) {
+  const pct = t > 0 ? (p / t) * 100 : null;
+  const key = s.code + '-' + mode;
+  const sim = simPreviews[key];
+  const simPct = sim && sim.t > 0 ? (sim.p / sim.t) * 100 : null;
+  const bunk = calcBunkInfo(p, t, target);
+  const color = pctColor(pct, target);
+  const chipCls = advice.tier === 'dont' ? 'bad' : advice.tier === 'careful' ? 'warn' : 'ok';
+  const barCls = pct == null ? '' : pct >= target ? 'ok' : pct >= target - 7.5 ? 'warn' : 'bad';
+  const b = state.baseline[s.code] || {};
+  const blkCls = advice.tier === 'dont' ? 'bad' : advice.tier === 'careful' ? 'warn' : 'ok';
+  const canMiss = t === 0 ? `<span class="chip">no data yet</span>`
+    : bunk.canBunk > 0 ? `<span class="chip ok">${icon('check', 11)} ${bunk.canBunk} safe skip${bunk.canBunk === 1 ? '' : 's'}</span>`
+    : bunk.status === 'danger' ? `<span class="chip bad">${icon('alert', 11)} attend ${bunk.mustAttend}</span>` : `<span class="chip">on target</span>`;
+  return `<div class="subj">
+    <div class="head">
+      <div class="l">
+        <div class="nm">${esc(s.name)}</div>
+        <div class="meta" style="margin-top:5px"><span class="chip" style="border:1px solid var(--line);background:var(--card)">${s.code}</span><span class="chip ${chipCls}">${advice.pill}</span>${canMiss}</div>
+      </div>
+      ${ringSVG(pct, { size: 58, stroke: 7, label: mode === 'clinical' ? 'clin' : 'theory', color })}
+    </div>
+    <div class="bar ${barCls}"><span style="width:${pct == null ? 0 : Math.min(100, pct)}%"></span></div>
+    <div class="spread xs muted"><span>${p} / ${t} logged${simPct != null ? ` · <b style="color:${pctColor(simPct, target)}">after ${mode}: ${simPct.toFixed(1)}%</b>` : ''}</span><span>${t > 0 ? bunk.message : advice.reason}</span></div>
+    <details>
+      <summary>${icon('target', 12)} Details, baseline &amp; what-if</summary>
+      <div style="margin-top:9px;display:flex;flex-direction:column;gap:10px">
+        <div class="xs muted">${advice.reason}</div>
+        <div class="row xs muted">
+          <span class="chip">${s.lecture}L hrs</span><span class="chip">${s.sgl} SGL</span><span class="chip">${s.sdl} SDL</span>
+          <span class="chip">${s.total} total</span><span class="chip">${s.clinicalWeeks}-wk posting</span><span class="chip">${s.weeklySlots}/wk</span>
+        </div>
+        <div class="row" style="align-items:flex-end">
+          <div class="field"><label>Th P/T</label><div class="row"><input class="inl-input" id="bl-tp-${s.code}" type="number" min="0" value="${b.theoryPresent || 0}"><input class="inl-input" id="bl-tt-${s.code}" type="number" min="0" value="${b.theoryTotal || 0}"></div></div>
+          <div class="field"><label>Cl P/T</label><div class="row"><input class="inl-input" id="bl-cp-${s.code}" type="number" min="0" value="${b.clinicalPresent || 0}"><input class="inl-input" id="bl-ct-${s.code}" type="number" min="0" value="${b.clinicalTotal || 0}"></div></div>
+          <button class="btn sm" data-baseline-save="${s.code}">Save baseline</button>
+        </div>
+        <div class="row">
+          <span class="xs bold muted">Simulator (from ${p}/${t}):</span>
+          <button class="btn sm ok" data-sim-btn="${s.code}|${mode}|p" data-p="${p}" data-t="${t}">+1 attended</button>
+          <button class="btn sm bad" data-sim-btn="${s.code}|${mode}|m" data-p="${p}" data-t="${t}">+1 missed</button>
+          <button class="btn sm ghost" data-sim-reset="${key}">Reset</button>
+        </div>
+      </div>
+    </details>
+  </div>`;
+}
+</script>
+<script>
+/* ================= ANALYTICS ================= */
+function renderAnalytics(st) {
+  const os = overallStats();
+  const streak = streakInfo();
+  const tPct = os.tT > 0 ? (os.tP / os.tT) * 100 : null;
+  const cPct = os.cT > 0 ? (os.cP / os.cT) * 100 : null;
+  const allP = os.tP + os.cP, allT = os.tT + os.cT;
+  const allPct = allT > 0 ? (allP / allT) * 100 : null;
+
+  document.getElementById('an-stats').innerHTML = `
+    <div class="stat"><b>${streak.totalLoggedDays}</b><span>Days logged</span></div>
+    <div class="stat"><b>${streak.current} 🔥</b><span>Current perfect streak</span></div>
+    <div class="stat"><b>${streak.best}</b><span>Best streak</span></div>
+    <div class="stat"><b>${streak.perfectDays}</b><span>Perfect days (0 absent)</span></div>
+    <div class="stat"><b>${Object.values(state.logs).reduce((n, d) => n + (Object.values(d).some(e => e.status === 'cancelled') ? 1 : 0), 0)}</b><span>Holiday / cancelled days</span></div>
+    <div class="stat"><b>${allP}</b><span>Classes attended</span></div>`;
+
+  document.getElementById('an-rings').innerHTML = `
+    <div class="card tight" style="display:flex;align-items:center;justify-content:space-around;gap:8px">
+      ${ringSVG(tPct, { size: 86, color: pctColor(tPct, state.profile.theoryTarget) })}
+      <div class="small"><b>Theory</b><div class="xs muted">${os.tP}/${os.tT} · target ${state.profile.theoryTarget}%</div><div class="xs" style="color:${tPct != null && tPct >= state.profile.theoryTarget ? 'var(--ok)' : 'var(--bad)'}">${os.tT ? calcBunkInfo(os.tP, os.tT, state.profile.theoryTarget).message : '—'}</div></div>
+    </div>
+    <div class="card tight" style="display:flex;align-items:center;justify-content:space-around;gap:8px">
+      ${ringSVG(cPct, { size: 86, color: pctColor(cPct, state.profile.clinicalTarget) })}
+      <div class="small"><b>Clinical</b><div class="xs muted">${os.cP}/${os.cT} · target ${state.profile.clinicalTarget}%</div><div class="xs" style="color:${cPct != null && cPct >= state.profile.clinicalTarget ? 'var(--ok)' : 'var(--bad)'}">${os.cT ? calcBunkInfo(os.cP, os.cT, state.profile.clinicalTarget).message : '—'}</div></div>
+    </div>
+    <div class="card tight" style="display:flex;align-items:center;justify-content:space-around;gap:8px">
+      ${ringSVG(allPct, { size: 86, color: pctColor(allPct, Math.round((state.profile.theoryTarget + state.profile.clinicalTarget) / 2)) })}
+      <div class="small"><b>Combined</b><div class="xs muted">${allP}/${allT} total slots</div><div class="xs muted">Theory + clinical + modules apart</div></div>
+    </div>`;
+
+  // trend line: last 15 logged days
+  const dates = Object.keys(state.logs).filter(d => daySummary(d).judged > 0).sort().slice(-15);
+  const trendEl = document.getElementById('an-trend');
+  if (dates.length < 2) {
+    trendEl.innerHTML = `<div class="muted small" style="padding:22px;text-align:center">Log at least two days to see your trend line.</div>`;
+  } else {
+    const W = 620, H = 190, PADL = 34, PADR = 12, PADT = 14, PADB = 30;
+    const iw = W - PADL - PADR, ih = H - PADT - PADB;
+    const pts = dates.map((d, i) => {
+      const x = PADL + (i / (dates.length - 1)) * iw;
+      const y = PADT + (1 - daySummary(d).pct / 100) * ih;
+      return { x, y, d, pct: daySummary(d).pct };
+    });
+    const tgtY = PADT + (1 - state.profile.theoryTarget / 100) * ih;
+    const line = pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+    trendEl.innerHTML = `<svg class="chart-line" viewBox="0 0 ${W} ${H}">
+      <line x1="${PADL}" y1="${tgtY}" x2="${W - PADR}" y2="${tgtY}" stroke="var(--bad)" stroke-dasharray="4 4" stroke-width="1.2"/>
+      <text x="${PADL}" y="${tgtY - 4}" font-size="9.5" fill="var(--bad)">target ${state.profile.theoryTarget}%</text>
+      ${[0, 50, 100].map(v => {
+        const y = PADT + (1 - v / 100) * ih;
+        return `<line x1="${PADL}" y1="${y}" x2="${W - PADR}" y2="${y}" stroke="var(--line)" stroke-width="1"/><text x="4" y="${y + 3}" font-size="9.5" fill="var(--muted)">${v}%</text>`;
+      }).join('')}
+      <polyline points="${line}" fill="none" stroke="var(--brand)" stroke-width="2.4" stroke-linejoin="round"/>
+      ${pts.map(p => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.2" fill="var(--card)" stroke="${pctColor(p.pct, state.profile.theoryTarget)}" stroke-width="2"><title>${formatDisplayDate(p.d)} · ${p.pct.toFixed(0)}%</title></circle>`).join('')}
+      <text x="${PADL}" y="${H - 8}" font-size="9.5" fill="var(--muted)">${formatDisplayDate(pts[0].d)}</text>
+      <text x="${W - PADR}" y="${H - 8}" font-size="9.5" fill="var(--muted)" text-anchor="end">${formatDisplayDate(pts[pts.length - 1].d)}</text>
+    </svg>`;
+  }
+
+  // weekday performance
+  const agg = {};
+  for (const d of Object.keys(state.logs)) {
+    const ds = daySummary(d);
+    if (ds.judged === 0) continue;
+    const k = ds.dow;
+    agg[k] = agg[k] || { p: 0, t: 0 };
+    agg[k].p += ds.present; agg[k].t += ds.judged;
+  }
+  document.getElementById('an-dow').innerHTML = [1, 2, 3, 4, 5, 6].map(dow => {
+    const a = agg[dow];
+    const pct = a && a.t > 0 ? (a.p / a.t) * 100 : null;
+    const h = pct == null ? 3 : Math.max(4, pct);
+    return `<div class="dow-col"><b>${pct == null ? '—' : pct.toFixed(0) + '%'}</b>
+      <div class="vbar" style="height:${h}%;background:${pct == null ? 'var(--line)' : pct >= state.profile.theoryTarget ? 'linear-gradient(180deg,var(--ok),var(--sky))' : 'linear-gradient(180deg,var(--brand),var(--brand2))'}"></div>
+      <span>${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dow - 1]}</span></div>`;
+  }).join('');
+
+  // projection
+  const rem = scheduledRemaining(todayIso);
+  let projHtml = '';
+  if (rem.remT === 0 && rem.remC === 0) {
+    projHtml = `<div class="muted small">Session projection horizon reached — nothing left to project.</div>`;
+  } else {
+    const prT = os.tT + rem.remT > 0 ? ((os.tP + (os.tT > 0 ? os.tP / os.tT : state.profile.theoryTarget / 100) * rem.remT) / (os.tT + rem.remT)) * 100 : null;
+    const prC = os.cT + rem.remC > 0 ? ((os.cP + (os.cT > 0 ? os.cP / os.cT : state.profile.clinicalTarget / 100) * rem.remC) / (os.cT + rem.remC)) * 100 : null;
+    projHtml = `
+      <div><div class="spread"><span class="small bold">Theory now → projected</span><span class="xs muted">${rem.remT} classes left</span></div>
+      <div class="row" style="margin-top:4px"><b style="font-size:17px;color:${pctColor(tPct, state.profile.theoryTarget)}">${tPct == null ? '—' : tPct.toFixed(1) + '%'}</b><span class="muted">→</span>
+      <b style="font-size:17px;color:${pctColor(prT, state.profile.theoryTarget)}">${prT == null ? '—' : prT.toFixed(1) + '%'}</b></div></div>
+      <div><div class="spread"><span class="small bold">Clinical now → projected</span><span class="xs muted">${rem.remC} postings left</span></div>
+      <div class="row" style="margin-top:4px"><b style="font-size:17px;color:${pctColor(cPct, state.profile.clinicalTarget)}">${cPct == null ? '—' : cPct.toFixed(1) + '%'}</b><span class="muted">→</span>
+      <b style="font-size:17px;color:${pctColor(prC, state.profile.clinicalTarget)}">${prC == null ? '—' : prC.toFixed(1) + '%'}</b></div></div>
+      <div class="xs muted">Assumes your current attendance rate holds for every scheduled class until the Sentup exam. Unlogged past days count as missed — log them to correct the projection.</div>`;
+  }
+  document.getElementById('an-projection').innerHTML = projHtml;
+
+  // leaderboard
+  const rows = SUBJECTS.map(s => {
+    const p = st[s.code].theoryPresent + st[s.code].clinicalPresent;
+    const t = st[s.code].theoryTotal + st[s.code].clinicalTotal;
+    return { s, p, t, pct: t > 0 ? (p / t) * 100 : -1 };
+  }).sort((a, b) => b.pct - a.pct);
+  document.getElementById('an-subjects').innerHTML = rows.map(r => `
+    <div class="row" style="gap:12px">
+      <span class="chip" style="min-width:38px;justify-content:center">${r.s.code}</span>
+      <span class="small" style="flex:1;min-width:140px">${esc(r.s.name)}</span>
+      <div class="bar ${r.pct >= 0 && r.pct >= state.profile.theoryTarget ? 'ok' : r.pct >= 0 ? 'bad' : ''}" style="flex:1;max-width:300px"><span style="width:${r.pct < 0 ? 0 : Math.min(100, r.pct)}%;background:${r.pct < 0 ? 'var(--line)' : r.s.color}"></span></div>
+      <b class="xs" style="min-width:66px;text-align:right;color:${r.pct < 0 ? 'var(--muted)' : pctColor(r.pct, state.profile.theoryTarget)}">${r.pct < 0 ? 'not logged' : r.pct.toFixed(1) + '%'}</b>
+      <span class="xs muted" style="min-width:58px;text-align:right">${r.p}/${r.t}</span>
+    </div>`).join('');
+}
+
+/* ================= TIMETABLE ================= */
+function renderTimetable() {
+  const rows = [0, 1, 2, 3, 4]; // slot index
+  const days = [1, 2, 3, 4, 5, 6];
+  const gi = getGroupInfo(state.profile.rollNo);
+  const header = `<tr><th></th>${days.map(d => `<th>${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d - 1]}</th>`).join('')}</tr>`;
+  document.getElementById('tt-table').innerHTML = header + rows.map(ri => {
+    const tds = days.map(d => {
+      const slot = MASTER_TIMETABLE[d][ri];
+      if (!slot) return '<td></td>';
+      const isClin = slot.type === 'clinical';
+      const posting = getClinicalPostingForDate(todayIso, gi.subGroup);
+      const nm = isClin ? (posting ? posting.code + ' — Posting' : 'CP — Posting') : slot.subject;
+      const chip = isClin ? '<span class="chip sky">Clinical</span>' : (slot.altSubject ? `<span class="chip">${slot.subject}/${slot.altSubject}</span>` : '<span class="chip brand">Theory</span>');
+      return `<td><b>${esc(isClin ? (posting ? posting.name : 'Clinical Posting') : slot.label)}</b>${chip}</td>`;
+    }).join('');
+    const time = MASTER_TIMETABLE[1][ri].time;
+    return `<tr><td class="time">${time}</td>${tds}</tr>`;
+  }).join('');
+
+  // weekly loads per subject
+  const loads = {};
+  for (const d of days) for (const slot of MASTER_TIMETABLE[d]) {
+    const code = slot.type === 'clinical' ? 'CP' : slot.subject;
+    loads[code] = loads[code] || { n: 0, clin: slot.type === 'clinical' };
+    loads[code].n++;
+  }
+  document.getElementById('tt-loads').innerHTML = Object.entries(loads).sort((a, b) => b[1].n - a[1].n).map(([code, L]) => {
+    const s = SUBJECT_MAP[code];
+    return `<div class="stat" style="flex-direction:row;align-items:center;gap:10px">
+      <span class="chip" style="background:${s ? s.color : 'var(--muted)'};color:#fff">${code}</span>
+      <div style="flex:1"><b>${s ? esc(s.name) : 'Clinical Posting'}</b><span style="display:block">${L.n} slot${L.n > 1 ? 's' : ''} / week ${L.clin ? '· 3 hrs each' : ''}</span></div>
+    </div>`;
+  }).join('');
+}
+
+/* ================= POSTINGS ================= */
+function renderPostings() {
+  const gi = getGroupInfo(state.profile.rollNo);
+  const current = getClinicalPostingForDate(todayIso, gi.subGroup);
+  const nowBox = document.getElementById('posting-now');
+  if (!current) {
+    nowBox.innerHTML = `<div class="card"><h2>No posting scheduled today</h2><p class="sub">Your roll (${gi.rollNo}) maps to sub-group <b>${gi.subGroup}</b> (Group ${gi.group}). Check the timeline below for your next rotation.</p></div>`;
+  } else {
+    const total = daysBetween(current.start, current.end) + 1;
+    const done = Math.max(0, Math.min(total, daysBetween(current.start, todayIso) + 1));
+    const pct = (done / total) * 100;
+    nowBox.innerHTML = `<div class="card">
+      <div class="spread">
+        <div><h2>${icon('steth')} Current posting · Sub-group ${gi.subGroup}</h2>
+        <p class="sub" style="margin-bottom:8px">${esc(current.name)} · ${current.block}</p>
+        <div class="meta"><span class="chip brand">${formatDisplayDate(current.start)} → ${formatDisplayDate(current.end)}</span>
+        <span class="chip ok">${total} days · day ${done}</span>
+        <span class="chip">${Math.max(0, total - done)} days left</span></div></div>
+        ${ringSVG(pct, { size: 76, label: 'done', color: 'var(--sky)' })}
+      </div>
+      <div class="bar" style="margin-top:12px"><span style="width:${pct}%;background:var(--sky)"></span></div>
+    </div>`;
+  }
+  const timeline = getPersonalRosterTimeline(gi.subGroup);
+  document.getElementById('tl-sub').innerHTML = `Roll ${gi.rollNo} → Group ${gi.group}, Sub-group ${gi.subGroup} · ${timeline.length} rotations resolved from the official roster`;
+  document.getElementById('posting-timeline').innerHTML = timeline.map(it => {
+    const stateCls = it.end < todayIso ? 'past' : (todayIso >= it.start && todayIso <= it.end ? 'now' : '');
+    const chipCls = stateCls === 'now' ? 'ok' : stateCls === 'past' ? '' : 'brand';
+    return `<div class="tl-item ${stateCls}">
+      <div class="spread"><b class="small">${esc(it.name)} <span class="chip ${chipCls}" style="margin-left:6px">${it.block}</span></b>
+      <span class="xs muted">${formatDisplayDate(it.start)} → ${formatDisplayDate(it.end)}</span></div>
+      <div class="xs muted">${daysBetween(it.start, it.end) + 1} days</div>
+    </div>`;
+  }).join('');
+}
+
+/* ================= EXAMS ================= */
+function renderExams() {
+  const hero = document.getElementById('exam-hero');
+  const next = EXAMS.find(e => e.end >= todayIso);
+  if (next) {
+    const toStart = daysBetween(todayIso, next.start);
+    const running = todayIso >= next.start;
+    const days = running ? 0 : toStart;
+    hero.innerHTML = `<div class="card" style="background:linear-gradient(135deg,var(--brand-soft),var(--card));display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div style="flex:1;min-width:220px">
+        <h2>${icon('cap')} ${esc(next.name)}</h2>
+        <p class="sub" style="margin-bottom:6px">${esc(next.subjects)}</p>
+        <div class="meta"><span class="chip brand">${formatDisplayDate(next.start)} → ${formatDisplayDate(next.end)}</span>
+        <span class="chip ${running ? 'bad' : 'warn'}">${running ? 'In progress' : `${days} day${days === 1 ? '' : 's'} to go`}</span></div>
+      </div>
+      ${ringSVG(running ? 100 : Math.max(0, Math.min(100, (1 - days / 180) * 100)), { size: 84, label: running ? 'live' : 'prep', color: running ? 'var(--bad)' : 'var(--warn)' })}
+    </div>`;
+  } else {
+    hero.innerHTML = `<div class="card"><h2>All assessments complete</h2><p class="sub">University exams ahead — good luck!</p></div>`;
+  }
+  document.getElementById('exam-cards').innerHTML = EXAMS.map(e => {
+    const toStart = daysBetween(todayIso, e.start);
+    const running = todayIso >= e.start && todayIso <= e.end;
+    const done = e.end < todayIso;
+    const chip = running ? '<span class="chip bad">In progress</span>' : done ? '<span class="chip">Completed</span>' : `<span class="chip warn">In ${toStart} days</span>`;
+    return `<div class="card tight">
+      <div class="spread"><b class="small">${esc(e.name)}</b>${chip}</div>
+      <div class="xs muted" style="margin:6px 0">${esc(e.subjects)}</div>
+      <div class="row"><span class="chip">${formatDisplayDate(e.start)}</span><span class="muted xs">→</span><span class="chip">${formatDisplayDate(e.end)}</span>
+      <span class="chip brand">${daysBetween(e.start, e.end) + 1} days</span></div>
+    </div>`;
+  }).join('');
+}
+
+/* ================= MODULES ================= */
+function renderModules() {
+  const aetDone = AETCOM_MODULES.filter(m => state.aetcomDone[m.id]).length;
+  const panDone = PANDEMIC_MODULES.filter(m => state.pandemicDone[m.id]).length;
+  document.getElementById('aet-badge').textContent = `${aetDone} / ${AETCOM_MODULES.length}`;
+  document.getElementById('pan-badge').textContent = `${panDone} / ${PANDEMIC_MODULES.length}`;
+  const aetHrsDone = AETCOM_MODULES.reduce((n, m) => n + (state.aetcomDone[m.id] ? parseFloat(m.hours) || 0 : 0), 0);
+  document.getElementById('aet-hrs').textContent = `${aetHrsDone} / 52 hrs done`;
+  document.getElementById('pan-hrs').textContent = '32 hrs total';
+  document.querySelector('#aet-bar span').style.width = (aetDone / AETCOM_MODULES.length * 100) + '%';
+  document.querySelector('#pan-bar span').style.width = (panDone / PANDEMIC_MODULES.length * 100) + '%';
+  document.getElementById('aet-list').innerHTML = AETCOM_MODULES.map(m => moduleItemHTML(m, state.aetcomDone[m.id], 'aetcom')).join('');
+  document.getElementById('pan-list').innerHTML = PANDEMIC_MODULES.map(m => moduleItemHTML(m, state.pandemicDone[m.id], 'pandemic')).join('');
+  document.querySelectorAll('[data-mod-toggle]').forEach(el => el.addEventListener('click', () => {
+    const [group, id] = el.dataset.modToggle.split('|');
+    pushUndo();
+    const store = group === 'aetcom' ? state.aetcomDone : state.pandemicDone;
+    if (store[id]) delete store[id]; else store[id] = true;
+    saveState(); renderModules(); toast(store[id] ? `Module ${id} marked complete` : `Module ${id} unchecked`, true);
+  }));
+}
+function moduleItemHTML(m, done, group) {
+  return `<div class="mod-item ${done ? 'done' : ''}">
+    <div class="q">
+      <button class="mod-check" data-mod-toggle="${group}|${m.id}" title="Toggle complete">${icon('check')}</button>
+      <div style="min-width:0">
+        <div class="mt bold small">${esc(m.title)}</div>
+        <div class="meta" style="margin-top:4px"><span class="chip">${m.hours}</span><span class="chip sky">${esc(m.dept)}</span></div>
+      </div>
+    </div>
+    <details><summary>Learning objective</summary><div class="xs muted" style="margin-top:6px">${esc(m.topic)}</div></details>
+  </div>`;
+}
+
+/* ================= SETTINGS ================= */
+function renderSettings() {
+  document.getElementById('set-name').value = state.profile.name;
+  document.getElementById('set-roll').value = state.profile.rollNo;
+  document.getElementById('set-ttarget').value = state.profile.theoryTarget;
+  document.getElementById('set-ctarget').value = state.profile.clinicalTarget;
+  const gi = getGroupInfo(state.profile.rollNo);
+  document.getElementById('set-group').textContent = `Group ${gi.group} · Sub-group ${gi.subGroup}`;
+  let bytes = 0;
+  try { bytes = (localStorage.getItem(STORAGE_KEY) || '').length; } catch (e) { }
+  const loggedDays = Object.keys(state.logs).length;
+  document.getElementById('storage-info').textContent = `${loggedDays} day${loggedDays === 1 ? '' : 's'} logged · ${(bytes / 1024).toFixed(1)} KB stored · last saved locally just now`;
+  const feats = [
+    ['Offline-first', 'Zero dependencies — works fully offline, no CDN, install-and-go single file'],
+    ['Smart bunk planner', 'Per-subject safe-skip and must-attend math for both theory and clinical modes'],
+    ['Priority advisor', 'Subjects auto-tiered into Don\u2019t Miss / Tight / Buffer as your data grows'],
+    ['Calendar heatmap', 'Month view with per-day attendance colors, exam windows and perfect-day streaks'],
+    ['Analytics', 'Trend line, weekday performance, subject leaderboard and session-end projection'],
+    ['Roster resolver', 'Your roll number maps to A1–F4 and resolves every posting block automatically'],
+    ['Undo + backups', '40-step undo, JSON export/import, reset — your data is always recoverable'],
+    ['Baselines & extras', 'Carry over prior attendance and log make-up / extra classes on any date']
+  ];
+  document.getElementById('about-features').innerHTML = feats.map(f =>
+    `<div class="stat"><b class="small">${f[0]}</b><span>${f[1]}</span></div>`).join('');
+}
+
+/* =====================================================================
+   5. ACTIONS & EVENT WIRING
+   ===================================================================== */
+function markSlot(iso, slotId, status, subject, kind) {
+  pushUndo();
+  state.logs[iso] = state.logs[iso] || {};
+  const entry = { status };
+  if (subject) entry.subject = subject;
+  if (kind) entry.kind = kind;
+  state.logs[iso][slotId] = entry;
+  saveState();
+  toast(status === 'present' ? 'Marked present' : status === 'absent' ? 'Marked absent' : 'Marked cancelled', true);
+  renderAll();
+}
+function bulkMarkDay(iso, status) {
+  const dow = getDayOfWeek(iso);
+  const slots = dow === 0 ? [] : MASTER_TIMETABLE[dow];
+  if (!slots.length) return toast('No scheduled classes on this day');
+  pushUndo();
+  state.logs[iso] = state.logs[iso] || {};
+  for (const s of slots) {
+    const isClin = s.type === 'clinical';
+    const gi = getGroupInfo(state.profile.rollNo);
+    const posting = isClin ? getClinicalPostingForDate(iso, gi.subGroup) : null;
+    state.logs[iso][s.id] = { status, subject: isClin ? (posting ? posting.code : 'IM') : s.subject };
+  }
+  saveState();
+  toast(status === 'present' ? 'All slots marked present' : 'Day marked as holiday', true);
+  renderAll();
+}
+function copyYesterday() {
+  const iso = state.selectedDate;
+  const src = state.logs[shiftDate(iso, -1)];
+  if (!src) return toast('Yesterday has no logs to copy');
+  pushUndo();
+  const dayLog = state.logs[iso] || {};
+  for (const id of Object.keys(src)) state.logs[iso][id] = { ...src[id] };
+  saveState(); renderAll(); toast('Copied yesterday\u2019s log', true);
+}
+
+function wireEvents() {
+  // delegation for slot marking / swap / remove (re-rendered rows)
+  document.addEventListener('click', e => {
+    const mk = e.target.closest('[data-mark-slot]');
+    if (mk) { markSlot(state.selectedDate, mk.dataset.markSlot, mk.dataset.markStatus, mk.dataset.markSubj, mk.dataset.markKind); return; }
+    const sw = e.target.closest('[data-swap-slot]');
+    if (sw) {
+      const slotId = sw.dataset.swapSlot;
+      const dow = getDayOfWeek(state.selectedDate);
+      const slot = (MASTER_TIMETABLE[dow] || []).find(s => s.id === slotId);
+      if (!slot || !slot.altSubject) return;
+      pushUndo();
+      const dayLog = state.logs[state.selectedDate] || {};
+      const cur = dayLog[slotId] || {};
+      const nextSubj = cur.subject === slot.altSubject ? slot.subject : slot.altSubject;
+      state.logs[state.selectedDate][slotId] = { status: cur.status || '', subject: nextSubj };
+      saveState(); renderAll(); toast(`Slot switched to ${nextSubj}`, true);
+      return;
+    }
+    const del = e.target.closest('[data-del-extra]');
+    if (del) {
+      pushUndo();
+      delete state.logs[state.selectedDate][del.dataset.delExtra];
+      saveState(); renderAll(); toast('Extra class removed', true);
+    }
+  });
+
+  document.getElementById('day-prev').addEventListener('click', () => { state.selectedDate = shiftDate(state.selectedDate, -1); saveState(); renderToday(computeSubjectStats()); renderAll(); });
+  document.getElementById('day-next').addEventListener('click', () => { state.selectedDate = shiftDate(state.selectedDate, 1); saveState(); renderAll(); });
+  document.getElementById('day-today').addEventListener('click', () => { state.selectedDate = todayIso; saveState(); renderAll(); });
+  document.getElementById('btn-all-present').addEventListener('click', () => bulkMarkDay(state.selectedDate, 'present'));
+  document.getElementById('btn-holiday').addEventListener('click', () => bulkMarkDay(state.selectedDate, 'cancelled'));
+  document.getElementById('btn-copy-yesterday').addEventListener('click', copyYesterday);
+  document.getElementById('btn-add-extra').addEventListener('click', () => {
+    const code = document.getElementById('extra-subject').value;
+    const kind = document.getElementById('extra-kind').value;
+    if (!code) return toast('Pick a subject first');
+    pushUndo();
+    const iso = state.selectedDate;
+    state.logs[iso] = state.logs[iso] || {};
+    state.logs[iso]['x-' + Date.now()] = { status: 'present', subject: code, kind, custom: true };
+    saveState(); renderAll(); toast('Extra class added (present) — adjust below', true);
+  });
+  document.getElementById('btn-fill').addEventListener('click', () => {
+    const from = document.getElementById('fill-from').value;
+    const to = document.getElementById('fill-to').value;
+    const status = document.getElementById('fill-status').value;
+    if (!from || !to || from > to) return toast('Pick a valid date range');
+    let filled = 0, skipped = 0;
+    let d = from;
+    while (d <= to) {
+      const dow = getDayOfWeek(d);
+      const ds = daySummary(d);
+      if (dow === 0) { skipped++; }
+      else if (ds.logged > 0) { skipped++; }
+      else { bulkMarkDay(d, status); filled++; }
+      d = shiftDate(d, 1);
+    }
+    toast(`Filled ${filled} day${filled === 1 ? '' : 's'} · skipped ${skipped}`);
+  });
+
+  // calendar nav
+  document.getElementById('cal-prev').addEventListener('click', () => { calCursor.m--; if (calCursor.m < 0) { calCursor.m = 11; calCursor.y--; } renderCalendar(); });
+  document.getElementById('cal-next').addEventListener('click', () => { calCursor.m++; if (calCursor.m > 11) { calCursor.m = 0; calCursor.y++; } renderCalendar(); });
+
+  // theme / undo / print
+  document.getElementById('btn-theme').addEventListener('click', () => {
+    state.profile.theme = state.profile.theme === 'dark' ? 'light' : 'dark';
+    saveState(); applyTheme(); toast(state.profile.theme === 'dark' ? 'Dark mode on' : 'Light mode on');
+  });
+  document.getElementById('btn-undo').addEventListener('click', doUndo);
+  document.getElementById('toast-undo').addEventListener('click', doUndo);
+  document.getElementById('btn-print').addEventListener('click', () => window.print());
+
+  // settings
+  document.getElementById('btn-save-profile').addEventListener('click', () => {
+    pushUndo();
+    state.profile.name = document.getElementById('set-name').value.trim();
+    state.profile.rollNo = Math.max(1, Math.min(100, parseInt(document.getElementById('set-roll').value, 10) || 1));
+    saveState(); renderAll(); toast('Profile saved');
+  });
+  document.getElementById('btn-save-targets').addEventListener('click', () => {
+    pushUndo();
+    state.profile.theoryTarget = Math.max(1, Math.min(100, parseInt(document.getElementById('set-ttarget').value, 10) || 75));
+    state.profile.clinicalTarget = Math.max(1, Math.min(100, parseInt(document.getElementById('set-ctarget').value, 10) || 80));
+    saveState(); renderAll(); toast('Targets updated');
+  });
+  document.getElementById('btn-export').addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `attendmate-pro-backup-${todayIso}.json`;
+    a.click(); URL.revokeObjectURL(a.href);
+    toast('Backup downloaded');
+  });
+  document.getElementById('btn-import').addEventListener('click', () => document.getElementById('import-file').click());
+  document.getElementById('import-file').addEventListener('change', ev => {
+    const file = ev.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result);
+        if (!parsed || typeof parsed !== 'object' || !('profile' in parsed)) throw new Error('bad file');
+        pushUndo();
+        state = { ...createDefaultState(), ...parsed, profile: { ...createDefaultState().profile, ...(parsed.profile || {}) } };
+        saveState(); applyTheme(); switchTab(state.activeTab || 'today'); toast('Backup imported');
+      } catch (err) { toast('Import failed — not a valid backup file'); }
+      ev.target.value = '';
+    };
+    reader.readAsText(file);
+  });
+  document.getElementById('btn-reset').addEventListener('click', () => {
+    if (!confirm('Reset ALL data? Logs, baselines and module progress will be erased. Export a backup first!')) return;
+    pushUndo();
+    state = createDefaultState();
+    saveState(); applyTheme(); switchTab('today'); toast('All data reset');
+  });
+}
+
+/* =====================================================================
+   6. INIT
+   ===================================================================== */
+function init() {
+  loadState();
+  document.getElementById('brand-mark').innerHTML = icon('cap', 20);
+  applyTheme();
+  buildNav();
+  document.getElementById('extra-subject').innerHTML = SUBJECTS.map(s => `<option value="${s.code}">${esc(s.name)} (${s.code})</option>`).join('');
+  document.getElementById('fill-from').value = shiftDate(todayIso, -7);
+  document.getElementById('fill-to').value = shiftDate(todayIso, -1);
+  wireEvents();
+  switchTab(state.activeTab || 'today');
+}
+init();
+</script>
+</body>
+</html>
