@@ -10,7 +10,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
 import { AppState, SlotEntry, MarkStatus, MASTER_TIMETABLE } from "./data";
 import { todayISO, getClinicalPostingForDate, shiftDate } from "./engine";
-import { ServerUser, apiMe, apiLogin, apiTotpVerify, apiRegister, apiLogout, apiVerifyPassword } from "./sync";
+import { ServerUser, apiMe, apiLogin, apiTotpVerify, apiRegister, apiLogout, apiVerifyPassword, friendlyAuthError } from "./sync";
 import {
   StorageConsent, readConsent, grantConsent as persistConsentFlag, requestPersistent as askPersistent,
   isPersistent, migrateLegacyStore, readOwnerStore, writeOwnerStore, removeOwnerStore, wipeAllDeviceData, snapshotOwnerStore,
@@ -358,7 +358,7 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
       note("Signed in — data stays on this device");
       return { ok: true as const };
     } catch (err) {
-      return { ok: false as const, error: (err as Error).message || "Sign-in failed" };
+      return { ok: false as const, error: friendlyAuthError(err, "Invalid email or password") };
     }
   }, [enterAccount, note]);
 
@@ -369,7 +369,7 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
       note("Signed in — data stays on this device");
       return { ok: true as const };
     } catch (err) {
-      return { ok: false as const, error: (err as Error).message || "Invalid or expired code" };
+      return { ok: false as const, error: friendlyAuthError(err, "Invalid or expired code") };
     }
   }, [enterAccount, note]);
 
@@ -382,7 +382,7 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
       note("Account created — data stays on this device");
       return { ok: true as const };
     } catch (err) {
-      return { ok: false, error: (err as Error).message || "Registration failed" };
+      return { ok: false, error: friendlyAuthError(err, "Registration failed") };
     }
   }, [enterAccount, note]);
 

@@ -8,7 +8,7 @@ import { ArrowRight, CloudUpload, Loader2, ShieldCheck } from "lucide-react";
 import DitherReveal from "@/components/originkit/ui/dither-reveal";
 import { BrandWord } from "./bits";
 import { useAttendMate } from "@/lib/attendmate/storage";
-import { apiExists, apiResetRequest } from "@/lib/attendmate/sync";
+import { apiExists, apiResetRequest, friendlyAuthError } from "@/lib/attendmate/sync";
 import { getGroupInfo } from "@/lib/attendmate/engine";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -61,8 +61,10 @@ export default function SignIn({ onDone, nav }: { onDone: () => void; nav: (to: 
       setDeviceOnly(false);
       setStep(exists ? "login" : "register");
     } catch {
-      // server unreachable — offer the offline device-only path
-      setErr("Can't reach the sign-in server right now — you can continue on this device only.");
+      // Server unreachable (offline, 5xx, timeout): never show a red banner and
+      // never block the app — drop straight onto the local profile step with a
+      // neutral Device-only chip. A red error is reserved for an explicit
+      // "Create an account" / "Sign in" attempt that fails.
       setDeviceOnly(true);
       setStep("register");
     } finally {
@@ -98,8 +100,8 @@ export default function SignIn({ onDone, nav }: { onDone: () => void; nav: (to: 
     try {
       await apiResetRequest(email.trim().toLowerCase());
       setForgotSent(true);
-    } catch {
-      setErr("Can't reach the server right now — try again later.");
+    } catch (err) {
+      setErr(friendlyAuthError(err, "Can't reach the server right now — try again later."));
     } finally {
       setBusy(false);
     }
@@ -303,8 +305,13 @@ export default function SignIn({ onDone, nav }: { onDone: () => void; nav: (to: 
                   </span>
                   <h1 className="text-[20px] font-bold tracking-tight">{email}</h1>
                   <p className="mt-1.5 text-[13px] text-white/60">
-                    {deviceOnly ? "Offline mode — profile stays on this device" : "Create your account — nothing gets uploaded"}
+                    {deviceOnly ? "Profile stays on this device" : "Create your account — nothing gets uploaded"}
                   </p>
+                  {deviceOnly && (
+                    <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold text-white/70">
+                      Device only
+                    </span>
+                  )}
                 </div>
                 <label className="mb-1 block text-xs font-semibold text-white/70" htmlFor="lm-name">Full name</label>
                 <input

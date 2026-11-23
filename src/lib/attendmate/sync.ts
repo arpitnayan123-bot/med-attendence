@@ -55,6 +55,21 @@ async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+/* ---------- human error copy ---------- */
+// Server strings never reach the UI raw. 5xx / network / timeout → one calm
+// message that always offers the device-only path; 429 → rate-limit line;
+// 4xx validation keeps its field-level text (the server writes those for
+// humans). A raw "Internal server error" can never surface anywhere.
+export function friendlyAuthError(err: unknown, fallback: string): string {
+  const e = err as Error & { status?: number };
+  const status = typeof e?.status === "number" ? e.status : undefined;
+  if (status === 429) return "Too many attempts — try again in a minute.";
+  if (!status || status >= 500) return "Accounts are unavailable right now — you can keep using this device.";
+  const msg = (e?.message || "").trim();
+  if (!msg || msg.startsWith("Request failed (") || msg === "Internal server error" || msg.startsWith("Request timed out")) return fallback;
+  return msg;
+}
+
 /* ---------- auth calls ---------- */
 export async function apiExists(email: string): Promise<boolean> {
   const r = await apiJson<{ exists: boolean }>("/api/auth/exists", {

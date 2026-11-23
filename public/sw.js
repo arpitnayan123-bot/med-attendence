@@ -5,10 +5,23 @@
 //   • /api/* (credentials-only endpoints)     → network only, never cached
 // User DATA is never cached here — it lives in localStorage behind the
 // storage-consent gate, fully under the user's control.
-const VERSION = "attendmate-static-v1";
+const VERSION = "attendmate-static-v2";
 const STATIC_PREFIXES = ["/_next/static/", "/icons/", "/manifest.webmanifest", "/favicon"];
 
-self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("install", (event) => {
+  // Precache the app shell so the very first offline reload can boot: without
+  // this, the cache only fills after a navigation happens while controlled.
+  event.waitUntil(
+    (async () => {
+      const cache = await caches.open(VERSION);
+      try {
+        const res = await fetch("/", { credentials: "same-origin" });
+        if (res.ok) await cache.put("/", res.clone());
+      } catch { /* offline install — runtime caching will fill later */ }
+      self.skipWaiting();
+    })(),
+  );
+});
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
