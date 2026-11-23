@@ -1,6 +1,6 @@
 "use client";
 // AttendMate Pro — single-route app with hash navigation:
-//   #/            → landing (sign-in, Originkit Dither Reveal) or dashboard if signed in
+//   #/            → landing (sign-in over the dashboard shot) or dashboard if signed in
 //   #/dashboard   → the attendance dashboard
 //   #/features | #/how-it-works | #/roster | #/faq | #/about → marketing pages
 //   anything else → 404

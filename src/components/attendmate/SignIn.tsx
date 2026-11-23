@@ -1,15 +1,16 @@
 "use client";
-// Landing page = sign-in. Originkit "Dither Reveal" animation fills the
-// screen on a dark background; a minimal glass sign-in card sits on top.
-// Accounts are real (server-side, bcrypt + JWT cookie sessions); a
-// "device only" path keeps the app fully usable offline-first.
-import { useEffect, useState } from "react";
-import { ArrowRight, CloudUpload, Loader2, ShieldCheck } from "lucide-react";
-import DitherReveal from "@/components/originkit/ui/dither-reveal";
+// Landing page = sign-in. A real dashboard screenshot grounds the pitch and
+// a minimal glass sign-in card sits on top; the value proposition stacks
+// above the card on phones. Accounts are real (server-side, bcrypt + JWT
+// cookie sessions); a "device only" path keeps the app fully usable
+// offline-first.
+import { useEffect, useMemo, useState } from "react";
+import { ArrowRight, CalendarClock, CloudUpload, Loader2, ShieldCheck, TrendingDown, Wallet } from "lucide-react";
 import { BrandWord } from "./bits";
 import { useAttendMate } from "@/lib/attendmate/storage";
 import { apiExists, apiResetRequest, friendlyAuthError } from "@/lib/attendmate/sync";
-import { getGroupInfo } from "@/lib/attendmate/engine";
+import { getGroupInfo, daysBetween, todayISO } from "@/lib/attendmate/engine";
+import { EXAMS } from "@/lib/attendmate/data";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -140,20 +141,13 @@ export default function SignIn({ onDone, nav }: { onDone: () => void; nav: (to: 
 
   return (
     <div className="relative min-h-screen bg-black text-white">
-      {/* Originkit Dither Reveal — full-screen animation */}
-      <div className="absolute inset-0">
-        <DitherReveal
-          image={{ src: "/originkit/reveal.jpg", alt: "Doctor portrait" }}
-          ditherStyle="bayer8"
-          dotSize={5}
-          revealRadius={150}
-          revealSoftness={55}
-          wave
-          waveSpeed={82}
-          waveDensity={25}
-        />
+      {/* Real dashboard screenshot instead of the WebGL dither canvas: the
+          canvas logged continuous ReadPixels GPU stalls, and on phones the
+          card floated over a picture with nothing to say. */}
+      <div aria-hidden className="absolute inset-0">
+        <img src="/dashboard-hero.png" alt="" className="h-full w-full object-cover opacity-25 blur-sm" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/85 via-black/60 to-black/90" />
       </div>
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/70 via-black/25 to-black/80" aria-hidden />
 
       {/* minimal chrome */}
       <div className="relative z-10 flex min-h-screen flex-col">
@@ -164,7 +158,20 @@ export default function SignIn({ onDone, nav }: { onDone: () => void; nav: (to: 
           </span>
         </header>
 
-        <main className="flex flex-1 items-center justify-center px-4 py-8">
+        <main className="flex flex-1 flex-col items-center justify-center gap-7 px-4 py-8 lg:flex-row lg:items-center lg:gap-14">
+          {/* value proposition — sits ABOVE the card on mobile so the card can
+              never cover it, beside it on desktop */}
+          <section className="w-full max-w-[440px] text-center lg:text-left">
+            <h1 className="text-balance text-[26px] font-extrabold leading-tight tracking-tight sm:text-[32px]">
+              Know your attendance before you risk it
+            </h1>
+            <p className="mt-2 text-[13.5px] leading-relaxed text-white/70">
+              Marked in seconds, computed honestly — safe-skip counts, the cost of the next miss, and where you land at session end.
+            </p>
+            <ValueChips />
+            <img src="/dashboard-hero.png" alt="AttendMate Pro analytics dashboard with attendance rings and trend line"
+              className="mt-6 w-full rounded-2xl border border-white/15 shadow-2xl shadow-black/50" />
+          </section>
           <div className="w-full max-w-[400px] rounded-3xl border border-white/15 bg-black/45 p-7 shadow-2xl shadow-black/60 backdrop-blur-2xl sm:p-8">
             {step === "email" && (
               <>
@@ -381,24 +388,48 @@ export default function SignIn({ onDone, nav }: { onDone: () => void; nav: (to: 
           </div>
         </main>
 
-        <footer className="flex flex-col items-center gap-2 px-4 pb-5 text-center">
-          <nav className="flex flex-wrap items-center justify-center gap-x-1 gap-y-1 text-[12px] font-semibold text-white/60">
-            {["features", "how-it-works", "roster", "faq", "about"].map((r, i) => (
+        <footer className="flex flex-col items-center gap-2.5 bg-black/45 px-4 pb-8 pt-3 text-center backdrop-blur-sm">
+          <nav className="flex flex-wrap items-center justify-center gap-x-1 gap-y-1 rounded-full bg-black/40 px-4 py-1.5 text-[12px] font-semibold text-white/80">
+            {([["features", "Features"], ["how-it-works", "Guide"], ["roster", "Roster"], ["faq", "FAQ"], ["about", "About"]] as const).map(([r, label], i) => (
               <span key={r} className="flex items-center">
                 {i > 0 && <span className="mx-1.5 text-white/25">·</span>}
-                <button onClick={() => nav(r)} className="transition hover:text-white">{r === "how-it-works" ? "guide" : r}</button>
+                <button onClick={() => nav(r)} className="transition hover:text-white">{label}</button>
               </span>
             ))}
             <span className="flex items-center">
               <span className="mx-1.5 text-white/25">·</span>
-              <a href="/privacy" className="transition hover:text-white">privacy</a>
+              <a href="/privacy" className="transition hover:text-white">Privacy</a>
               <span className="mx-1.5 text-white/25">·</span>
-              <a href="/terms" className="transition hover:text-white">terms</a>
+              <a href="/terms" className="transition hover:text-white">Terms</a>
             </span>
           </nav>
-          <p className="text-[11px] text-white/35">Unofficial · offline-first · your attendance never leaves your devices</p>
+          <p className="text-pretty text-[11px] leading-relaxed text-white/45">Unofficial · offline-first · your attendance never leaves your devices</p>
         </footer>
       </div>
+    </div>
+  );
+}
+
+/* The three numbers that sell the app. The Sentup countdown is live; the
+   other two are real outputs from the sample profile shown above, labelled
+   as such — the landing never pretends to know YOUR numbers. */
+function ValueChips() {
+  const sentup = EXAMS.find((e) => e.id === "sentup");
+  const days = sentup ? daysBetween(todayISO(), sentup.end) : null;
+  const chips = [
+    { Icon: Wallet, value: "52", label: "safe skips (sample profile)" },
+    { Icon: TrendingDown, value: "-0.2%", label: "cost of the next miss (sample)" },
+    { Icon: CalendarClock, value: days === null ? "-" : String(days), label: "days to Sentup" },
+  ] as const;
+  return (
+    <div className="mt-5 grid grid-cols-3 gap-2">
+      {chips.map(({ Icon, value, label }) => (
+        <div key={label} className="rounded-2xl border border-white/15 bg-white/[0.06] px-2 py-3 backdrop-blur-sm">
+          <Icon className="mx-auto h-4 w-4 text-orange-400" />
+          <div className="mt-1 text-[18px] font-extrabold leading-none">{value}</div>
+          <div className="mt-1 text-[9.5px] font-semibold leading-tight text-white/60">{label}</div>
+        </div>
+      ))}
     </div>
   );
 }
