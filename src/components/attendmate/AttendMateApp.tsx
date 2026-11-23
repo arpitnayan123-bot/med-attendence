@@ -14,12 +14,20 @@ import { SiteChrome, FeaturesPage, GuidePage, RosterPage, FaqPage, AboutPage, No
 const MARKETING = ["features", "how-it-works", "roster", "faq", "about"] as const;
 
 function Shell() {
-  const { state } = useAttendMate();
+  const { state, authed } = useAttendMate();
   const [route, nav] = useHashRoute();
 
   useEffect(() => { applyThemeClass(getStoredTheme()); }, []);
 
-  if (route === "dashboard") return <Dashboard nav={nav} />;
+  /**
+   * Account isolation on shared browsers: a device copy tagged with a server
+   * account unlocks the dashboard only while that account's session is live.
+   * (Device-only copies — no syncOwnerId — stay usable offline.) Without this,
+   * student B would land on student A's dashboard after A signed out.
+   */
+  const locked = !isSignedIn(state) || (Boolean(state.syncOwnerId) && !authed);
+
+  if (route === "dashboard") return locked ? <SignIn onDone={() => nav("dashboard")} nav={nav} /> : <Dashboard nav={nav} />;
 
   if ((MARKETING as readonly string[]).includes(route)) {
     const map = {
@@ -34,9 +42,9 @@ function Shell() {
   }
 
   if (route === "" || route === "/") {
-    return isSignedIn(state)
-      ? <Dashboard nav={nav} />
-      : <SignIn onDone={() => nav("dashboard")} nav={nav} />;
+    return locked
+      ? <SignIn onDone={() => nav("dashboard")} nav={nav} />
+      : <Dashboard nav={nav} />;
   }
 
   return <SiteChrome route={route} nav={nav}><NotFoundPage nav={nav} /></SiteChrome>;

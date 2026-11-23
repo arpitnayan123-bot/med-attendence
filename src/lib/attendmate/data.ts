@@ -211,6 +211,8 @@ export interface AppState {
   selectedDate: string;
   activeTab: string;
   subjMode: "theory" | "clinical";
+  /** Server user id this device copy belongs to; null/undefined = guest / device-only data. */
+  syncOwnerId?: string | null;
 }
 export const STORAGE_KEY = "attendmate_pro_v2";
 export const SESSION_END = "2027-12-24"; // Sentup exam end — projection horizon

@@ -36,6 +36,33 @@ interface PullSnapshot {
 
 const QUEUE_KEY = "attendmate_sync_queue";
 
+/**
+ * The offline queue is account-bound: it persists { owner, ops } where owner
+ * is the signed-in user's id (null = guest). Queued ops for one account can
+ * never flush into a different account on a shared browser — every reader
+ * drops queues whose owner does not match the active session.
+ */
+interface QueueFile { owner: string | null; ops: QueuedOp[] }
+
+function readQueueFile(): QueueFile {
+  try {
+    const raw = localStorage.getItem(QUEUE_KEY);
+    if (!raw) return { owner: null, ops: [] };
+    const parsed = JSON.parse(raw) as QueueFile | QueuedOp[] | null;
+    if (Array.isArray(parsed)) return { owner: null, ops: parsed }; // pre-owner format → treated as guest data
+    if (parsed && typeof parsed === "object" && Array.isArray(parsed.ops)) {
+      return { owner: typeof parsed.owner === "string" ? parsed.owner : null, ops: parsed.ops };
+    }
+  } catch { /* corrupted queue — start clean */ }
+  return { owner: null, ops: [] };
+}
+function writeQueueFile(file: QueueFile) {
+  try {
+    if (file.ops.length === 0 && file.owner === null) localStorage.removeItem(QUEUE_KEY);
+    else localStorage.setItem(QUEUE_KEY, JSON.stringify({ owner: file.owner, ops: file.ops.slice(-1000) }));
+  } catch { /* storage unavailable */ }
+}
+
 export type SyncStatus = "local" | "synced" | "saving" | "queued" | "offline" | "error";
 
 /* ---------- low-level fetch ---------- */
@@ -68,46 +95,34 @@ async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 /* ---------- queue persistence ---------- */
-function readQueue(): QueuedOp[] {
-  try {
-    const raw = localStorage.getItem(QUEUE_KEY);
-    return raw ? (JSON.parse(raw) as QueuedOp[]) : [];
-  } catch {
-    return [];
-  }
-}
-function writeQueue(q: QueuedOp[]) {
-  try {
-    if (q.length === 0) localStorage.removeItem(QUEUE_KEY);
-    else localStorage.setItem(QUEUE_KEY, JSON.stringify(q.slice(-1000)));
-  } catch { /* storage unavailable */ }
-}
-
 /** Add ops, coalescing by key (last op per key wins; slot kept in place). */
-export function enqueueOps(ops: ServerOp[]): number {
+export function enqueueOps(ops: ServerOp[], owner: string | null): number {
   if (ops.length === 0) return 0;
-  const q = readQueue();
+  const file = readQueueFile();
+  const list = file.owner === owner ? file.ops : [];
   for (const op of ops) {
     const key = opKey(op);
-    const idx = q.findIndex((e) => e.key === key);
+    const idx = list.findIndex((e) => e.key === key);
     const entry: QueuedOp = { key, at: Date.now(), op };
-    if (idx >= 0) q[idx] = entry;
-    else q.push(entry);
+    if (idx >= 0) list[idx] = entry;
+    else list.push(entry);
   }
-  writeQueue(q);
-  return q.length;
+  writeQueueFile({ owner, ops: list });
+  return list.length;
 }
-export function readPendingOps(): QueuedOp[] {
-  return readQueue();
+export function readPendingOps(owner: string | null): QueuedOp[] {
+  const file = readQueueFile();
+  return file.owner === owner ? file.ops : [];
 }
-export function writePendingOps(q: QueuedOp[]) {
-  writeQueue(q);
+export function writePendingOps(q: QueuedOp[], owner: string | null) {
+  writeQueueFile({ owner, ops: q });
 }
-export function pendingCount(): number {
-  return readQueue().length;
+export function pendingCount(owner: string | null): number {
+  const file = readQueueFile();
+  return file.owner === owner ? file.ops.length : 0;
 }
-export function clearQueue() {
-  writeQueue([]);
+export function clearQueue(owner: string | null) {
+  writeQueueFile({ owner, ops: [] });
 }
 
 function opKey(op: ServerOp): string {
@@ -189,9 +204,12 @@ function cloneState(s: AppState): AppState {
  * Rules: profile — server wins (theme stays device-local); records — a queued
  * local op newer than the server row wins, otherwise the server wins;
  * local-only records are queued for push (first-time migration).
+ * `owner` is the signed-in user's id: the merged copy is stamped with it and
+ * only ops queued by the same account are honoured, so two students sharing a
+ * browser can never import or flush each other's records.
  * Returns null when the fetch fails (offline / not signed in).
  */
-export async function pullAndMerge(local: AppState): Promise<MergeResult | null> {
+export async function pullAndMerge(local: AppState, owner: string | null): Promise<MergeResult | null> {
   let snap: PullSnapshot;
   try {
     snap = await apiJson<PullSnapshot>("/api/sync");
@@ -201,7 +219,8 @@ export async function pullAndMerge(local: AppState): Promise<MergeResult | null>
 
   let serverWins = 0;
   let importedOps = 0;
-  const queue = readQueue();
+  const qFile = readQueueFile();
+  const queue = qFile.owner === owner ? [...qFile.ops] : [];
   const queueTime = (key: string) => Math.max(0, ...queue.filter((e) => e.key === key).map((e) => e.at));
 
   const merged = cloneState(local);
@@ -313,8 +332,9 @@ export async function pullAndMerge(local: AppState): Promise<MergeResult | null>
     if (e.at === 0) return true; // migration imports
     return e.at > serverTimeFor(e.op);
   });
-  writeQueue(kept);
+  writeQueueFile({ owner, ops: kept });
 
+  merged.syncOwnerId = owner; // this device copy now belongs to the signed-in account
   saveState(merged);
   return { state: merged, importedOps, serverWins };
 }

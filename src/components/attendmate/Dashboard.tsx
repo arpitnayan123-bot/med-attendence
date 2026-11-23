@@ -45,7 +45,9 @@ export default function Dashboard({ nav }: { nav: (to: string) => void }) {
   } as const;
   const syncMeta = SYNC_MAP[syncStatus];
 
-  if (!isSignedIn(state)) {
+  // Same isolation rule as the app shell: an account-tagged device copy needs
+  // that account's live session — a direct #/dashboard visit can't bypass it.
+  if (!isSignedIn(state) || (Boolean(state.syncOwnerId) && !authed)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="relative w-full max-w-sm">

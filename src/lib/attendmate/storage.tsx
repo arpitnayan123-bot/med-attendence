@@ -28,6 +28,7 @@ export function createDefaultState(): AppState {
     selectedDate: todayISO(),
     activeTab: "today",
     subjMode: "theory",
+    syncOwnerId: null,
   };
 }
 
@@ -46,6 +47,7 @@ function loadStored(): AppState {
         baseline: parsed.baseline || {},
         aetcomDone: parsed.aetcomDone || {},
         pandemicDone: parsed.pandemicDone || {},
+        syncOwnerId: typeof parsed.syncOwnerId === "string" ? parsed.syncOwnerId : null,
       };
     }
   } catch { /* fall back to defaults */ }
@@ -169,6 +171,7 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
   const hydrated = useRef(false);
   const stateRef = useRef<AppState>(state);
   const authedRef = useRef(false);
+  const userIdRef = useRef<string | null>(null);
   const inFlight = useRef(false);
   const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -179,17 +182,37 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
     setLastActionAt(Date.now());
   }, []);
 
+  /**
+   * Account isolation: local storage (state + op queue) belongs to exactly one
+   * account. When the active session user differs from the stored copy's owner
+   * — or the copy is un-attributable guest data — discard it before pulling the
+   * server snapshot, so two students sharing a browser can never see or merge
+   * each other's records.
+   */
+  const adoptLocalCopyFor = useCallback((user: { id: string }, migrateGuest: boolean) => {
+    const local = loadStored();
+    const owner = local.syncOwnerId ?? null;
+    const foreign = owner !== null && owner !== user.id;
+    const guest = owner === null;
+    if (foreign || (guest && !migrateGuest)) {
+      const fresh = createDefaultState();
+      fresh.profile.theme = getStoredTheme(); // theme stays device-local
+      saveStored(fresh);
+      clearQueue(user.id);
+    }
+  }, []);
+
   const persist = useCallback((next: AppState) => {
     saveStored(next);
     setCanUndo(undoRef.current.length > 0);
   }, []);
 
-  const refreshPending = useCallback(() => setPending(pendingCount()), []);
+  const refreshPending = useCallback(() => setPending(pendingCount(userIdRef.current)), []);
 
   /* ---------- flush loop ---------- */
   const flush = useCallback(async () => {
     if (!authedRef.current || inFlight.current) return;
-    const ops = readPendingOps();
+    const ops = readPendingOps(userIdRef.current);
     if (ops.length === 0) { setSyncStatus("synced"); return; }
     inFlight.current = true;
     setSyncStatus("saving");
@@ -198,14 +221,15 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
       await apiPush(ops.map((e) => e.op));
       // drop the ops we just pushed, unless they were re-touched mid-flight
       const pushedKeys = new Set(ops.map((e) => e.key));
-      const rest = readPendingOps().filter((e) => !pushedKeys.has(e.key) || e.at > startedAt);
-      writePendingOps(rest);
+      const rest = readPendingOps(userIdRef.current).filter((e) => !pushedKeys.has(e.key) || e.at > startedAt);
+      writePendingOps(rest, userIdRef.current);
       refreshPending();
       setSyncStatus(rest.length === 0 ? "synced" : "queued");
     } catch (err) {
       const status = (err as Error & { status?: number }).status;
       if (status === 401) {
         authedRef.current = false;
+        userIdRef.current = null;
         setAuthed(false);
         setSyncStatus("local");
       } else if (status && status < 500) {
@@ -241,11 +265,13 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
       const user = await apiMe();
       if (!user) { setSyncStatus("local"); return; }
       authedRef.current = true;
+      userIdRef.current = user.id;
       setAuthed(true);
-      const merge = await pullAndMerge(loadStored());
+      adoptLocalCopyFor(user, false); // a live session never adopts foreign or guest copies
+      const merge = await pullAndMerge(loadStored(), user.id);
       if (merge) {
         setStateRaw({ ...merge.state, profile: { ...merge.state.profile, theme: getStoredTheme() } });
-        setSyncStatus(merge.importedOps > 0 || pendingCount() > 0 ? "queued" : "synced");
+        setSyncStatus(merge.importedOps > 0 || pendingCount(user.id) > 0 ? "queued" : "synced");
       } else {
         setSyncStatus("offline");
       }
@@ -269,7 +295,7 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
       persist(next);
       const ops = diffOps(prev, next);
       if (authedRef.current && ops.length > 0) {
-        enqueueOps(ops);
+        enqueueOps(ops, userIdRef.current);
         // schedule outside the updater to avoid side effects mid-render
         setTimeout(scheduleFlush, 0);
       }
@@ -372,7 +398,7 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
     persist(snap.state);
     const ops = diffOps(stateRef.current, snap.state);
     if (authedRef.current && ops.length > 0) {
-      enqueueOps(ops);
+      enqueueOps(ops, userIdRef.current);
       setTimeout(scheduleFlush, 0);
     }
     setCanUndo(undoRef.current.length > 0);
@@ -383,10 +409,12 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
     if (authedRef.current) {
       try { await apiWipeServerData(); } catch { /* best effort — local reset proceeds */ }
     }
-    clearQueue();
+    clearQueue(userIdRef.current);
     refreshPending();
-    setStateRaw(createDefaultState());
-    saveStored(createDefaultState());
+    const fresh = createDefaultState();
+    fresh.syncOwnerId = userIdRef.current; // reset copy stays bound to the active account
+    setStateRaw(fresh);
+    saveStored(fresh);
     undoRef.current = [];
     setCanUndo(false);
     setSyncStatus(authedRef.current ? "synced" : "local");
@@ -397,7 +425,9 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
     try {
       const parsed = JSON.parse(json);
       if (!parsed || typeof parsed !== "object" || !parsed.profile) return false;
-      setState(() => ({ ...createDefaultState(), ...parsed, profile: { ...createDefaultState().profile, ...(parsed.profile || {}) } }), "Import backup");
+      // Imported copies never carry a foreign owner tag — they belong to the
+      // active account (or stay guest data when signed out).
+      setState(() => ({ ...createDefaultState(), ...parsed, syncOwnerId: userIdRef.current, profile: { ...createDefaultState().profile, ...(parsed.profile || {}) } }), "Import backup");
       return true;
     } catch { return false; }
   }, [setState]);
@@ -412,29 +442,40 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
   const signIn = useCallback(async (email: string, password: string) => {
     try {
       const user = await apiLogin(email, password);
+      // Isolation: only reuse the local copy if it belongs to this account.
+      // Foreign-account and guest copies are wiped first (guest data cannot be
+      // attributed, so it never flows into an existing account) — the server
+      // snapshot is the single source of truth.
+      adoptLocalCopyFor(user, false);
       authedRef.current = true;
+      userIdRef.current = user.id;
       setAuthed(true);
-      const merge = await pullAndMerge(loadStored());
+      const merge = await pullAndMerge(loadStored(), user.id);
       if (merge) {
         setStateRaw({ ...merge.state, profile: { ...merge.state.profile, email: user.email, theme: getStoredTheme() } });
       }
-      setSyncStatus(pendingCount() > 0 ? "queued" : "synced");
+      setSyncStatus(pendingCount(user.id) > 0 ? "queued" : "synced");
       refreshPending();
       void flush();
       return { ok: true };
     } catch (err) {
       return { ok: false, error: (err as Error).message || "Sign-in failed" };
     }
-  }, [flush, refreshPending]);
+  }, [flush, refreshPending, adoptLocalCopyFor]);
 
   const signUp = useCallback(async (email: string, name: string, rollNo: number, password: string) => {
     try {
       const user = await apiRegister(email, name, rollNo, password);
+      // First-time migration: an un-attributed guest copy (this device, never
+      // signed in) is imported into the new account. A copy that belongs to
+      // another account is wiped — it must never flow into the new account.
+      adoptLocalCopyFor(user, true);
       authedRef.current = true;
+      userIdRef.current = user.id;
       setAuthed(true);
-      // First-time migration: server is empty, so pullAndMerge queues all
-      // local-only records and the flush imports them.
-      const merge = await pullAndMerge(loadStored());
+      // Server is empty, so pullAndMerge queues all local-only records and the
+      // flush imports them.
+      const merge = await pullAndMerge(loadStored(), user.id);
       if (merge) {
         setStateRaw({ ...merge.state, profile: { ...merge.state.profile, email: user.email, theme: getStoredTheme() } });
       }
@@ -445,14 +486,18 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       return { ok: false, error: (err as Error).message || "Registration failed" };
     }
-  }, [flush, refreshPending]);
+  }, [flush, refreshPending, adoptLocalCopyFor]);
 
   const signOut = useCallback(async () => {
     try { await apiLogout(); } catch { /* session may already be gone */ }
+    // Drop queued ops so nothing can flush into a different account later; the
+    // local copy stays on this device, locked to this account via its owner tag.
+    clearQueue(null);
+    userIdRef.current = null;
     authedRef.current = false;
     setAuthed(false);
     setSyncStatus("local");
-    note("Signed out — data stays on this device");
+    note("Signed out — data stays on this device, locked to your account");
   }, [note]);
 
   const retrySync = useCallback(() => { void flush(); }, [flush]);

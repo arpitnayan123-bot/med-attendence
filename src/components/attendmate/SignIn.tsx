@@ -7,7 +7,7 @@ import { useState } from "react";
 import { ArrowRight, CloudUpload, Loader2, ShieldCheck } from "lucide-react";
 import DitherReveal from "@/components/originkit/ui/dither-reveal";
 import { BrandWord } from "./bits";
-import { useAttendMate } from "@/lib/attendmate/storage";
+import { useAttendMate, createDefaultState } from "@/lib/attendmate/storage";
 import { apiExists } from "@/lib/attendmate/sync";
 import { getGroupInfo } from "@/lib/attendmate/engine";
 
@@ -19,8 +19,10 @@ export default function SignIn({ onDone, nav }: { onDone: () => void; nav: (to: 
   const [deviceOnly, setDeviceOnly] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState(state.profile.name || "");
-  const [roll, setRoll] = useState<string>(state.profile.rollNo > 1 ? String(state.profile.rollNo) : "");
+  // Prefill from the device copy only when it is un-owned guest data; a copy
+  // tagged with another student's account must never leak name/roll here.
+  const [name, setName] = useState(state.syncOwnerId ? "" : (state.profile.name || ""));
+  const [roll, setRoll] = useState<string>(!state.syncOwnerId && state.profile.rollNo > 1 ? String(state.profile.rollNo) : "");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
@@ -66,7 +68,12 @@ export default function SignIn({ onDone, nav }: { onDone: () => void; nav: (to: 
     setErr("");
     setBusy(true);
     if (deviceOnly) {
-      setState((prev) => ({ ...prev, profile: { ...prev.profile, name: n, email: email.trim(), rollNo: r } }));
+      // Never build a device-only profile on top of another student's copy.
+      setState((prev) => {
+        const base = prev.syncOwnerId ? createDefaultState() : prev;
+        if (base !== prev) base.profile.theme = prev.profile.theme; // theme stays device-local
+        return { ...base, profile: { ...base.profile, name: n, email: email.trim(), rollNo: r } };
+      });
       setBusy(false);
       finish();
       return;
