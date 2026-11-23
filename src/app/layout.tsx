@@ -13,12 +13,30 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "AttendMate Pro — NSMCH Phase-III (Part-2) Attendance Tracker",
   description:
-    "Offline-first attendance intelligence for NSMCH Bihta Phase-III (Part-2): roster resolver, safe-bunk planner, heatmap calendar, analytics and a projection to Sentup. Built with the Originkit Dither Reveal.",
+    "Offline-first attendance tracker for NSMCH Bihta Phase-III (Part-2): roster-resolved clinical postings, safe-skip maths, exam-aware analytics and a session-end projection. Your attendance stays on your device.",
   keywords: ["AttendMate", "attendance", "NSMCH", "medical school", "Phase-III", "tracker"],
   manifest: "/manifest.webmanifest",
+  openGraph: {
+    type: "website",
+    title: "AttendMate Pro — NSMCH Phase-III (Part-2) Attendance Tracker",
+    description:
+      "Offline-first attendance tracking with honest arithmetic: safe-skip maths, roster-resolved postings, exam-aware projections. Your attendance stays on your device.",
+    url: "/",
+    siteName: "AttendMate Pro",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "AttendMate Pro — attendance tracker for NSMCH Phase-III (Part-2)" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "AttendMate Pro — NSMCH Phase-III (Part-2) Attendance Tracker",
+    description: "Offline-first attendance tracking with honest arithmetic. Your attendance stays on your device.",
+    images: ["/og.png"],
+  },
   icons: {
     icon: [
       { url: "/favicon.svg", type: "image/svg+xml" },

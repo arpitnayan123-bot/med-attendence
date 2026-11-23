@@ -80,6 +80,8 @@ export function SiteChrome({ route, nav, children }: {
             <button onClick={() => nav(signedIn ? "dashboard" : "")} className="block py-1 text-[12.5px] text-muted-foreground transition hover:text-violet-600">Open the dashboard</button>
             <button onClick={() => nav("how-it-works")} className="block py-1 text-[12.5px] text-muted-foreground transition hover:text-violet-600">Backups &amp; recovery</button>
             <button onClick={() => nav("faq")} className="block py-1 text-[12.5px] text-muted-foreground transition hover:text-violet-600">Privacy &amp; data</button>
+            <a href="/privacy" className="block py-1 text-[12.5px] text-muted-foreground transition hover:text-violet-600">Privacy</a>
+            <a href="/terms" className="block py-1 text-[12.5px] text-muted-foreground transition hover:text-violet-600">Terms</a>
           </div>
         </div>
         <div className="border-t">

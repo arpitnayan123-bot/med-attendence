@@ -192,7 +192,13 @@ export default function SignIn({ onDone, nav }: { onDone: () => void; nav: (to: 
                 </button>
                 <div className="mt-6 flex items-center justify-between border-t border-white/10 pt-4 text-[11px] text-white/45">
                   <span>English (India)</span>
-                  <span>Help · Privacy · Terms</span>
+                  <span className="flex items-center gap-1">
+                    <button onClick={() => nav("faq")} className="transition hover:text-white/80">Help</button>
+                    <span className="text-white/25">·</span>
+                    <a href="/privacy" className="transition hover:text-white/80">Privacy</a>
+                    <span className="text-white/25">·</span>
+                    <a href="/terms" className="transition hover:text-white/80">Terms</a>
+                  </span>
                 </div>
               </>
             )}
@@ -383,6 +389,12 @@ export default function SignIn({ onDone, nav }: { onDone: () => void; nav: (to: 
                 <button onClick={() => nav(r)} className="transition hover:text-white">{r === "how-it-works" ? "guide" : r}</button>
               </span>
             ))}
+            <span className="flex items-center">
+              <span className="mx-1.5 text-white/25">·</span>
+              <a href="/privacy" className="transition hover:text-white">privacy</a>
+              <span className="mx-1.5 text-white/25">·</span>
+              <a href="/terms" className="transition hover:text-white">terms</a>
+            </span>
           </nav>
           <p className="text-[11px] text-white/35">Unofficial · offline-first · your attendance never leaves your devices</p>
         </footer>
