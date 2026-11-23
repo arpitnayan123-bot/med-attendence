@@ -275,18 +275,41 @@ export function streakInfo(state: AppState): StreakInfo {
   return { best, current: curStreak, perfectDays, totalLoggedDays: dates.length };
 }
 
+/**
+ * Projection horizon. Sentup ends 24 Dec 2027, but the exam-oriented clinical
+ * blocks keep running to 8 Jan 2028 (see EXAM_CLINICAL_ROSTER) — so the real
+ * session end is the later of the two. Derived from the data, never hard-coded.
+ */
+export const PROJECTION_HORIZON: string = [SESSION_END, ...EXAM_CLINICAL_ROSTER.map((r) => r.end)].reduce((a, b) => (b > a ? b : a));
+
 export function scheduledRemaining(state: AppState, todayIso: string): { remT: number; remC: number } {
+  // Slot counts per weekday come from the master timetable — never literals.
+  const perDow: Record<number, { t: number; c: number }> = {};
+  for (let dow = 0; dow <= 6; dow++) {
+    const slots = MASTER_TIMETABLE[dow] || [];
+    perDow[dow] = {
+      t: slots.filter((s) => s.type !== "clinical").length,
+      c: slots.filter((s) => s.type === "clinical").length,
+    };
+  }
+  // No regular classes inside assessment windows (internal assessments + Sentup).
+  const exams = examDates();
   let remT = 0, remC = 0;
   let d = todayIso;
-  while (d <= SESSION_END) {
+  while (d <= PROJECTION_HORIZON) {
     const dow = getDayOfWeek(d);
-    if (dow !== 0 && !state.logs[d]) { remT += 4; remC += 1; }
+    // Sundays are holidays; a user-declared holiday is a logged day (all
+    // slots cancelled), already excluded by the logs check below.
+    if (dow !== 0 && !state.logs[d] && !exams.has(d)) {
+      remT += perDow[dow].t;
+      remC += perDow[dow].c;
+    }
     d = shiftDate(d, 1);
   }
   return { remT, remC };
 }
 
-export interface Projection { theory: number | null; clinical: number | null; combined: number | null; remT: number; remC: number }
+export interface Projection { theory: number | null; clinical: number | null; combined: number | null; remT: number; remC: number; horizon: string }
 export function projectSessionEnd(state: AppState): Projection {
   const { tP, tT, cP, cT } = overallStats(state);
   const { remT, remC } = scheduledRemaining(state, todayISO());
@@ -301,7 +324,7 @@ export function projectSessionEnd(state: AppState): Projection {
   const clinical = proj(cP, cT, remC);
   // Combined needs both modes observed — a missing side would fabricate its rate.
   const combined = tT === 0 || cT === 0 ? null : ((tP + (tP / tT) * remT) + (cP + (cP / cT) * remC)) / (tT + remT + cT + remC) * 100;
-  return { theory, clinical, combined, remT, remC };
+  return { theory, clinical, combined, remT, remC, horizon: PROJECTION_HORIZON };
 }
 
 export interface TrendPoint { date: string; pct: number }

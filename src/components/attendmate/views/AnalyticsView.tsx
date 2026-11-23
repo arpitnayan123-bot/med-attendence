@@ -7,7 +7,7 @@ import { useAttendMate } from "@/lib/attendmate/storage";
 import { SUBJECTS } from "@/lib/attendmate/data";
 import {
   computeSubjectStats, overallStats, streakInfo, trendSeries, weekdayAverages,
-  projectSessionEnd, calcBunkInfo,
+  projectSessionEnd, calcBunkInfo, formatDisplayDate,
 } from "@/lib/attendmate/engine";
 import { Ring, Sparkline, StatCard, TierPill } from "../bits";
 
@@ -121,8 +121,8 @@ export default function AnalyticsView() {
 
         {/* projection */}
         <section className="clay-card p-5">
-          <h2 className="flex items-center gap-2 text-[15px] font-extrabold"><TrendingUp className="h-4 w-4 text-orange-600 dark:text-orange-300" /> Projection to Sentup</h2>
-          <p className="text-xs text-muted-foreground">Where you land on 24 Dec 2027 if your current rate holds</p>
+          <h2 className="flex items-center gap-2 text-[15px] font-extrabold"><TrendingUp className="h-4 w-4 text-orange-600 dark:text-orange-300" /> Session-end projection</h2>
+          <p className="text-xs text-muted-foreground">Where you land at the end of the session ({formatDisplayDate(proj.horizon)}) if your current rate holds</p>
           <div className="mt-4 flex items-center justify-around gap-2">
             <div className="text-center">
               <Ring pct={proj.theory} target={state.profile.theoryTarget} size={86} label="theory" />
