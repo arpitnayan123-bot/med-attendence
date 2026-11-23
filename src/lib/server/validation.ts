@@ -81,5 +81,48 @@ export const syncPushSchema = z.object({
   ops: z.array(syncOpSchema).max(500, "Too many changes in one batch"),
 });
 
+/* ---------- security (2FA / sessions / step-up) ---------- */
+
+export const totpCodeSchema = z
+  .string()
+  .trim()
+  .refine((v) => /^\d{6}$/.test(v.replace(/\s/g, "")), "Enter the 6-digit code");
+
+export const backupCodeSchema = z
+  .string()
+  .trim()
+  .refine((v) => /^[A-Z0-9]{4}-?[A-Z0-9]{4}$/.test(v.replace(/\s/g, "").toUpperCase()), "Invalid backup code");
+
+/** TOTP step at login: a 6-digit authenticator code or a backup code. */
+export const totpVerifySchema = z.object({ code: z.string().trim().min(6).max(16) });
+
+export const twoFaEnableSchema = z.object({ code: totpCodeSchema });
+
+export const twoFaDisableSchema = z.object({ password: z.string().min(1).max(72), code: totpCodeSchema });
+
+export const backupRegenSchema = z.object({ password: z.string().min(1).max(72) });
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1).max(72),
+  newPassword: passwordSchema,
+  code: totpCodeSchema.optional(),
+});
+
+export const sessionRevokeSchema = z.union([
+  z.object({ id: z.string().min(1).max(64) }),
+  z.object({ all: z.literal(true) }),
+]);
+
+/** Step-up proof attached to sensitive actions (e.g. Reset all data). */
+export const stepUpSchema = z.object({
+  password: z.string().min(1, "Confirm with your password").max(72),
+  code: z.string().trim().min(6).max(16).optional(),
+});
+
+export const resetConfirmSchema = z.object({
+  token: z.string().min(10).max(128),
+  newPassword: passwordSchema,
+});
+
 export type SyncOp = z.infer<typeof syncOpSchema>;
 export type ProfilePatch = z.infer<typeof profilePatchSchema>;

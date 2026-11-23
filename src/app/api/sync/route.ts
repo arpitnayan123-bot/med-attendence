@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { db } from "@/lib/db";
-import { getSessionUser } from "@/lib/server/auth";
+import { getSessionUser, verifyPassword } from "@/lib/server/auth";
 import { jsonError, mutate, readJson } from "@/lib/server/http";
-import { syncPushSchema, SyncOp } from "@/lib/server/validation";
+import { syncPushSchema, SyncOp, stepUpSchema } from "@/lib/server/validation";
+import { consumeBackupCode, decryptSecret, verifyTotp } from "@/lib/server/totp";
 
 export const dynamic = "force-dynamic";
 
@@ -106,11 +108,29 @@ async function applyOp(tx: Tx, userId: string, op: SyncOp) {
   }
 }
 
-/* DELETE — wipe this account's attendance data (account itself is kept) */
+/* DELETE — wipe this account's attendance data (account itself is kept).
+   Step-up required: password + TOTP when enabled, so a hijacked session or a
+   briefly borrowed device cannot erase someone's attendance history. */
 export const DELETE = mutate(
   async (req: NextRequest) => {
     const user = await getSessionUser(req);
     if (!user) return jsonError(401, "Not signed in");
+    const { stepUp } = z.object({ stepUp: stepUpSchema }).parse(await readJson(req, 4 * 1024));
+    if (!(await verifyPassword(stepUp.password, user.passwordHash))) {
+      return jsonError(401, "Incorrect password — data not erased");
+    }
+    if (user.totpEnabled) {
+      const code = stepUp.code || "";
+      const normalized = code.replace(/\s/g, "").toUpperCase();
+      let ok = false;
+      if (/^\d{6}$/.test(normalized)) {
+        const secret = user.totpSecret ? decryptSecret(user.totpSecret) : null;
+        ok = Boolean(secret && verifyTotp(secret, normalized));
+      } else if (code) {
+        ok = consumeBackupCode(normalized, user.backupCodes) !== null;
+      }
+      if (!ok) return jsonError(401, "Invalid or expired authenticator code — data not erased");
+    }
     await db.$transaction([
       db.attendanceLog.deleteMany({ where: { userId: user.id } }),
       db.baseline.deleteMany({ where: { userId: user.id } }),

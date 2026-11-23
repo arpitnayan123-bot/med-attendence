@@ -8,8 +8,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { AppState, STORAGE_KEY, SlotEntry, MarkStatus, MASTER_TIMETABLE } from "./data";
 import { todayISO, getClinicalPostingForDate, shiftDate } from "./engine";
 import {
-  SyncStatus, ServerOp, enqueueOps, readPendingOps, writePendingOps, pendingCount,
-  clearQueue, pullAndMerge, apiMe, apiLogin, apiRegister, apiLogout, apiPush, apiWipeServerData,
+  SyncStatus, ServerOp, ServerUser, enqueueOps, readPendingOps, writePendingOps, pendingCount,
+  clearQueue, pullAndMerge, apiMe, apiLogin, apiTotpVerify, apiRegister, apiLogout, apiPush, apiWipeServerData,
 } from "./sync";
 
 function MASTER_SLOTS(dow: number) { return MASTER_TIMETABLE[dow] || []; }
@@ -145,14 +145,15 @@ export interface AttendMateCtx {
   canUndo: boolean;
   lastAction: string | null;
   lastActionAt: number;
-  resetAll: () => Promise<void>;
+  resetAll: (stepUp?: { password: string; code?: string }) => Promise<void>;
   importState: (json: string) => boolean;
   setTheme: (theme: "light" | "dark") => void;
   /* sync */
   authed: boolean;
   syncStatus: SyncStatus;
   pending: number;
-  signIn: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  signIn: (email: string, password: string) => Promise<{ ok: boolean; error?: string; twoFactorRequired?: boolean }>;
+  verifyTotp: (code: string) => Promise<{ ok: boolean; error?: string }>;
   signUp: (email: string, name: string, rollNo: number, password: string) => Promise<{ ok: boolean; error?: string }>;
   signOut: () => Promise<void>;
   retrySync: () => void;
@@ -405,9 +406,12 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
     note("Last action undone");
   }, [persist, note, scheduleFlush]);
 
-  const resetAll = useCallback(async () => {
+  const resetAll = useCallback(async (stepUp?: { password: string; code?: string }) => {
     if (authedRef.current) {
-      try { await apiWipeServerData(); } catch { /* best effort — local reset proceeds */ }
+      // Destructive: requires a fresh password (+ TOTP) proof. A failed proof
+      // throws — nothing is erased, locally or on the server.
+      if (!stepUp) throw new Error("Confirm with your password to erase your data");
+      await apiWipeServerData(stepUp);
     }
     clearQueue(userIdRef.current);
     refreshPending();
@@ -439,29 +443,48 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
   }, [setState]);
 
   /* ---------- auth flows ---------- */
+  const adoptServerSession = useCallback(async (user: ServerUser) => {
+    // Isolation: only reuse the local copy if it belongs to this account.
+    // Foreign-account and guest copies are wiped first (guest data cannot be
+    // attributed, so it never flows into an existing account) — the server
+    // snapshot is the single source of truth.
+    adoptLocalCopyFor(user, false);
+    authedRef.current = true;
+    userIdRef.current = user.id;
+    setAuthed(true);
+    const merge = await pullAndMerge(loadStored(), user.id);
+    if (merge) {
+      setStateRaw({ ...merge.state, profile: { ...merge.state.profile, email: user.email, theme: getStoredTheme() } });
+    }
+    setSyncStatus(pendingCount(user.id) > 0 ? "queued" : "synced");
+    refreshPending();
+    void flush();
+  }, [flush, refreshPending, adoptLocalCopyFor]);
+
   const signIn = useCallback(async (email: string, password: string) => {
     try {
-      const user = await apiLogin(email, password);
-      // Isolation: only reuse the local copy if it belongs to this account.
-      // Foreign-account and guest copies are wiped first (guest data cannot be
-      // attributed, so it never flows into an existing account) — the server
-      // snapshot is the single source of truth.
-      adoptLocalCopyFor(user, false);
-      authedRef.current = true;
-      userIdRef.current = user.id;
-      setAuthed(true);
-      const merge = await pullAndMerge(loadStored(), user.id);
-      if (merge) {
-        setStateRaw({ ...merge.state, profile: { ...merge.state.profile, email: user.email, theme: getStoredTheme() } });
+      const r = await apiLogin(email, password);
+      if (r.twoFactorRequired || !r.user) {
+        // Password verified, but this account has 2FA — the UI shows the code
+        // step and calls verifyTotp() next. No session exists yet.
+        return { ok: false, twoFactorRequired: true as const };
       }
-      setSyncStatus(pendingCount(user.id) > 0 ? "queued" : "synced");
-      refreshPending();
-      void flush();
-      return { ok: true };
+      await adoptServerSession(r.user);
+      return { ok: true as const };
     } catch (err) {
-      return { ok: false, error: (err as Error).message || "Sign-in failed" };
+      return { ok: false as const, error: (err as Error).message || "Sign-in failed" };
     }
-  }, [flush, refreshPending, adoptLocalCopyFor]);
+  }, [adoptServerSession]);
+
+  const verifyTotp = useCallback(async (code: string) => {
+    try {
+      const user = await apiTotpVerify(code);
+      await adoptServerSession(user);
+      return { ok: true as const };
+    } catch (err) {
+      return { ok: false as const, error: (err as Error).message || "Invalid or expired code" };
+    }
+  }, [adoptServerSession]);
 
   const signUp = useCallback(async (email: string, name: string, rollNo: number, password: string) => {
     try {
@@ -505,8 +528,8 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AttendMateCtx>(() => ({
     state, setState, markSlot, bulkMarkDay, copyPreviousDay, addExtraClass, removeSlot,
     bulkFill, undo, canUndo, lastAction, lastActionAt, resetAll, importState, setTheme,
-    authed, syncStatus, pending, signIn, signUp, signOut, retrySync,
-  }), [state, setState, markSlot, bulkMarkDay, copyPreviousDay, addExtraClass, removeSlot, bulkFill, undo, canUndo, lastAction, lastActionAt, resetAll, importState, setTheme, authed, syncStatus, pending, signIn, signUp, signOut, retrySync]);
+    authed, syncStatus, pending, signIn, verifyTotp, signUp, signOut, retrySync,
+  }), [state, setState, markSlot, bulkMarkDay, copyPreviousDay, addExtraClass, removeSlot, bulkFill, undo, canUndo, lastAction, lastActionAt, resetAll, importState, setTheme, authed, syncStatus, pending, signIn, verifyTotp, signUp, signOut, retrySync]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

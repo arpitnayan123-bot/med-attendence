@@ -147,10 +147,19 @@ export async function apiExists(email: string): Promise<boolean> {
   });
   return r.exists;
 }
-export async function apiLogin(email: string, password: string): Promise<ServerUser> {
-  const r = await apiJson<{ user: ServerUser }>("/api/auth/login", {
+export type LoginResult = { user: ServerUser; twoFactorRequired?: false } | { user?: undefined; twoFactorRequired: true };
+export async function apiLogin(email: string, password: string): Promise<LoginResult> {
+  const r = await apiJson<{ user?: ServerUser; twoFactorRequired?: boolean }>("/api/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
+  });
+  return r.twoFactorRequired ? { twoFactorRequired: true } : { user: r.user as ServerUser };
+}
+/** Login step 2 for 2FA accounts: authenticator code or backup code. */
+export async function apiTotpVerify(code: string): Promise<ServerUser> {
+  const r = await apiJson<{ user: ServerUser }>("/api/auth/totp", {
+    method: "POST",
+    body: JSON.stringify({ code }),
   });
   return r.user;
 }
@@ -172,6 +181,50 @@ export async function apiMe(): Promise<ServerUser | null> {
     return null;
   }
 }
+
+/* ---------- security APIs (2FA, devices, history, password) ---------- */
+export interface SecurityStatus {
+  totpEnabled: boolean;
+  emailVerified: boolean;
+  mailConfigured: boolean;
+  backupCodesLeft: number;
+  loginEvents: { id: string; at: string; label: string; device: string; ip: string; newDevice: boolean }[];
+}
+export interface DeviceSession {
+  id: string; label: string; ip: string; createdAt: string; lastSeenAt: string; current: boolean;
+}
+export async function apiSecurity(): Promise<SecurityStatus> {
+  return apiJson<SecurityStatus>("/api/auth/security");
+}
+export async function apiSetup2fa(): Promise<{ uri: string; qrDataUrl: string }> {
+  return apiJson("/api/auth/2fa/setup", { method: "POST" });
+}
+export async function apiEnable2fa(code: string): Promise<{ backupCodes: string[] }> {
+  return apiJson("/api/auth/2fa/enable", { method: "POST", body: JSON.stringify({ code }) });
+}
+export async function apiDisable2fa(password: string, code: string): Promise<void> {
+  await apiJson("/api/auth/2fa/disable", { method: "POST", body: JSON.stringify({ password, code }) });
+}
+export async function apiRegenBackupCodes(password: string): Promise<{ backupCodes: string[] }> {
+  return apiJson("/api/auth/2fa/backup", { method: "POST", body: JSON.stringify({ password }) });
+}
+export async function apiSessions(): Promise<DeviceSession[]> {
+  const r = await apiJson<{ sessions: DeviceSession[] }>("/api/auth/sessions");
+  return r.sessions;
+}
+export async function apiRevokeSession(id: string): Promise<{ signedOut?: boolean }> {
+  return apiJson("/api/auth/sessions", { method: "DELETE", body: JSON.stringify({ id }) });
+}
+export async function apiRevokeAllSessions(): Promise<{ signedOut: boolean }> {
+  return apiJson("/api/auth/sessions", { method: "DELETE", body: JSON.stringify({ all: true }) });
+}
+export async function apiChangePassword(currentPassword: string, newPassword: string, code?: string): Promise<void> {
+  await apiJson("/api/auth/change-password", { method: "POST", body: JSON.stringify({ currentPassword, newPassword, code }) });
+}
+export async function apiResetRequest(email: string): Promise<void> {
+  await apiJson("/api/auth/reset-request", { method: "POST", body: JSON.stringify({ email }) });
+}
+
 /* ---------- sync calls ---------- */
 export async function apiPush(ops: ServerOp[]): Promise<{ applied: number; serverTime: string }> {
   return apiJson<{ applied: number; serverTime: string }>("/api/sync", {
@@ -179,8 +232,9 @@ export async function apiPush(ops: ServerOp[]): Promise<{ applied: number; serve
     body: JSON.stringify({ ops }),
   });
 }
-export async function apiWipeServerData(): Promise<void> {
-  await apiJson("/api/sync", { method: "DELETE" });
+/** Step-up proof required: password (+ TOTP when enabled). Throws on bad proof. */
+export async function apiWipeServerData(stepUp: { password: string; code?: string }): Promise<void> {
+  await apiJson("/api/sync", { method: "DELETE", body: JSON.stringify({ stepUp }) });
 }
 
 /* ---------- pull + merge ---------- */

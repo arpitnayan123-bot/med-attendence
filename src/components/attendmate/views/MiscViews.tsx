@@ -1,6 +1,6 @@
 "use client";
 // Timetable · Postings · Exams · Modules · Settings views.
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Download, LogOut, RotateCcw, Upload, Stethoscope, CalendarClock } from "lucide-react";
 import { useAttendMate } from "@/lib/attendmate/storage";
 import {
@@ -10,6 +10,8 @@ import {
   todayISO, getGroupInfo, getClinicalPostingForDate, getPersonalRosterTimeline,
   formatDisplayDate, daysBetween,
 } from "@/lib/attendmate/engine";
+import { apiSecurity } from "@/lib/attendmate/sync";
+import SecuritySection from "./Security";
 
 /* ================= TIMETABLE ================= */
 export function TimetableView() {
@@ -224,11 +226,21 @@ export function SettingsView() {
   const { state, setState, resetAll, importState, setTheme, authed, syncStatus, pending, signOut, retrySync } = useAttendMate();
   const fileRef = useRef<HTMLInputElement>(null);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [resetPw, setResetPw] = useState("");
+  const [resetCode, setResetCode] = useState("");
+  const [totpEnabled, setTotpEnabled] = useState(false);
+  const [resetBusy, setResetBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [form, setForm] = useState({
     name: state.profile.name, email: state.profile.email, rollNo: String(state.profile.rollNo),
     theoryTarget: String(state.profile.theoryTarget), clinicalTarget: String(state.profile.clinicalTarget),
   });
+
+  // Reset-all needs a step-up: ask for the authenticator code only when 2FA is on.
+  useEffect(() => {
+    if (!authed) return;
+    apiSecurity().then((s) => setTotpEnabled(s.totpEnabled)).catch(() => { /* offline */ });
+  }, [authed]);
 
   const exportBackup = () => {
     const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
@@ -335,6 +347,8 @@ export function SettingsView() {
         </div>
       </section>
 
+      {authed && <SecuritySection />}
+
       <section className="clay-card p-5 lg:col-span-2">
         <h2 className="text-[15px] font-extrabold">Data — backup &amp; recovery</h2>
         <p className="text-xs text-muted-foreground">Everything lives in localStorage. Export regularly; import on a new device to restore.</p>
@@ -348,11 +362,30 @@ export function SettingsView() {
           <input ref={fileRef} type="file" accept="application/json" className="hidden" aria-hidden
             onChange={(e) => { const f = e.target.files?.[0]; if (f) importBackup(f); e.target.value = ""; }} />
           {confirmReset ? (
-            <span className="inline-flex items-center gap-2 rounded-xl border border-rose-500/50 bg-rose-500/5 px-3 py-2 text-[12px] font-bold text-rose-600 dark:text-rose-300">
+            <span className="inline-flex flex-wrap items-center gap-2 rounded-xl border border-rose-500/50 bg-rose-500/5 px-3 py-2 text-[12px] font-bold text-rose-600 dark:text-rose-300">
               Erase all data{authed ? " (device + server)" : ""}?
-              <button onClick={() => { void resetAll().then(() => setMsg("All data erased.")); setConfirmReset(false); }}
-                className="clay-btn clay-danger clay-sm rounded-[0.7rem]">Yes, erase</button>
-              <button onClick={() => setConfirmReset(false)} className="clay-btn clay-soft clay-sm rounded-[0.7rem]">Cancel</button>
+              {authed && (
+                <>
+                  <input type="password" value={resetPw} onChange={(e) => setResetPw(e.target.value)} placeholder="Confirm password" autoComplete="current-password"
+                    className="clay-input w-44 px-3 py-2 text-[12px]" />
+                  {authed && totpEnabled && (
+                    <input value={resetCode} onChange={(e) => setResetCode(e.target.value)} placeholder="Code" inputMode="numeric"
+                      className="clay-input w-24 px-3 py-2 text-[12px]" />
+                  )}
+                </>
+              )}
+              <button
+                disabled={resetBusy || (authed && !resetPw) || (authed && totpEnabled && resetCode.length < 6)}
+                onClick={() => {
+                  setResetBusy(true);
+                  resetAll(authed ? { password: resetPw, code: authed && totpEnabled ? resetCode : undefined } : undefined)
+                    .then(() => { setMsg("All data erased."); setConfirmReset(false); setResetPw(""); setResetCode(""); })
+                    .catch((e: Error) => setMsg(e.message || "Reset failed — nothing was erased."))
+                    .finally(() => setResetBusy(false));
+                }}
+                className="clay-btn clay-danger clay-sm rounded-[0.7rem]"
+              >{resetBusy ? "Erasing…" : "Yes, erase"}</button>
+              <button onClick={() => { setConfirmReset(false); setResetPw(""); setResetCode(""); }} className="clay-btn clay-soft clay-sm rounded-[0.7rem]">Cancel</button>
             </span>
           ) : (
             <button onClick={() => setConfirmReset(true)} className="clay-btn clay-danger clay-md">

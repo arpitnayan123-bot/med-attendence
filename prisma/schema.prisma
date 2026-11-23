@@ -11,23 +11,83 @@ datasource db {
 // SQLite single-file DB; see README "Production" for backup & hardening notes.
 
 model User {
-  id             String   @id @default(cuid())
-  email          String   @unique
-  name           String
-  passwordHash   String
-  rollNo         Int      @default(1)
-  theoryTarget   Int      @default(75)
-  clinicalTarget Int      @default(80)
-  theme          String   @default("light")
-  lastSeenAt     DateTime @default(now())
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id               String   @id @default(cuid())
+  email            String   @unique
+  name             String
+  passwordHash     String
+  rollNo           Int      @default(1) @unique
+  theoryTarget     Int      @default(75)
+  clinicalTarget   Int      @default(80)
+  theme            String   @default("light")
+  emailVerified    Boolean  @default(true)
+  // TOTP 2FA: secret stored AES-256-GCM encrypted (key derived from AUTH_SECRET)
+  totpSecret       String?
+  pendingTotpSecret String?
+  totpEnabled      Boolean  @default(false)
+  // one-time recovery codes, sha256 hashes as a JSON array — plaintext shown once
+  backupCodes      String?
+  // per-account brute-force lockout
+  failedAttempts   Int      @default(0)
+  totpFailedAttempts Int    @default(0)
+  lockedUntil      DateTime?
+  lastSeenAt       DateTime @default(now())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   logs      AttendanceLog[]
   baselines Baseline[]
   modules   ModuleDone[]
+  sessions  Session[]
+  loginEvents LoginEvent[]
+  authTokens  AuthToken[]
 
   @@index([email])
+}
+
+/// Server-side, revocable login sessions (device list, remote sign-out).
+model Session {
+  id        String    @id @default(cuid())
+  userId    String
+  ua        String
+  deviceHash String // sha256(ua)[:16] — loose device fingerprint
+  ip        String
+  createdAt DateTime  @default(now())
+  lastSeenAt DateTime @default(now())
+  revokedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// Security audit trail: logins, failed attempts, lockouts, password changes.
+model LoginEvent {
+  id         String   @id @default(cuid())
+  userId     String
+  at         DateTime @default(now())
+  outcome    String // ok | bad_password | bad_totp | locked | password_changed | reset | device_revoked
+  ip         String
+  ua         String
+  deviceHash String
+  newDevice  Boolean  @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, at])
+}
+
+/// Single-use, expiring tokens: email verification ("verify") and password reset ("reset").
+model AuthToken {
+  id        String    @id @default(cuid())
+  userId    String
+  kind      String
+  tokenHash String
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, kind])
 }
 
 /// One row per logged timetable slot: unique (user, date, slotId).

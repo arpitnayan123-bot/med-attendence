@@ -8,17 +8,19 @@ import { ArrowRight, CloudUpload, Loader2, ShieldCheck } from "lucide-react";
 import DitherReveal from "@/components/originkit/ui/dither-reveal";
 import { BrandWord } from "./bits";
 import { useAttendMate, createDefaultState } from "@/lib/attendmate/storage";
-import { apiExists } from "@/lib/attendmate/sync";
+import { apiExists, apiResetRequest } from "@/lib/attendmate/sync";
 import { getGroupInfo } from "@/lib/attendmate/engine";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function SignIn({ onDone, nav }: { onDone: () => void; nav: (to: string) => void }) {
-  const { state, setState, signIn, signUp } = useAttendMate();
-  const [step, setStep] = useState<"email" | "login" | "register">("email");
+  const { state, setState, signIn, verifyTotp, signUp } = useAttendMate();
+  const [step, setStep] = useState<"email" | "login" | "register" | "totp" | "forgot">("email");
   const [deviceOnly, setDeviceOnly] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [totpCode, setTotpCode] = useState("");
+  const [forgotSent, setForgotSent] = useState(false);
   // Prefill from the device copy only when it is un-owned guest data; a copy
   // tagged with another student's account must never leak name/roll here.
   const [name, setName] = useState(state.syncOwnerId ? "" : (state.profile.name || ""));
@@ -56,7 +58,32 @@ export default function SignIn({ onDone, nav }: { onDone: () => void; nav: (to: 
     const r = await signIn(email.trim().toLowerCase(), password);
     setBusy(false);
     if (r.ok) finish();
+    else if (r.twoFactorRequired) setStep("totp"); // password verified — now the code
     else setErr(r.error || "Invalid email or password");
+  };
+
+  const submitTotp = async () => {
+    if (!totpCode.trim()) { setErr("Enter the 6-digit code or a backup code"); return; }
+    setErr("");
+    setBusy(true);
+    const r = await verifyTotp(totpCode.trim());
+    setBusy(false);
+    if (r.ok) finish();
+    else setErr(r.error || "Invalid or expired code");
+  };
+
+  const submitForgot = async () => {
+    if (!EMAIL_RE.test(email)) { setErr("Enter a valid email address"); return; }
+    setErr("");
+    setBusy(true);
+    try {
+      await apiResetRequest(email.trim().toLowerCase());
+      setForgotSent(true);
+    } catch {
+      setErr("Can't reach the server right now — try again later.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const submitRegister = async () => {
@@ -85,7 +112,12 @@ export default function SignIn({ onDone, nav }: { onDone: () => void; nav: (to: 
   };
 
   const gi = roll !== "" && parseInt(roll, 10) >= 1 && parseInt(roll, 10) <= 100 ? getGroupInfo(parseInt(roll, 10)) : null;
-  const canEnter = step === "email" ? submitEmail : step === "login" ? submitLogin : submitRegister;
+  const canEnter =
+    step === "email" ? submitEmail
+    : step === "login" ? submitLogin
+    : step === "totp" ? submitTotp
+    : step === "forgot" ? submitForgot
+    : submitRegister;
 
   return (
     <div className="relative min-h-screen bg-black text-white">
@@ -172,7 +204,76 @@ export default function SignIn({ onDone, nav }: { onDone: () => void; nav: (to: 
                 </button>
                 <div className="mt-6 flex items-center justify-between border-t border-white/10 pt-4 text-[11px] text-white/45">
                   <button onClick={() => { setStep("email"); setPassword(""); setErr(""); }} className="hover:text-white/80">← Not you?</button>
-                  <span>Sync restores your full dashboard</span>
+                  <button onClick={() => { setStep("forgot"); setForgotSent(false); setErr(""); }} className="font-semibold text-white/60 transition hover:text-white">Forgot password?</button>
+                </div>
+              </>
+            )}
+
+            {step === "totp" && (
+              <>
+                <div className="mb-6 flex flex-col items-center text-center">
+                  <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/15 bg-white/10">
+                    <ShieldCheck className="h-6 w-6 text-emerald-400" />
+                  </span>
+                  <h1 className="text-[20px] font-bold tracking-tight">Two-step verification</h1>
+                  <p className="mt-1.5 text-[13px] text-white/60">Enter the 6-digit code from your authenticator app — a backup code works here too.</p>
+                </div>
+                <input
+                  value={totpCode} autoFocus
+                  onChange={(e) => setTotpCode(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && void canEnter()}
+                  placeholder="123 456 — or K7MP-W3RT"
+                  autoComplete="one-time-code"
+                  className="w-full rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-center text-[18px] font-bold tracking-[0.2em] text-white placeholder-white/30 outline-none transition focus:border-violet-400/70 focus:bg-white/15"
+                />
+                {err && <p className="mt-2 text-xs font-medium text-rose-400">{err}</p>}
+                <button
+                  onClick={() => void canEnter()}
+                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-500 py-3 text-[14px] font-bold shadow-lg shadow-violet-600/40 transition hover:brightness-110 active:scale-[.99]"
+                >
+                  {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Verify <ArrowRight className="h-4 w-4" /></>}
+                </button>
+                <div className="mt-6 flex items-center justify-between border-t border-white/10 pt-4 text-[11px] text-white/45">
+                  <button onClick={() => { setStep("email"); setTotpCode(""); setErr(""); }} className="hover:text-white/80">← Use a different account</button>
+                  <span>Codes rotate every 30 s</span>
+                </div>
+              </>
+            )}
+
+            {step === "forgot" && (
+              <>
+                <div className="mb-6 flex flex-col items-center text-center">
+                  <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/15 bg-white/10 text-lg font-bold">
+                    {email.trim().charAt(0).toUpperCase()}
+                  </span>
+                  <h1 className="text-[20px] font-bold tracking-tight">Reset password</h1>
+                  <p className="mt-1.5 text-[13px] text-white/60">We'll email a single-use reset link (valid 15 minutes).</p>
+                </div>
+                {forgotSent ? (
+                  <p className="rounded-xl border border-emerald-400/30 bg-emerald-400/10 p-3 text-[12px] font-semibold text-emerald-300">
+                    If that email has an account and mail is configured, the reset link is on its way. Check your inbox.
+                  </p>
+                ) : (
+                  <input
+                    type="email" value={email} autoFocus
+                    onChange={(e) => setEmail(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && void canEnter()}
+                    placeholder="you@gmail.com"
+                    className="w-full rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-[14px] text-white placeholder-white/35 outline-none transition focus:border-violet-400/70 focus:bg-white/15"
+                  />
+                )}
+                {err && <p className="mt-2 text-xs font-medium text-rose-400">{err}</p>}
+                {!forgotSent && (
+                  <button
+                    onClick={() => void canEnter()}
+                    className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-500 py-3 text-[14px] font-bold shadow-lg shadow-violet-600/40 transition hover:brightness-110 active:scale-[.99]"
+                  >
+                    {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Send reset link <ArrowRight className="h-4 w-4" /></>}
+                  </button>
+                )}
+                <div className="mt-6 flex items-center justify-between border-t border-white/10 pt-4 text-[11px] text-white/45">
+                  <button onClick={() => { setStep(forgotSent ? "login" : "email"); setErr(""); }} className="hover:text-white/80">← Back</button>
+                  <span>Reset signs out every device</span>
                 </div>
               </>
             )}
