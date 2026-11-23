@@ -34,7 +34,7 @@ function StatTile({ label, value, accent }: { label: string; value: ReactNode; a
   );
 }
 
-export default function ActivityPanel({ state }: { state: AppState }) {
+export default function ActivityPanel({ state, authed }: { state: AppState; authed: boolean }) {
   const weeks = 18;
   // React Compiler memoizes these from `state`; no manual useMemo needed.
   const cols = buildHeatmapWeeks(state, weeks);
@@ -58,8 +58,9 @@ export default function ActivityPanel({ state }: { state: AppState }) {
 
   return (
     <section className="clay-card p-5" aria-label="Your activity">
-      {/* student identity — the unique roll every student owns (one roll = one
-          student, enforced by the server at registration) */}
+      {/* student identity — the "unique roll" claim is only shown when a real
+          server session answered this boot/login; device-only profiles make no
+          uniqueness promise (two devices can claim the same roll offline) */}
       <div className="flex flex-wrap items-center gap-3 rounded-2xl border bg-gradient-to-r from-orange-500/10 via-rose-500/5 to-transparent px-3 py-2.5">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-rose-500 text-sm font-extrabold text-white shadow-md shadow-orange-500/30">
           {initial}
@@ -72,12 +73,14 @@ export default function ActivityPanel({ state }: { state: AppState }) {
             </span>
           </div>
           <div className="mt-0.5 text-[10px] font-semibold text-muted-foreground">
-            Group {gi.group} · Sub-group {gi.subGroup} · unique across the batch — no one else holds this roll
+            Group {gi.group} · Sub-group {gi.subGroup}{authed ? " · unique across the batch — no one else holds this roll" : " · resolved on this device"}
           </div>
         </div>
-        <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-          <BadgeCheck className="h-3 w-3" /> verified at sign-up
-        </span>
+        {authed && (
+          <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+            <BadgeCheck className="h-3 w-3" /> verified at sign-up
+          </span>
+        )}
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">

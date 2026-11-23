@@ -16,7 +16,7 @@ import ActivityPanel from "../ActivityPanel";
 import FirstRunTips from "../FirstRunTips";
 
 export default function TodayView() {
-  const { state, setState, markSlot, unmarkSlot, bulkMarkDay, bulkFill, copyPreviousDay, addExtraClass, removeSlot } = useAttendMate();
+  const { state, setState, markSlot, unmarkSlot, bulkMarkDay, bulkFill, copyPreviousDay, addExtraClass, removeSlot, authed } = useAttendMate();
   const iso = state.selectedDate;
   const subGroup = getGroupInfo(state.profile.rollNo).subGroup;
   const sum = daySummary(state, iso);
@@ -87,7 +87,7 @@ export default function TodayView() {
       <FirstRunTips />
 
       {/* activity panel — GitHub/LeetCode-style contribution graph, computed on-device */}
-      <ActivityPanel state={state} />
+      <ActivityPanel state={state} authed={authed} />
 
       {/* hero header — warm sunset spotlight card */}
       <section className="am-card-in relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-500 via-orange-600 to-rose-500 p-4 text-white shadow-xl shadow-orange-600/30 sm:p-5">
