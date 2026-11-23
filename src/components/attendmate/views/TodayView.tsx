@@ -1,7 +1,7 @@
 "use client";
 // Today view: the working day — mark slots, advice chips, bulk tools.
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Check, X, Ban, Copy, Umbrella, Plus, Trash2, Repeat, Lock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, X, Ban, Copy, Umbrella, Plus, Trash2, Lock } from "lucide-react";
 import { useAttendMate } from "@/lib/attendmate/storage";
 import {
   MASTER_TIMETABLE, SUBJECTS, SUBJECT_MAP, Slot,
@@ -16,21 +16,18 @@ import ActivityPanel from "../ActivityPanel";
 import FirstRunTips from "../FirstRunTips";
 
 export default function TodayView() {
-  const { state, setState, markSlot, unmarkSlot, bulkMarkDay, copyPreviousDay, addExtraClass, removeSlot, bulkFill } = useAttendMate();
+  const { state, setState, markSlot, unmarkSlot, bulkMarkDay, copyPreviousDay, addExtraClass, removeSlot } = useAttendMate();
   const iso = state.selectedDate;
   const subGroup = getGroupInfo(state.profile.rollNo).subGroup;
   const sum = daySummary(state, iso);
   const dow = getDayOfWeek(iso);
-  // Marking is a today-only action: past days are read-only (catch up via the
-  // explicit bulk-fill tool), future days have nothing to mark yet.
+  // Marking is a today-only action: past days are read-only and stay as
+  // logged, future days have nothing to mark yet.
   const canMark = iso === todayISO();
   const slots: Slot[] = dow !== 0 ? (MASTER_TIMETABLE[dow] || []) : [];
   const stats = computeSubjectStats(state);
   const customIds = Object.keys(state.logs[iso] || {}).filter((id) => id.startsWith("x-"));
   const posting = getClinicalPostingForDate(iso, subGroup);
-  const [fillFrom, setFillFrom] = useState(shiftDate(todayISO(), -7));
-  const [fillTo, setFillTo] = useState(shiftDate(todayISO(), -1));
-  const [fillStatus, setFillStatus] = useState<"present" | "absent">("present");
   const [extraSub, setExtraSub] = useState("IM");
   const [extraKind, setExtraKind] = useState<"theory" | "clinical">("theory");
 
@@ -164,8 +161,7 @@ export default function TodayView() {
       {dow !== 0 && (
         <>
           {/* actions */}
-          {/* day-level marking tools — today only, like the per-slot buttons;
-              past catch-up stays with the explicit bulk-fill tool below */}
+          {/* day-level marking tools — today only, like the per-slot buttons */}
           {canMark ? (
             <div className="am-card-in flex flex-wrap gap-2 [animation-delay:120ms]">
               <button onClick={() => bulkMarkDay(iso, "present", subGroup)}
@@ -186,7 +182,7 @@ export default function TodayView() {
                point at the one sanctioned way to catch up */
             <div className="am-card-in flex items-center gap-2 rounded-2xl border border-muted bg-muted/40 px-4 py-3 text-[12.5px] text-muted-foreground [animation-delay:120ms]">
               <Lock className="h-3.5 w-3.5 shrink-0" />
-              <span>This day has passed — its log is locked. To backfill unlogged classes, use <strong className="font-semibold">Bulk-fill past days</strong> below.</span>
+              <span>This day has passed — its log is locked as recorded.</span>
             </div>
           )}
 
@@ -277,42 +273,19 @@ export default function TodayView() {
                     {meta ? meta.name : e.subject} <span className="text-xs text-muted-foreground">({e.kind})</span>
                   </div>
                   {statusChip(e.status)}
-                  <button onClick={() => removeSlot(iso, id)} aria-label="Remove extra class"
-                    className="clay-btn clay-soft clay-icon h-8 w-8 text-muted-foreground"><Trash2 className="h-4 w-4" /></button>
+                  {canMark && (
+                    <button onClick={() => removeSlot(iso, id)} aria-label="Remove extra class"
+                      className="clay-btn clay-soft clay-icon h-8 w-8 text-muted-foreground"><Trash2 className="h-4 w-4" /></button>
+                  )}
                 </div>
               );
             })}
           </section>
 
-          {/* tools */}
-          <div className="am-card-in grid gap-4 lg:grid-cols-2 [animation-delay:240ms]">
-            <section className="clay-card p-4 sm:p-5">
-              <h3 className="flex items-center gap-2 text-[14px] font-extrabold"><Repeat className="h-4 w-4 text-orange-600 dark:text-orange-300" /> Bulk-fill past days</h3>
-              <p className="mt-1 text-xs text-muted-foreground">Marks whole past date range (skips Sundays and already-logged days). CP credits resolve from your official roster.</p>
-              <div className="mt-3 flex flex-wrap items-end gap-2">
-                <label className="text-[11px] font-semibold text-muted-foreground">From
-                  <input type="date" value={fillFrom} max={todayISO()} onChange={(e) => setFillFrom(e.target.value)}
-                    className="clay-input mt-1 block px-3 py-2 text-[12.5px]" />
-                </label>
-                <label className="text-[11px] font-semibold text-muted-foreground">To
-                  <input type="date" value={fillTo} max={todayISO()} onChange={(e) => setFillTo(e.target.value)}
-                    className="clay-input mt-1 block px-3 py-2 text-[12.5px]" />
-                </label>
-                <label className="text-[11px] font-semibold text-muted-foreground">Status
-                  <select value={fillStatus} onChange={(e) => setFillStatus(e.target.value as "present" | "absent")}
-                    className="clay-input mt-1 block px-3 py-2 text-[12.5px]">
-                    <option value="present">Present</option>
-                    <option value="absent">Absent</option>
-                  </select>
-                </label>
-                <button onClick={() => fillFrom <= fillTo && bulkFill(fillFrom, fillTo, fillStatus, subGroup)}
-                  className="clay-btn clay-primary clay-sm">
-                  Apply
-                </button>
-              </div>
-            </section>
+          {/* tools — today only: extras and make-up classes are logged the day they happen */}
+          {canMark && (
+            <section className="clay-card am-card-in p-4 sm:p-5 [animation-delay:240ms]">
 
-            <section className="clay-card p-4 sm:p-5">
               <h3 className="flex items-center gap-2 text-[14px] font-extrabold"><Plus className="h-4 w-4 text-orange-600 dark:text-orange-300" /> Add extra / make-up class</h3>
               <p className="mt-1 text-xs text-muted-foreground">Unplanned lecture or posting held beyond the timetable — logs under the chosen subject and mode.</p>
               <div className="mt-3 flex flex-wrap items-end gap-2">
@@ -335,7 +308,7 @@ export default function TodayView() {
                 </button>
               </div>
             </section>
-          </div>
+          )}
         </>
       )}
     </div>

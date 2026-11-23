@@ -34,8 +34,8 @@ const STEPS = [
   },
   {
     icon: CalendarCheck,
-    title: "Catch up on past days",
-    body: "Open the Calendar for any date, or use Bulk fill to mark a whole date range in one go.",
+    title: "Mark the day as it happens",
+    body: "Mark each class during the day; the moment a day passes it locks, keeping your history honest. The Calendar is always there to review every logged detail.",
   },
   {
     icon: BarChart3,

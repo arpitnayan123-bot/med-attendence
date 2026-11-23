@@ -82,7 +82,6 @@ export interface AttendMateCtx {
   copyPreviousDay: (iso: string) => void;
   addExtraClass: (iso: string, subject: string, kind: "theory" | "clinical") => void;
   removeSlot: (iso: string, slotId: string) => void;
-  bulkFill: (from: string, to: string, status: MarkStatus, subGroup: string) => void;
   undo: () => void;
   canUndo: boolean;
   lastAction: string | null;
@@ -294,38 +293,6 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
     }, "Remove entry");
   }, [setState]);
 
-  const bulkFill = useCallback((from: string, to: string, status: MarkStatus, subGroup: string) => {
-    let n = 0;
-    let probe = from;
-    while (probe <= to) {
-      const dow = new Date(probe + "T12:00:00").getDay();
-      if (dow !== 0 && !stateRef.current.logs[probe]) n++;
-      probe = shift(probe, 1);
-    }
-    setState((prev) => {
-      const logs = { ...prev.logs };
-      let d = from;
-      while (d <= to) {
-        const dow = new Date(d + "T12:00:00").getDay();
-        if (dow !== 0 && !logs[d]) {
-          const dayLog: Record<string, SlotEntry> = {};
-          for (const s of MASTER_SLOTS(dow)) {
-            if (status === "present" && s.type === "clinical" && subGroup) {
-              const posting = resolvePostingCached(d, subGroup);
-              dayLog[s.id] = { status, subject: posting || "CP", kind: "clinical" };
-            } else {
-              dayLog[s.id] = { status, subject: s.subject };
-            }
-          }
-          logs[d] = dayLog;
-        }
-        d = shift(d, 1);
-      }
-      return { ...prev, logs };
-    }, "Bulk fill");
-    note(`Bulk-filled ${n} day${n === 1 ? "" : "s"}`);
-  }, [setState, note]);
-
   const undo = useCallback(() => {
     const snap = undoRef.current.pop();
     if (!snap) return;
@@ -480,10 +447,10 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AttendMateCtx>(() => ({
     state, setState, markSlot, unmarkSlot, bulkMarkDay, copyPreviousDay, addExtraClass, removeSlot, claimDeviceProfile,
-    bulkFill, undo, canUndo, lastAction, lastActionAt, resetAll, importState, setTheme,
+    undo, canUndo, lastAction, lastActionAt, resetAll, importState, setTheme,
     authed, signIn, verifyTotp, signUp, signOut,
     storageState, persistent, grantStorage, denyStorage, requestPersistent, forgetDevice,
-  }), [state, setState, markSlot, unmarkSlot, bulkMarkDay, copyPreviousDay, addExtraClass, removeSlot, bulkFill, claimDeviceProfile, undo, canUndo, lastAction, lastActionAt, resetAll, importState, setTheme, authed, signIn, verifyTotp, signUp, signOut, storageState, persistent, grantStorage, denyStorage, requestPersistent, forgetDevice]);
+  }), [state, setState, markSlot, unmarkSlot, bulkMarkDay, copyPreviousDay, addExtraClass, removeSlot, claimDeviceProfile, undo, canUndo, lastAction, lastActionAt, resetAll, importState, setTheme, authed, signIn, verifyTotp, signUp, signOut, storageState, persistent, grantStorage, denyStorage, requestPersistent, forgetDevice]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

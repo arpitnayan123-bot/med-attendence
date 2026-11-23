@@ -129,7 +129,7 @@ const FEATURE_LIST = [
   ["Priority advisor", "Every subject is auto-tiered into Don't Miss / Be Careful / Safe to Miss. With little data the tiers use structure — short postings and low-frequency subjects land in Don't Miss; as your log grows, live percentages take over and re-rank on every mark."],
   ["Calendar heatmap", "A Monday-start month grid colours each logged day by its percentage, marks Sundays, dashed assessment windows from the official exam calendar, and shows the month's logged days, average and perfect days. Tap any day to open it."],
   ["Analytics & projection", "Six streak and volume stats, overall rings for theory, clinical and combined, a trend line of your last 15 logged days against the target, average performance per weekday, a full subject leaderboard, and a session-end projection to the Sentup exam at your current rate."],
-  ["Offline & recoverable", "Your data never leaves your device — the server holds nothing but sign-in credentials. Every action pushes onto a 40-step undo stack, past weeks can be bulk-filled, prior records imported as baselines, and one click exports a JSON backup you can re-import anywhere."],
+  ["Offline & recoverable", "Your data never leaves your device — the server holds nothing but sign-in credentials. Every action pushes onto a 40-step undo stack, rolling device snapshots keep the past recoverable, prior records import as baselines, and one click exports a JSON backup you can re-import anywhere."],
 ] as const;
 
 export function FeaturesPage({ nav }: { nav: (to: string) => void }) {
@@ -159,7 +159,7 @@ export function GuidePage({ nav }: { nav: (to: string) => void }) {
     ["Read the advice", "Each subject shows a live tier — Don't Miss, Be Careful or Safe to Miss — with exact safe-skip or must-attend counts. Check it before deciding to bunk."],
   ] as const;
   const detail = [
-    ["Day navigation and catch-up", "Arrows around the date header move through any day; “Copy previous day” clones yesterday's marks; the bulk-fill card marks a whole past range present or absent in one action, skipping Sundays and already-logged days. Started late? Back-fill three weeks in under a minute."],
+    ["Day navigation, honest history", "Arrows around the date header move through any day to review every logged detail; “Copy previous day” clones yesterday's marks onto today in one tap; each day locks the moment it passes, so the log stays an honest record of what actually happened — mark during the day, review any time."],
     ["Extra and make-up classes", "Cancelled a class? Mark it Cancelled so it stops counting. Unplanned extra class? Add it from the extra-class form — it logs under the right subject and mode and appears in all totals immediately."],
     ["Baselines for prior records", "Tracked attendance elsewhere? Open any subject's details, enter prior present/total counts for theory and clinical, and the app merges them with everything you log from then on."],
     ["The what-if simulator", "Every subject card has a simulator: press “+1 attended” or “+1 missed” and watch the percentage and skip math update instantly — without touching your real log."],
