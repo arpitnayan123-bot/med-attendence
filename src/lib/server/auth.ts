@@ -13,9 +13,9 @@ import { db } from "@/lib/db";
  * - Passwords hashed with bcrypt (12 rounds).
  * - 2FA: a short-lived "pre-auth" cookie (audience=2fa) bridges login and the
  *   TOTP step; no session exists until the code is verified.
- * - CSRF: mutating endpoints require a custom header (x-am-csrf) plus a
- *   same-origin Origin check (see http.ts) — cross-site requests cannot set
- *   custom headers without a CORS preflight, which is not offered.
+ * - CSRF: mutating endpoints require a custom header (x-am-csrf, see
+ *   http.ts) — cross-site requests cannot set custom headers without a CORS
+ *   preflight, which is not offered.
  */
 
 export const SESSION_COOKIE = "am_session";
@@ -24,6 +24,20 @@ const SESSION_TTL_SEC = 60 * 60 * 24 * 30;
 const PREAUTH_TTL_SEC = 60 * 5;
 const BCRYPT_ROUNDS = 12;
 const LASTSEEN_TOUCH_MS = 60_000; // throttle the per-request lastSeen write
+
+/**
+ * The sandboxed preview window runs the dev server inside a cross-origin
+ * iframe, where SameSite=Lax cookies are dropped — the user would stay logged
+ * out in the preview no matter what. Dev therefore sends SameSite=None
+ * (browsers honor it only with Secure, hence the unconditional secure flag;
+ * Partitioned keeps it alive under third-party-cookie blocking via CHIPS).
+ * In-app fetches stay same-origin, so the CSRF origin check is unaffected.
+ * Production keeps the stricter Lax.
+ */
+const COOKIE_SAMESITE = process.env.NODE_ENV === "production"
+  ? ("lax" as const)
+  : ("none" as const);
+const COOKIE_PARTITIONED = process.env.NODE_ENV !== "production";
 
 function secretKey(): Uint8Array {
   const s = process.env.AUTH_SECRET;
@@ -130,8 +144,9 @@ export async function createSession(res: NextResponse, userId: string, req: Next
     .sign(secretKey());
   res.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    sameSite: COOKIE_SAMESITE,
+    secure: true,
+    partitioned: COOKIE_PARTITIONED,
     maxAge: SESSION_TTL_SEC,
     path: "/",
   });
@@ -141,8 +156,9 @@ export async function createSession(res: NextResponse, userId: string, req: Next
 export async function clearSession(res: NextResponse) {
   res.cookies.set(SESSION_COOKIE, "", {
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    sameSite: COOKIE_SAMESITE,
+    secure: true,
+    partitioned: COOKIE_PARTITIONED,
     maxAge: 0,
     path: "/",
   });
@@ -159,8 +175,9 @@ export async function createPreAuth(res: NextResponse, userId: string) {
     .sign(secretKey());
   res.cookies.set(PREAUTH_COOKIE, token, {
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    sameSite: COOKIE_SAMESITE,
+    secure: true,
+    partitioned: COOKIE_PARTITIONED,
     maxAge: PREAUTH_TTL_SEC,
     path: "/",
   });
@@ -169,8 +186,9 @@ export async function createPreAuth(res: NextResponse, userId: string) {
 export async function clearPreAuth(res: NextResponse) {
   res.cookies.set(PREAUTH_COOKIE, "", {
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    sameSite: COOKIE_SAMESITE,
+    secure: true,
+    partitioned: COOKIE_PARTITIONED,
     maxAge: 0,
     path: "/",
   });

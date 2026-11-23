@@ -4,8 +4,8 @@ import { ZodError } from "zod";
 import { clientIP, rateLimit } from "./rate-limit";
 
 /**
- * Route helpers: uniform JSON errors, CSRF (origin + custom header) and
- * per-IP rate limiting for every mutating endpoint.
+ * Route helpers: uniform JSON errors, CSRF (custom header) and per-IP rate
+ * limiting for every mutating endpoint.
  */
 
 export function jsonError(status: number, error: string, extra?: Record<string, unknown>) {
@@ -18,18 +18,12 @@ export function mutate<T extends unknown[]>(
   opts: { limit: number; windowMs: number; requireCsrf?: boolean },
 ) {
   return async (req: NextRequest, ...args: T): Promise<NextResponse> => {
-    // CSRF: same-origin check on Origin (sent on all cross-origin POSTs by browsers)
-    const origin = req.headers.get("origin");
-    if (origin) {
-      try {
-        const o = new URL(origin);
-        const host = req.headers.get("host");
-        if (host && o.host !== host) return jsonError(403, "Cross-origin request blocked");
-      } catch {
-        return jsonError(403, "Invalid Origin");
-      }
-    }
-    // custom header — cannot be attached cross-site without a CORS preflight
+    // CSRF: the custom header is the gate — cross-site requests cannot attach
+    // it without a CORS preflight, and no endpoint here answers one. An
+    // Origin-vs-Host comparison used to run as well, but the sandboxed preview
+    // proxy chain rewrites Host, so the browser's real Origin never matched
+    // and every sign-in from the preview window was 403'd. The header gate is
+    // the part that actually defends against CSRF; keep it strict.
     if (opts.requireCsrf !== false && req.headers.get("x-am-csrf") !== "1") {
       return jsonError(403, "Missing CSRF header");
     }

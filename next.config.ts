@@ -12,11 +12,13 @@ const nextConfig: NextConfig = {
   // Baseline security headers for every response (app + API).
   async headers() {
     const isDev = process.env.NODE_ENV !== "production";
-    // Strict-ish CSP: everything self-hosted, no third-party origins, framing
-    // and object embedding denied. Inline scripts/styles stay allowed — the
-    // theme pre-paint runs before hydration and Next injects build-varying
-    // inline bootstrap scripts whose bytes change every build (hash-pinning
-    // them would break each deploy).
+    // Strict-ish CSP: everything self-hosted, no third-party origins, object
+    // embedding denied. Inline scripts/styles stay allowed — the theme
+    // pre-paint runs before hydration and Next injects build-varying inline
+    // bootstrap scripts whose bytes change every build (hash-pinning them
+    // would break each deploy). Framing stays denied in production, but the
+    // sandboxed preview window embeds the dev server in a cross-origin
+    // iframe, so dev must allow any ancestor or the preview renders blank.
     const csp = [
       "default-src 'self'",
       `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
@@ -27,14 +29,16 @@ const nextConfig: NextConfig = {
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
-      "frame-ancestors 'none'",
+      isDev ? "frame-ancestors *" : "frame-ancestors 'none'",
       "upgrade-insecure-requests",
     ].join("; ");
     return [
       {
         source: "/:path*",
         headers: [
-          { key: "X-Frame-Options", value: "DENY" },
+          // Older browsers ignore CSP frame-ancestors and obey this instead;
+          // in dev it must be absent or the preview iframe is refused.
+          ...(isDev ? [] : [{ key: "X-Frame-Options", value: "DENY" }]),
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
