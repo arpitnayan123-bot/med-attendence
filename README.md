@@ -86,6 +86,32 @@ AUTH_SECRET=<openssl rand -hex 32>   # REQUIRED in production — app refuses to
    before running multiple instances; Prisma can be pointed at Postgres by swapping the
    datasource provider — the schema is intentionally vanilla.
 
+### Deploying to Vercel
+
+Verified from a cold clone of this repo on a Vercel-equivalent environment:
+`bun install --frozen-lockfile` → `next build` compiles clean with no local artifacts
+and no env vars needed at build time. `vercel.json` pins the framework (Next.js), the
+install command and the build command, so auto-detection cannot drift. If you have
+previously overridden Build & Output settings in the Vercel dashboard, reset them to
+defaults — dashboard overrides win over `vercel.json`.
+
+1. Import the repo; framework Next.js; root directory = repo root.
+2. Environment variables (Project → Settings → Environment Variables):
+   - `AUTH_SECRET` — **required**; without it the auth module throws in production
+     and every sign-in returns 500. Generate: `openssl rand -hex 32`.
+   - `DATABASE_URL` — see the database note below.
+   - optional: `RESEND_API_KEY` + `MAIL_FROM` for password-reset / verification mail
+     (without them, mail is logged to the server console).
+3. **Database note (important)**: Vercel functions have an ephemeral filesystem — a
+   SQLite file does not persist across requests, so accounts and sessions would
+   silently vanish. For Vercel, switch Prisma to a managed Postgres (Neon or Vercel
+   Postgres): change `provider = "sqlite"` → `provider = "postgresql"` in
+   `prisma/schema.prisma`, set `DATABASE_URL` to the Postgres connection string, run
+   `bunx prisma db push` once against that URL to create the tables (User, Session,
+   LoginEvent, AuthToken), then deploy. Keep SQLite for self-hosting — it remains the
+   zero-ops choice there (backups above).
+4. Redeploy after adding env vars so they are picked up by the running deployment.
+
 ## Security notes
 
 - Passwords: bcrypt, 12 rounds. Sessions: HS256 JWT, 30-day expiry, httpOnly
