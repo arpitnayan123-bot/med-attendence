@@ -171,11 +171,29 @@ export const AETCOM_MODULES: ModuleInfo[] = [
   { id: "4.1", title: "4.1 (A & B): The Foundation of Communication-5", hours: "5 hrs (1+2+2)", dept: "General Medicine and Allied Subjects", topic: "A: Demonstrate ability to communicate to patients in a patient, respectful, nonthreatening, non-judgmental and empathetic manner. B: Communicate diagnostic and therapeutic options to patient and family in a simulated environment." },
   { id: "4.2", title: "4.2: Case Studies in Medico-legal and Ethical Situations", hours: "6 hrs (1+3-SDL+1+1)", dept: "Obs/ Gynaecology", topic: "Identify, discuss and defend medico-legal, socioeconomic and ethical issues as it pertains to abortion / Medical Termination of Pregnancy and reproductive rights." },
   { id: "4.3", title: "4.3: Case Studies in Medico-legal and Ethical Situations", hours: "6 hrs (1+3-SDL+1+1)", dept: "General Medicine and Allied Subjects", topic: "Identify and discuss medico-legal, socio-economic and ethical issues as it pertains to organ donation." },
+  // source: AETCOM Phase-III, Module 4.4 (NMC AETCOM book, professional year 4):
+  // competencies "Demonstrate empathy in patient encounters" + "Communicate care
+  // options to patient and family with a terminal illness in a simulated environment".
+  // NOTE: the central book allocates 5 hrs (1+2-SDL+1+1); the college schedule
+  // transcribed here allocates 6 (1+3-SDL+1+1) — kept, flagged per ground rules.
   { id: "4.4", title: "4.4 (A & B): Case Studies in Ethics, Empathy & Doctor-Patient Relationship", hours: "6 hrs (1+3-SDL+1+1)", dept: "General Surgery and Allied Subjects", topic: "A: Demonstrate empathy in patient encounters. B: Communicate care options to patient and family with a terminal illness in a simulated environment." },
-  { id: "4.5", title: "4.5: Case Studies in Ethics: The Doctor-Industry Relationship", hours: "6 hrs (1+3-SDL+1+1)", dept: "General Surgery and Allied Subjects", topic: "Identify, discuss and defend medico-legal, socio-cultural, professional and ethical issues in physician-industry relationships." },
-  { id: "4.6", title: "4.6: Case Studies in Ethics: The Doctor-Industry Relationship", hours: "6 hrs (1+3-SDL+1+1)", dept: "General Surgery and Allied Subjects", topic: "Identify conflicts of interest in patient care and professional relationships and describe the correct response to these conflicts." },
+  // source: AETCOM Phase-III, Module 4.5 — "Identify and discuss and defend
+  // medico-legal, socio-cultural, professional and ethical issues in
+  // physician-industry relationships" (wording aligned to the book).
+  { id: "4.5", title: "4.5: Case Studies in Ethics: The Doctor-Industry Relationship", hours: "6 hrs (1+3-SDL+1+1)", dept: "General Surgery and Allied Subjects", topic: "Identify and discuss and defend medico-legal, socio-cultural, professional and ethical issues in physician-industry relationships." },
+  // source: AETCOM Phase-III, Module 4.6 — title in the book is "Case studies in
+  // ethics and the doctor-industry relationship"; competency below is verbatim.
+  { id: "4.6", title: "4.6: Case Studies in Ethics and the Doctor-Industry Relationship", hours: "6 hrs (1+3-SDL+1+1)", dept: "General Surgery and Allied Subjects", topic: "Identify conflicts of interest in patient care and professional relationships and describe the correct response to these conflicts." },
+  // source: AETCOM Phase-III, Module 4.7 — the book's competency for this module
+  // is VERBATIM the same sentence as 4.6's ("Identify conflicts of interest...").
+  // The apparent duplication is in the handbook itself, not a copy-paste error.
   { id: "4.7", title: "4.7: Case Studies in Ethics and Patient Autonomy", hours: "6 hrs (1+3-SDL+1+1)", dept: "Obs/ Gynaecology", topic: "Identify conflicts of interest in patient care and professional relationships and describe the correct response to these conflicts." },
+  // source: AETCOM Phase-III, Module 4.8 "Dealing with death" — the book lists
+  // two competencies: (1) the conflicts-of-interest sentence, (2) "Demonstrate
+  // empathy to patient and family with a terminal illness in a simulated
+  // environment". A/B below transcribe them verbatim.
   { id: "4.8", title: "4.8 (A & B): Dealing with Death", hours: "6 hrs (1+3-SDL+1+1)", dept: "Obs/ Gynaecology", topic: "A: Identify conflicts of interest in patient care and professional relationships and describe the correct response to these conflicts. B: Demonstrate empathy to patient and family with a terminal illness in a simulated environment." },
+  // source: AETCOM Phase-III, Module 4.9 "Medical negligence".
   { id: "4.9", title: "4.9 (A & B): Medical Negligence", hours: "5 hrs (1+3-SDL+1)", dept: "Paediatrics", topic: "A: Identify, discuss and defend medico-legal, socio-cultural, professional and ethical issues pertaining to medical negligence. B: Identify, discuss and defend medico-legal, socio-cultural, professional and ethical issues pertaining to malpractice." },
 ];
 export const PANDEMIC_MODULES: ModuleInfo[] = [
