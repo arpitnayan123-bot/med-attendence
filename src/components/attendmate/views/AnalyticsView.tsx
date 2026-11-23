@@ -126,17 +126,21 @@ export default function AnalyticsView() {
           <div className="mt-4 flex items-center justify-around gap-2">
             <div className="text-center">
               <Ring pct={proj.theory} target={state.profile.theoryTarget} size={86} label="theory" />
+              {proj.theory === null && <p className="mt-1 text-[10px] font-semibold text-muted-foreground">Log a week to unlock</p>}
             </div>
             <div className="text-center">
               <Ring pct={proj.clinical} target={state.profile.clinicalTarget} size={86} label="clinical" />
+              {proj.clinical === null && <p className="mt-1 text-[10px] font-semibold text-muted-foreground">Log a week to unlock</p>}
             </div>
             <div className="text-center">
               <Ring pct={proj.combined} target={combinedTarget} size={86} label="combined" />
+              {proj.combined === null && <p className="mt-1 text-[10px] font-semibold text-muted-foreground">Log a week to unlock</p>}
             </div>
           </div>
           <p className="mt-3 text-center text-[11px] text-muted-foreground">
             Remaining schedule: ~{proj.remT} theory slots · ~{proj.remC} posting days
           </p>
+          <p className="mt-1 text-center text-[10.5px] text-muted-foreground">Assumes you keep your current rate.</p>
         </section>
       </div>
 

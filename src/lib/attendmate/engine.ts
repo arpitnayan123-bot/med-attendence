@@ -290,15 +290,17 @@ export interface Projection { theory: number | null; clinical: number | null; co
 export function projectSessionEnd(state: AppState): Projection {
   const { tP, tT, cP, cT } = overallStats(state);
   const { remT, remC } = scheduledRemaining(state, todayISO());
+  // A projection needs an actual observed rate: with zero logged classes the
+  // old fallback assumed a 100% future, showing a brand-new profile 100.0%.
+  // Null instead — the ring renders "—" until a week of real data exists.
   const proj = (p: number, t: number, rem: number): number | null => {
-    if (t + rem === 0) return null;
-    const rate = t > 0 ? p / t : 1;
-    return ((p + rate * rem) / (t + rem)) * 100;
+    if (t === 0) return null;
+    return ((p + (p / t) * rem) / (t + rem)) * 100;
   };
   const theory = proj(tP, tT, remT);
   const clinical = proj(cP, cT, remC);
-  const tt = tT + remT, tc = cT + remC;
-  const combined = tt + tc > 0 ? ((tP + (tT > 0 ? (tP / tT) * remT : remT)) + (cP + (cT > 0 ? (cP / cT) * remC : remC))) / (tt + tc) * 100 : null;
+  // Combined needs both modes observed — a missing side would fabricate its rate.
+  const combined = tT === 0 || cT === 0 ? null : ((tP + (tP / tT) * remT) + (cP + (cP / cT) * remC)) / (tT + remT + cT + remC) * 100;
   return { theory, clinical, combined, remT, remC };
 }
 
