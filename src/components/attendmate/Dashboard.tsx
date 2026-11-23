@@ -1,10 +1,11 @@
 "use client";
 // Dashboard shell: sidebar (desktop) + tab strip (mobile), topbar with undo
 // & theme, toast feedback, and the nine ported views.
-import { ComponentType } from "react";
+import { ComponentType, useEffect, useRef, useState } from "react";
 import {
   Home, CalendarDays, BookOpen, LineChart, Clock, Stethoscope, GraduationCap,
   ClipboardCheck, Settings, Undo2, Sun, Moon, LogIn, HardDrive, HardDriveDownload, SaveOff, HardDriveUpload,
+  MoreHorizontal, X,
 } from "lucide-react";
 import { useAttendMate, isSignedIn } from "@/lib/attendmate/storage";
 import { getGroupInfo } from "@/lib/attendmate/engine";
@@ -32,8 +33,17 @@ const VIEW_MAP: Record<string, ComponentType> = {
   timetable: TimetableView, postings: PostingsView, exams: ExamsView, modules: ModulesView, settings: SettingsView,
 };
 
+/* Mobile: five primary tabs on a bottom bar; the rest live behind "More".
+   Tab order here is the single source of truth for both mobile surfaces. */
+const PRIMARY_TABS = ["today", "calendar", "subjects", "analytics"] as const;
+const MORE_TABS = ["timetable", "postings", "exams", "modules", "settings"] as const;
+
 export default function Dashboard({ nav }: { nav: (to: string) => void }) {
   const { state, setState, undo, canUndo, lastAction, lastActionAt, setTheme, authed, storageState, persistent } = useAttendMate();
+  const [moreOpen, setMoreOpen] = useState(false);
+  // Leaving "More" open with nothing to show, or open across tab switches, is
+  // janky — close it whenever the active tab changes to a sheet tab.
+  useEffect(() => { if (moreOpen && MORE_TABS.includes(state.activeTab as never)) setMoreOpen(false); }, [state.activeTab, moreOpen]);
 
   // Device-storage status chip: data lives on this device only (server holds
   // credentials). Clicking opens Settings → Storage on this device.
@@ -152,31 +162,72 @@ export default function Dashboard({ nav }: { nav: (to: string) => void }) {
           </div>
         </header>
 
-      {/* mobile tabs */}
-      <div className="flex gap-1 overflow-x-auto border-b bg-card px-3 py-2 md:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {TABS.map(({ id, label }) => (
-            <button
-              key={id}
-              onClick={() => setState((p) => ({ ...p, activeTab: id }))}
-              className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-[12.5px] font-bold transition ${
-                state.activeTab === id ? "bg-gradient-to-r from-orange-500 to-rose-500 text-white shadow-md shadow-orange-500/30" : "text-muted-foreground hover:bg-muted"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        <main className="mx-auto w-full max-w-6xl px-4 py-5 md:px-6">
+        <main className="mx-auto w-full max-w-6xl px-4 pb-24 py-5 md:px-6 md:pb-10">
           <Active />
         </main>
       </div>
+
+      {/* mobile bottom tab bar — five primary tabs; everything else in More */}
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t bg-card/95 backdrop-blur md:hidden" aria-label="Primary">
+        <div className="grid grid-cols-5">
+          {PRIMARY_TABS.map((id) => {
+            const t = TABS.find((x) => x.id === id)!;
+            const active = state.activeTab === id;
+            return (
+              <button key={id} onClick={() => setState((p) => ({ ...p, activeTab: id }))}
+                aria-current={active ? "page" : undefined}
+                className={`flex flex-col items-center gap-0.5 py-2.5 text-[10.5px] font-bold transition ${
+                  active ? "text-orange-600 dark:text-orange-400" : "text-muted-foreground"
+                }`}>
+                <t.Icon className={`h-5 w-5 ${active ? "stroke-[2.4]" : ""}`} />
+                {t.label}
+                {active && <span className="h-0.5 w-6 rounded-full bg-gradient-to-r from-orange-500 to-rose-500" />}
+              </button>
+            );
+          })}
+          <button onClick={() => setMoreOpen(true)}
+            aria-haspopup="dialog" aria-expanded={moreOpen}
+            className={`flex flex-col items-center gap-0.5 py-2.5 text-[10.5px] font-bold transition ${
+              MORE_TABS.includes(state.activeTab as never) ? "text-orange-600 dark:text-orange-400" : "text-muted-foreground"
+            }`}>
+            <MoreHorizontal className="h-5 w-5" /> More
+            {MORE_TABS.includes(state.activeTab as never) && <span className="h-0.5 w-6 rounded-full bg-gradient-to-r from-orange-500 to-rose-500" />}
+          </button>
+        </div>
+      </nav>
+
+      {/* More sheet — bottom sheet on mobile */}
+      {moreOpen && (
+        <div className="fixed inset-0 z-40 flex items-end md:hidden" role="dialog" aria-modal="true" aria-label="More tabs">
+          <div className="absolute inset-0 bg-black/55 backdrop-blur-sm" onClick={() => setMoreOpen(false)} aria-hidden />
+          <div className="relative w-full rounded-t-3xl border border-border bg-card p-4 pb-6 shadow-2xl">
+            <div className="flex items-center justify-between px-2">
+              <h2 className="text-[14px] font-extrabold">More</h2>
+              <button onClick={() => setMoreOpen(false)} aria-label="Close menu" className="clay-btn clay-soft clay-icon h-8 w-8 text-muted-foreground"><X className="h-4 w-4" /></button>
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {MORE_TABS.map((id) => {
+                const t = TABS.find((x) => x.id === id)!;
+                const active = state.activeTab === id;
+                return (
+                  <button key={id} onClick={() => { setState((p) => ({ ...p, activeTab: id })); setMoreOpen(false); }}
+                    className={`flex items-center gap-2.5 rounded-2xl border px-3.5 py-3 text-[13px] font-bold transition ${
+                      active ? "border-orange-400 bg-orange-500/10 text-orange-600 dark:text-orange-400" : "border-border text-muted-foreground hover:bg-muted"
+                    }`}>
+                    <t.Icon className="h-4 w-4" /> {t.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* toast — remounts on every action, fades out via CSS (no timers) */}
       {lastAction && (
         <div
           key={lastActionAt}
-          className="pointer-events-none fixed bottom-5 left-1/2 z-50 animate-toast rounded-full border bg-foreground px-4 py-2 text-[12.5px] font-semibold text-background shadow-xl"
+          className="pointer-events-none fixed bottom-24 left-1/2 z-50 animate-toast md:bottom-5 rounded-full border bg-foreground px-4 py-2 text-[12.5px] font-semibold text-background shadow-xl"
         >
           {lastAction}
         </div>

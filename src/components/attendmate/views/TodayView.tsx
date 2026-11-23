@@ -62,6 +62,14 @@ export default function TodayView() {
     const dIso = shiftDate(monday, i);
     return { iso: dIso, label: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][i], num: new Date(`${dIso}T00:00:00`).getDate() };
   });
+  const weekStripRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    // keep the selected day's chip visible without scrolling the page itself
+    const strip = weekStripRef.current;
+    if (!strip) return;
+    const active = [...strip.children].find((el) => el.getAttribute("aria-label")?.includes(formatDisplayDate(iso))) as HTMLElement | null;
+    if (active) strip.scrollTo({ left: active.offsetLeft - strip.clientWidth / 2 + active.offsetWidth / 2, behavior: "smooth" });
+  }, [iso]);
   const ringFrac = sum.pct === null ? 0 : Math.min(sum.pct, 100) / 100;
   const RING_C = 2 * Math.PI * 19;
   const ringStroke =
@@ -139,8 +147,10 @@ export default function TodayView() {
         )}
       </section>
 
-      {/* week strip — Mon…Sun quick jump */}
-      <div className="am-card-in flex gap-1.5 overflow-x-auto pb-1 [animation-delay:60ms] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {/* week strip — Mon…Sun quick jump; right-edge fade + scroll snap; the
+          active day chip scrolls into view whenever the date changes */}
+      <div className="relative am-card-in [animation-delay:60ms]">
+      <div ref={weekStripRef} className="flex gap-1.5 overflow-x-auto scroll-smooth pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [scroll-snap-type:x_mandatory]">
         {weekDays.map((d) => {
           const active = d.iso === iso;
           const wsum = daySummary(state, d.iso);
@@ -148,7 +158,7 @@ export default function TodayView() {
           return (
             <button key={d.iso} onClick={() => setState((p) => ({ ...p, selectedDate: d.iso }))}
               aria-label={`Go to ${formatDisplayDate(d.iso)}`}
-              className={`flex min-w-[50px] flex-1 flex-col items-center gap-0.5 rounded-2xl border px-2 py-2 transition ${
+              className={`flex min-w-[50px] flex-1 flex-col items-center gap-0.5 rounded-2xl border px-2 py-2 [scroll-snap-align:center] transition ${
                 active ? "border-orange-300 bg-gradient-to-b from-orange-500 to-rose-500 text-white shadow-md shadow-orange-500/30"
                   : "border-border bg-card text-muted-foreground hover:border-orange-400 hover:text-orange-600"
               }`}
@@ -159,6 +169,8 @@ export default function TodayView() {
             </button>
           );
         })}
+      </div>
+        <div aria-hidden className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-background to-transparent" />
       </div>
 
       {dow !== 0 && (
