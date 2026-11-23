@@ -5,7 +5,7 @@ import { Download, History, LogOut, RotateCcw, Upload, Stethoscope, CalendarCloc
 import { listOwnerSnapshots, OwnerSnapshot } from "@/lib/attendmate/device-storage";
 import { useAttendMate } from "@/lib/attendmate/storage";
 import {
-  MASTER_TIMETABLE, SUBJECT_MAP, AETCOM_MODULES, PANDEMIC_MODULES, EXAMS,
+  MASTER_TIMETABLE, SUBJECT_MAP, AETCOM_MODULES, PANDEMIC_MODULES, EXAMS, Slot,
 } from "@/lib/attendmate/data";
 import {
   todayISO, getGroupInfo, getClinicalPostingForDate, getPersonalRosterTimeline,
@@ -21,6 +21,14 @@ export function TimetableView() {
   const days = [1, 2, 3, 4, 5, 6];
   const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const rows = ["09", "cp", "14", "15", "16"];
+  // weekly hours computed from the timetable itself — never hard-coded
+  const slotHours = (s: Slot): number => {
+    const [a, b] = s.time.split("–").map((t) => t.trim());
+    const toMin = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + (m || 0); };
+    return (toMin(b) - toMin(a)) / 60;
+  };
+  const theoryHrs = days.reduce((acc, d) => acc + (MASTER_TIMETABLE[d] || []).filter((s) => s.type !== "clinical").reduce((a, s) => a + slotHours(s), 0), 0);
+  const clinicalHrs = days.reduce((acc, d) => acc + (MASTER_TIMETABLE[d] || []).filter((s) => s.type === "clinical").reduce((a, s) => a + slotHours(s), 0), 0);
   const rowTime = (slotId: string) => {
     for (const d of days) { const s = (MASTER_TIMETABLE[d] || []).find((x) => x.id.endsWith(slotId === "cp" ? "-cp" : `-${slotId}`)); if (s) return s.time; }
     return "";
@@ -32,7 +40,7 @@ export function TimetableView() {
         <div className="flex flex-wrap items-center gap-3">
           <h2 className="text-[15px] font-extrabold">Master weekly timetable</h2>
           <span className="rounded-full bg-orange-500/10 px-2.5 py-1 text-[11px] font-bold text-orange-600 dark:text-orange-300">Sub-group {subGroup}</span>
-          <span className="ml-auto text-[11px] font-semibold text-muted-foreground">20 theory hrs · 18 clinical hrs per week</span>
+          <span className="ml-auto text-[11px] font-semibold text-muted-foreground">{theoryHrs} theory hrs · {clinicalHrs} clinical hrs per week</span>
         </div>
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[640px] border-collapse text-[12px]">
