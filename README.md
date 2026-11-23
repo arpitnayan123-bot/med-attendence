@@ -29,6 +29,11 @@ icons); `public/sw.js` offline shell (cache-first hashed assets, network-first
 documents, `/api/*` never cached, registration production-only); app-level error
 boundary with a recovery card; all credential requests abort after 15 s.
 
+**Unique rolls** — one roll number belongs to exactly one student: `db.user.rollNo` is
+unique (register returns 409 on a duplicate), `GET /api/auth/roll?roll=N` (rate-limited,
+no PII) powers a live availability check at sign-up, and the Today page's activity
+panel opens with a student-ID strip (name · Roll No. · group/sub-group).
+
 ## Backend
 
 **Schema** (`prisma/schema.prisma`, SQLite at `DATABASE_URL`) — **credential store only**:

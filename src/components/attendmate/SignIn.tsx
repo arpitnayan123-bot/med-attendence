@@ -3,7 +3,7 @@
 // screen on a dark background; a minimal glass sign-in card sits on top.
 // Accounts are real (server-side, bcrypt + JWT cookie sessions); a
 // "device only" path keeps the app fully usable offline-first.
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight, CloudUpload, Loader2, ShieldCheck } from "lucide-react";
 import DitherReveal from "@/components/originkit/ui/dither-reveal";
 import { BrandWord } from "./bits";
@@ -32,6 +32,25 @@ export default function SignIn({ onDone, nav }: { onDone: () => void; nav: (to: 
     setBusy(true);
     setTimeout(onDone, 300);
   };
+
+  // Live roll availability — every student gets exactly one roll (the server
+  // rejects duplicates at register); checking as they type means a taken roll
+  // never surprises anyone at submit time. Device-only profiles skip this:
+  // there is no server truth to check against.
+  const [rollCheck, setRollCheck] = useState<{ state: "checking" | "free" | "taken" } | null>(null);
+  useEffect(() => {
+    const r = parseInt(roll, 10);
+    if (step !== "register" || deviceOnly || !(r >= 1 && r <= 100)) { setRollCheck(null); return; }
+    setRollCheck({ state: "checking" });
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/auth/roll?roll=${r}`);
+        const body = await res.json().catch(() => null);
+        setRollCheck(res.ok && body ? { state: body.taken ? "taken" : "free" } : null);
+      } catch { setRollCheck(null); } // offline — submit-time check still protects uniqueness
+    }, 400);
+    return () => clearTimeout(t);
+  }, [roll, step, deviceOnly]);
 
   const submitEmail = async () => {
     if (!EMAIL_RE.test(email)) { setErr("Enter a valid email address"); return; }
@@ -306,6 +325,13 @@ export default function SignIn({ onDone, nav }: { onDone: () => void; nav: (to: 
                 />
                 {gi && (
                   <p className="mt-2 text-[11px] font-semibold text-violet-300">→ Group {gi.group} · Sub-group {gi.subGroup}</p>
+                )}
+                {!deviceOnly && rollCheck && rollCheck.state !== "checking" && (
+                  <p className={`mt-1.5 text-[11px] font-semibold ${rollCheck.state === "taken" ? "text-rose-400" : "text-emerald-300"}`}>
+                    {rollCheck.state === "free"
+                      ? `✓ Roll ${roll} is free — it will be yours alone, unique across the batch`
+                      : `✗ Roll ${roll} is already taken — each roll number belongs to exactly one student`}
+                  </p>
                 )}
                 {!deviceOnly && (
                   <>
