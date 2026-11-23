@@ -40,7 +40,7 @@ const STEPS = [
   {
     icon: BarChart3,
     title: "Plan with Analytics",
-    body: "See per-subject attendance, safe-bunk advice and your projection to the Sentup exam threshold.",
+    body: "See per-subject attendance, safe-bunk advice and your projection to the end of the session.",
   },
 ];
 

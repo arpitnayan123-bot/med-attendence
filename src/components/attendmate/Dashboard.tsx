@@ -39,9 +39,8 @@ const MORE_TABS = ["postings", "exams", "settings"] as const;
 export default function Dashboard({ nav }: { nav: (to: string) => void }) {
   const { state, setState, undo, canUndo, lastAction, lastActionAt, setTheme, authed, storageState, persistent } = useAttendMate();
   const [moreOpen, setMoreOpen] = useState(false);
-  // Leaving "More" open with nothing to show, or open across tab switches, is
-  // janky — close it whenever the active tab changes to a sheet tab.
-  useEffect(() => { if (moreOpen && MORE_TABS.includes(state.activeTab as never)) setMoreOpen(false); }, [state.activeTab, moreOpen]);
+  // The sheet closes itself on every tap inside it; the bottom-bar tab clicks
+  // never leave it dangling open, so no effect is needed here.
 
   // Device-storage status chip: data lives on this device only (server holds
   // credentials). Clicking opens Settings → Storage on this device.
