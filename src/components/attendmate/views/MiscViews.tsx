@@ -11,7 +11,7 @@ import {
   formatDisplayDate, daysBetween,
 } from "@/lib/attendmate/engine";
 import { apiSecurity } from "@/lib/attendmate/sync";
-import SecuritySection from "./Security";
+import SecuritySection, { StorageCard } from "./Security";
 
 /* ================= TIMETABLE ================= */
 export function TimetableView() {
@@ -223,7 +223,7 @@ export function ModulesView() {
 
 /* ================= SETTINGS ================= */
 export function SettingsView() {
-  const { state, setState, resetAll, importState, setTheme, authed, syncStatus, pending, signOut, retrySync } = useAttendMate();
+  const { state, setState, resetAll, importState, setTheme, authed, signOut } = useAttendMate();
   const fileRef = useRef<HTMLInputElement>(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const [resetPw, setResetPw] = useState("");
@@ -272,34 +272,25 @@ export function SettingsView() {
     <div className="grid gap-4 lg:grid-cols-2">
       <section className="clay-card p-5 lg:col-span-2">
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="text-[15px] font-extrabold">Account &amp; sync</h2>
+          <h2 className="text-[15px] font-extrabold">Account &amp; privacy</h2>
           {authed ? (
-            <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
-              syncStatus === "synced" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-              : syncStatus === "saving" ? "bg-orange-500/10 text-orange-600 dark:text-orange-300"
-              : syncStatus === "queued" ? "bg-orange-500/10 text-orange-600 dark:text-orange-300"
-              : syncStatus === "offline" ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-              : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
-            }`}>
-              {syncStatus === "synced" ? "Synced to server" : syncStatus === "saving" ? "Saving…" : syncStatus === "queued" ? `Queued (${pending})` : syncStatus === "offline" ? "Offline — will retry" : "Sync error"}
+            <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+              Signed in · data stays on this device
             </span>
           ) : (
-            <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-bold text-muted-foreground">Local only — no account</span>
-          )}
-          {(syncStatus === "offline" || syncStatus === "error") && (
-            <button onClick={retrySync} className="clay-btn clay-soft clay-sm">Retry now</button>
+            <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-bold text-muted-foreground">Device only — no account</span>
           )}
         </div>
         <p className="mt-1.5 max-w-[70ch] text-xs text-muted-foreground">
           {authed
-            ? "Every change is queued locally (so the app works in hostel dead-zones) and synced to your account — encrypted in transit, hashed at rest. Sign in on another device to restore everything."
-            : "You're using AttendMate Pro without an account: data lives in this browser only. Create an account from the sign-in page to sync across devices and back up automatically."}
+            ? "Your account exists only to prove who you are (password + 2FA) and to lock your device store to you on shared browsers. Every record — attendance, subjects, modules, targets — is stored on this device and is never uploaded. Moving to a new device? Export a backup file here and import it there."
+            : "Everything lives in this browser only — nothing is transmitted or uploaded. Create an account from the sign-in page if you want password-protected access on shared devices; your data still never leaves this device."}
         </p>
       </section>
 
       <section className="clay-card p-5">
         <h2 className="text-[15px] font-extrabold">Profile</h2>
-        <p className="text-xs text-muted-foreground">{authed ? "Changes sync to your account automatically." : "Stored only in this browser — nothing is transmitted."}</p>
+        <p className="text-xs text-muted-foreground">Stored on this device only — the server never sees it.</p>
         <div className="mt-4 space-y-3">
           <label className="block text-[11px] font-semibold text-muted-foreground">Full name
             <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -347,6 +338,7 @@ export function SettingsView() {
         </div>
       </section>
 
+      <StorageCard />
       {authed && <SecuritySection />}
 
       <section className="clay-card p-5 lg:col-span-2">

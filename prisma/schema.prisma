@@ -7,8 +7,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// AttendMate Pro — accounts and attendance data.
-// SQLite single-file DB; see README "Production" for backup & hardening notes.
+// AttendMate Pro — credential store ONLY.
+// Zero user data lives here: attendance, baselines, module progress, targets
+// and theme are device-local (per-owner localStorage behind an explicit
+// storage consent). The server holds just what sign-in security needs — see
+// README "Privacy & data storage".
 
 model User {
   id               String   @id @default(cuid())
@@ -16,9 +19,6 @@ model User {
   name             String
   passwordHash     String
   rollNo           Int      @default(1) @unique
-  theoryTarget     Int      @default(75)
-  clinicalTarget   Int      @default(80)
-  theme            String   @default("light")
   emailVerified    Boolean  @default(true)
   // TOTP 2FA: secret stored AES-256-GCM encrypted (key derived from AUTH_SECRET)
   totpSecret       String?
@@ -34,9 +34,6 @@ model User {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  logs      AttendanceLog[]
-  baselines Baseline[]
-  modules   ModuleDone[]
   sessions  Session[]
   loginEvents LoginEvent[]
   authTokens  AuthToken[]
@@ -88,49 +85,4 @@ model AuthToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, kind])
-}
-
-/// One row per logged timetable slot: unique (user, date, slotId).
-model AttendanceLog {
-  id        String   @id @default(cuid())
-  userId    String
-  date      String // YYYY-MM-DD
-  slotId    String
-  status    String // present | absent | cancelled
-  subject   String? // credited subject code, "CP" = roster-resolved posting
-  kind      String? // theory | clinical
-  updatedAt DateTime
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, date, slotId])
-  @@index([userId, date])
-}
-
-/// Prior-record baseline per subject code, merged with live logs client-side.
-model Baseline {
-  id              String   @id @default(cuid())
-  userId          String
-  code            String
-  theoryPresent   Int      @default(0)
-  theoryTotal     Int      @default(0)
-  clinicalPresent Int      @default(0)
-  clinicalTotal   Int      @default(0)
-  updatedAt       DateTime
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, code])
-}
-
-/// Module completion markers; row presence = done. Key: "aetcom:4.1" | "pandemic:P4.1".
-model ModuleDone {
-  id        String   @id @default(cuid())
-  userId    String
-  moduleKey String
-  updatedAt DateTime
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, moduleKey])
 }

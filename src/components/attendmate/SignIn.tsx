@@ -43,7 +43,7 @@ export default function SignIn({ onDone, nav }: { onDone: () => void; nav: (to: 
       setStep(exists ? "login" : "register");
     } catch {
       // server unreachable — offer the offline device-only path
-      setErr("Can't reach the sync server right now — you can continue on this device only.");
+      setErr("Can't reach the sign-in server right now — you can continue on this device only.");
       setDeviceOnly(true);
       setStep("register");
     } finally {
@@ -286,7 +286,7 @@ export default function SignIn({ onDone, nav }: { onDone: () => void; nav: (to: 
                   </span>
                   <h1 className="text-[20px] font-bold tracking-tight">{email}</h1>
                   <p className="mt-1.5 text-[13px] text-white/60">
-                    {deviceOnly ? "Offline mode — profile stays on this device" : "Create your account — data syncs & backs up"}
+                    {deviceOnly ? "Offline mode — profile stays on this device" : "Create your account — nothing gets uploaded"}
                   </p>
                 </div>
                 <label className="mb-1 block text-xs font-semibold text-white/70" htmlFor="lm-name">Full name</label>
@@ -319,7 +319,7 @@ export default function SignIn({ onDone, nav }: { onDone: () => void; nav: (to: 
                     />
                     <p className="mt-2 flex items-center gap-1.5 text-[11px] text-emerald-300">
                       <CloudUpload className="h-3.5 w-3.5" />
-                      Everything you&apos;ve already logged on this device will be imported to your account.
+                      Everything already logged on this device stays on this device — it is kept under your new account locally, never uploaded.
                     </p>
                   </>
                 )}

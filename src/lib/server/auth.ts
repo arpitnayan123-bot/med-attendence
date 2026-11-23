@@ -249,17 +249,14 @@ export async function revokeAllSessions(userId: string, exceptSessionId?: string
   });
 }
 
+/** Credential-only identity payload — targets/theme/etc. never touch the server. */
 export function publicUser(u: {
   id: string; email: string; name: string; rollNo: number;
-  theoryTarget: number; clinicalTarget: number; theme: string;
 }) {
   return {
     id: u.id,
     email: u.email,
     name: u.name,
     rollNo: u.rollNo,
-    theoryTarget: u.theoryTarget,
-    clinicalTarget: u.clinicalTarget,
-    theme: u.theme,
   };
 }

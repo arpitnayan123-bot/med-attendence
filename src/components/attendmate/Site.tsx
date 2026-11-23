@@ -129,7 +129,7 @@ const FEATURE_LIST = [
   ["Priority advisor", "Every subject is auto-tiered into Don't Miss / Be Careful / Safe to Miss. With little data the tiers use structure — short postings and low-frequency subjects land in Don't Miss; as your log grows, live percentages take over and re-rank on every mark."],
   ["Calendar heatmap", "A Monday-start month grid colours each logged day by its percentage, marks Sundays, dashed assessment windows from the official exam calendar, and shows the month's logged days, average and perfect days. Tap any day to open it."],
   ["Analytics & projection", "Six streak and volume stats, overall rings for theory, clinical and combined, a trend line of your last 15 logged days against the target, average performance per weekday, a full subject leaderboard, and a session-end projection to the Sentup exam at your current rate."],
-  ["Offline & recoverable", "No account, no server, no network calls. Every action pushes onto a 40-step undo stack, past weeks can be bulk-filled, prior records imported as baselines, and one click exports a JSON backup you can re-import anywhere."],
+  ["Offline & recoverable", "Your data never leaves your device — the server holds nothing but sign-in credentials. Every action pushes onto a 40-step undo stack, past weeks can be bulk-filled, prior records imported as baselines, and one click exports a JSON backup you can re-import anywhere."],
 ] as const;
 
 export function FeaturesPage({ nav }: { nav: (to: string) => void }) {
@@ -387,7 +387,7 @@ export function AboutPage({ nav }: { nav: (to: string) => void }) {
         <div>
           <h2 className="text-[16px] font-extrabold">The principles</h2>
           <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground"><b className="text-foreground">Offline-first.</b> The whole app is static files — it works in a hostel with no wifi, because nothing phones home.</p>
-          <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground"><b className="text-foreground">Private by architecture.</b> No accounts, no servers, no analytics. Your email, roll number and every mark live in your browser&apos;s localStorage; the JSON export exists so you — not a vendor — own the copy that matters.</p>
+          <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground"><b className="text-foreground">Private by architecture.</b> Accounts exist only to prove who you are (password + 2FA) — every mark and record lives in your device&apos;s browser storage, never uploaded; the JSON export exists so you — not a vendor — own the copy that matters.</p>
           <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground"><b className="text-foreground">Grounded in official data.</b> The rosters and exam windows are transcriptions of the Phase-III (Part-2) schedule, not guesses. When the college revises dates, the data is meant to be corrected.</p>
           <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground"><b className="text-foreground">Honest arithmetic.</b> Advice states its assumptions: projections say “if your current rate holds”; simulators touch preview numbers only; cancelled classes stop counting instead of quietly punishing you.</p>
         </div>

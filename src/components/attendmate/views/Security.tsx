@@ -1,11 +1,12 @@
 "use client";
 // Settings → Security: TOTP two-factor auth (QR enrolment + one-time backup
 // codes), the device/session list with remote sign-out, the login audit trail,
-// and password change (step-up: other devices are signed out on success).
+// password change (step-up: other devices are signed out on success), and the
+// device-storage consent card (this app stores nothing on the server).
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Check, Copy, Download, History, KeyRound, Loader2, MonitorSmartphone,
-  ShieldCheck, ShieldOff, Smartphone,
+  Check, Copy, Download, HardDrive, History, KeyRound, Loader2, MemoryStick,
+  MonitorSmartphone, ShieldCheck, ShieldOff, Smartphone, Trash2, SaveOff,
 } from "lucide-react";
 import { useAttendMate } from "@/lib/attendmate/storage";
 import {
@@ -13,6 +14,7 @@ import {
   apiChangePassword, apiRevokeSession, apiRevokeAllSessions,
   SecurityStatus, DeviceSession,
 } from "@/lib/attendmate/sync";
+import { storageUsage } from "@/lib/attendmate/device-storage";
 
 function timeAgo(iso: string): string {
   const s = Math.max(0, Math.floor((Date.now() - Date.parse(iso)) / 1000));
@@ -323,5 +325,87 @@ export default function SecuritySection() {
         )}
       </section>
     </>
+  );
+}
+
+/* ================= STORAGE ON THIS DEVICE ================= */
+// The consent surface for the device-only data model: what is stored, how
+// much, and full control (allow / turn off / make persistent / erase all).
+export function StorageCard() {
+  const { storageState, persistent, grantStorage, denyStorage, requestPersistent, forgetDevice } = useAttendMate();
+  const [usage, setUsage] = useState<{ usage: number; quota: number } | null>(null);
+  const [confirmForget, setConfirmForget] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  useEffect(() => {
+    void storageUsage().then(setUsage);
+  }, [storageState]);
+
+  const mb = (n: number) => (n >= 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.round(n / 1024)} KB`);
+
+  const chip =
+    storageState === "granted"
+      ? { text: persistent ? "Saving · persistent" : "Saving", cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400", Icon: HardDrive }
+      : storageState === "denied"
+        ? { text: "Not saving — memory only", cls: "bg-amber-500/10 text-amber-600 dark:text-amber-400", Icon: SaveOff }
+        : { text: "Permission not set", cls: "bg-muted text-muted-foreground", Icon: MemoryStick };
+
+  return (
+    <section className="clay-card p-5 lg:col-span-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <chip.Icon className="h-4.5 w-4.5 text-sky-500" />
+        <h2 className="text-[15px] font-extrabold">Storage on this device</h2>
+        <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${chip.cls}`}>{chip.text}</span>
+      </div>
+      <p className="mt-1.5 max-w-[75ch] text-xs text-muted-foreground">
+        All of your data — attendance, subjects, module progress, targets, theme — lives <b className="text-foreground">only in this
+        browser</b>, in your own store, isolated per account on shared devices. The server keeps just your sign-in credentials
+        (email, password, 2FA). To move devices, use <b className="text-foreground">Export backup</b> below and import the file there.
+      </p>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+        {usage && usage.quota > 0 && (
+          <span className="rounded-lg border bg-muted/50 px-2.5 py-1 font-semibold">
+            Using {mb(usage.usage)} of {mb(usage.quota)} available
+          </span>
+        )}
+        {storageState === "granted" && !persistent && (
+          <button onClick={() => void requestPersistent()} className="clay-btn clay-soft clay-sm">
+            <HardDrive className="h-3.5 w-3.5" /> Make storage persistent
+          </button>
+        )}
+        {storageState === "denied" && (
+          <span className="font-semibold text-amber-600 dark:text-amber-400">Changes are kept only until the page closes.</span>
+        )}
+      </div>
+      {msg && <p className="mt-2 text-[12px] font-semibold text-emerald-700 dark:text-emerald-300">{msg}</p>}
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        {(storageState === "unknown" || storageState === "denied") && (
+          <button onClick={() => void grantStorage().then(() => setMsg("Saving allowed — your data now survives closing the browser."))} className="clay-btn clay-primary clay-md">
+            <HardDrive className="h-4 w-4" /> Allow saving on this device
+          </button>
+        )}
+        {storageState === "granted" && (
+          <button onClick={() => { denyStorage(); setMsg("Saving turned off — nothing more will be written. Stored files stay until you erase them."); }} className="clay-btn clay-soft clay-md">
+            <SaveOff className="h-4 w-4" /> Turn off saving
+          </button>
+        )}
+        {confirmForget ? (
+          <span className="inline-flex flex-wrap items-center gap-2 rounded-xl border border-rose-500/50 bg-rose-500/5 px-3 py-2 text-[12px] font-bold text-rose-600 dark:text-rose-300">
+            Erase every AttendMate data file on this device (all accounts + guest)?
+            <button
+              onClick={() => { forgetDevice(); setConfirmForget(false); setMsg("All stored data erased from this device."); }}
+              className="clay-btn clay-danger clay-sm rounded-[0.7rem]"
+            >Yes, erase</button>
+            <button onClick={() => setConfirmForget(false)} className="clay-btn clay-soft clay-sm rounded-[0.7rem]">Cancel</button>
+          </span>
+        ) : (
+          <button onClick={() => setConfirmForget(true)} className="clay-btn clay-danger clay-md">
+            <Trash2 className="h-4 w-4" /> Erase stored data
+          </button>
+        )}
+      </div>
+    </section>
   );
 }

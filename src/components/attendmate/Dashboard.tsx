@@ -4,7 +4,7 @@
 import { ComponentType } from "react";
 import {
   Home, CalendarDays, BookOpen, LineChart, Clock, Stethoscope, GraduationCap,
-  ClipboardCheck, Settings, Undo2, Sun, Moon, LogIn, Cloud, CloudOff, CloudUpload, Loader2, TriangleAlert,
+  ClipboardCheck, Settings, Undo2, Sun, Moon, LogIn, HardDrive, HardDriveDownload, SaveOff, HardDriveUpload,
 } from "lucide-react";
 import { useAttendMate, isSignedIn } from "@/lib/attendmate/storage";
 import { getGroupInfo } from "@/lib/attendmate/engine";
@@ -33,17 +33,18 @@ const VIEW_MAP: Record<string, ComponentType> = {
 };
 
 export default function Dashboard({ nav }: { nav: (to: string) => void }) {
-  const { state, setState, undo, canUndo, lastAction, lastActionAt, setTheme, authed, syncStatus, pending, retrySync } = useAttendMate();
+  const { state, setState, undo, canUndo, lastAction, lastActionAt, setTheme, authed, storageState, persistent } = useAttendMate();
 
-  const SYNC_MAP = {
-    synced: { Icon: Cloud, cls: "text-emerald-500", label: "Synced" },
-    saving: { Icon: Loader2, cls: "text-violet-500 animate-spin", label: "Saving…" },
-    queued: { Icon: CloudUpload, cls: "text-violet-500", label: "Pending sync" },
-    offline: { Icon: CloudOff, cls: "text-amber-500", label: "Offline — retrying" },
-    error: { Icon: TriangleAlert, cls: "text-rose-500", label: "Sync error — retry" },
-    local: null,
+  // Device-storage status chip: data lives on this device only (server holds
+  // credentials). Clicking opens Settings → Storage on this device.
+  const STORAGE_MAP = {
+    granted: persistent
+      ? { Icon: HardDriveDownload, cls: "text-emerald-500", label: "Saved on device · persistent" }
+      : { Icon: HardDrive, cls: "text-emerald-500", label: "Saved on device" },
+    denied: { Icon: HardDriveUpload, cls: "text-amber-500", label: "Not saving — memory only" },
+    unknown: { Icon: HardDrive, cls: "text-muted-foreground", label: "Storage permission" },
   } as const;
-  const syncMeta = SYNC_MAP[syncStatus];
+  const storageMeta = STORAGE_MAP[storageState];
 
   // Same isolation rule as the app shell: an account-tagged device copy needs
   // that account's live session — a direct #/dashboard visit can't bypass it.
@@ -123,15 +124,15 @@ export default function Dashboard({ nav }: { nav: (to: string) => void }) {
                 <span className="rounded-full bg-orange-500 px-1.5 text-[10px] font-bold text-white">+</span>
               </button>
             )}
-            {syncMeta && (
+            {storageMeta && (
               <button
-                onClick={() => (syncStatus === "offline" || syncStatus === "error" ? retrySync() : undefined)}
-                title={`Server sync: ${syncMeta.label}${pending > 0 ? ` (${pending})` : ""}`}
-                aria-label={`Server sync: ${syncMeta.label}${pending > 0 ? ` (${pending})` : ""}`}
+                onClick={() => setState((p) => ({ ...p, activeTab: "settings" }))}
+                title={`Storage on this device: ${storageMeta.label}`}
+                aria-label={`Storage on this device: ${storageMeta.label}`}
                 className="clay-btn clay-soft h-9 rounded-[0.9rem] px-2.5 text-[11px] font-bold text-muted-foreground"
               >
-                <syncMeta.Icon className={`h-4 w-4 ${syncMeta.cls}`} />
-                <span className="hidden lg:inline">{syncMeta.label}{pending > 0 && syncStatus !== "saving" ? ` (${pending})` : ""}</span>
+                <storageMeta.Icon className={`h-4 w-4 ${storageMeta.cls}`} />
+                <span className="hidden lg:inline">{storageMeta.label}</span>
               </button>
             )}
             <button

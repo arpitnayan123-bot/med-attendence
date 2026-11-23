@@ -7,26 +7,29 @@ Tailwind CSS 4 + Prisma/SQLite, with the Originkit **Dither Reveal** on the land
 ## Architecture
 
 ```
-Landing (#/ · sign-in)          Originkit DitherReveal + real accounts
-  ├─ email → exists? → login (password) | register (name, roll, password)
+Landing (#/ · sign-in)          Originkit DitherReveal + real accounts (credentials only)
+  ├─ email → exists? → login (password [+ 2FA]) | register (name, roll, password)
   └─ "Use this device only"    local-only mode, no server contact
 Dashboard (#/dashboard)         9 views · offline-first · 40-step undo
-  └─ every mutation → diff → keyed op queue → POST /api/sync (debounced 900 ms)
+  └─ every mutation → per-owner device store (localStorage), gated by the
+     explicit storage consent — nothing is ever uploaded
 Marketing (#/features | #/how-it-works | #/roster | #/faq | #/about) + 404
 ```
 
 - `src/lib/attendmate/data.ts` — official subjects, master timetable, A1–F4 rosters, exams, modules
 - `src/lib/attendmate/engine.ts` — pure logic: stats, bunk math, advice tiers, streaks, projection
-- `src/lib/attendmate/storage.tsx` — state + undo + theme + sync bridge (diff → op queue)
-- `src/lib/attendmate/sync.ts` — API client, queue coalescing, pull-merge (per-key LWW)
+- `src/lib/attendmate/storage.tsx` — state + undo + theme + per-owner device stores (consent-gated)
+- `src/lib/attendmate/device-storage.ts` — storage consent, persistence request, usage, legacy migration
+- `src/lib/attendmate/sync.ts` — credentials/security API client (no data sync exists)
 - `src/lib/server/*` — auth (JWT/bcrypt), rate limiting, zod validation, route helpers
 
 ## Backend
 
-**Schema** (`prisma/schema.prisma`, SQLite at `DATABASE_URL`):
-`User` (email unique, bcrypt `passwordHash`, rollNo, targets, theme) ·
-`AttendanceLog` (unique per user+date+slot) · `Baseline` (per subject) ·
-`ModuleDone` (per module key). All child rows cascade on account deletion.
+**Schema** (`prisma/schema.prisma`, SQLite at `DATABASE_URL`) — **credential store only**:
+`User` (email unique, bcrypt `passwordHash`, unique rollNo, 2FA + lockout fields) ·
+`Session` (revocable device sessions) · `LoginEvent` (audit trail) · `AuthToken`
+(single-use verify/reset tokens). **No user data tables** — attendance, baselines,
+module progress, targets and theme are device-local by design (see "Privacy & data storage").
 
 **API** (all mutating routes require `x-am-csrf: 1` + same-origin Origin; per-IP rate limits):
 
@@ -36,18 +39,20 @@ Marketing (#/features | #/how-it-works | #/roster | #/faq | #/about) + 404
 | `/api/auth/exists` | POST | sign-in step 1 (account exists?) | 20 / 5 min |
 | `/api/auth/register` | POST | create account + session | 5 / 10 min |
 | `/api/auth/login` | POST | password sign-in (generic 401s) | 10 / 5 min |
-| `/api/auth/logout` | POST | clear session cookie | 30 / 5 min |
-| `/api/auth/me` | GET | current session user | — |
-| `/api/sync` | GET | full snapshot (profile, logs, baselines, modules) | — |
-| `/api/sync` | POST | apply ≤500 ops (upsert/delete, transactional) | 60 / min |
-| `/api/sync` | DELETE | wipe account's attendance data | 5 / min |
+| `/api/auth/totp` | POST | 2FA step (code or backup code) | 10 / 5 min |
+| `/api/auth/logout` | POST | revoke session + clear cookie | 30 / 5 min |
+| `/api/auth/me` | GET | current session user (credentials only) | — |
+| `/api/auth/verify-password` | POST | step-up proof for destructive device actions | 5 / min |
+| `/api/auth/security`, `/api/auth/2fa/*`, `/api/auth/sessions`, `/api/auth/change-password`, `/api/auth/reset*`, `/api/auth/verify` | | Tier 1+2 security surface | per-route |
 
-**Sync model** — offline-first with last-write-wins per key:
-mutations land in localStorage instantly and a keyed queue (`attendmate_sync_queue`);
-flushes are debounced and retried with backoff; on sign-in the server snapshot is
-merged (newer queued op wins, otherwise server wins; local-only records migrate up).
-The browser keeps working with zero connectivity — the topbar chip shows
-Saving / Synced / Pending (n) / Offline / Error.
+**Privacy & data storage** — device-only by architecture. On first use the app asks
+explicit permission ("Store your data on this device?"); allowing writes each owner's
+data to `attendmate_pro_v2:<userId>` (guest: `:guest`) and requests
+`navigator.storage.persist()`. Declining means zero writes (memory-only, question
+reappears next visit — nothing, not even the choice, can be saved). Accounts on a
+shared browser get isolated stores; sign-in switches stores and never moves data.
+Moving devices = Export/Import backup files. The server never receives, stores, or
+serves any attendance data.
 
 ## Environment
 

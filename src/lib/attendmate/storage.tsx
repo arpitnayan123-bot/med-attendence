@@ -1,16 +1,20 @@
 "use client";
-// AttendMate Pro — client state + sync bridge.
-// localStorage persistence (schema-compatible with the original app's
-// attendmate_pro_v2), 40-step undo, theme handling, and a production sync
-// layer: every mutation is diffed into keyed server ops, queued (offline-first)
-// and flushed to /api/sync when an account is signed in.
+// AttendMate Pro — client state + DEVICE-ONLY persistence.
+// Nothing is uploaded: every user's data lives in this browser, in a
+// per-owner store (`attendmate_pro_v2:<userId>`, guest = `:guest`), written
+// only after the user explicitly allowed device storage (consent gate).
+// The server holds just sign-in credentials + 2FA/security — see sync.ts.
+// Ownership is isolated: switching accounts switches stores, so two students
+// on a shared browser never see each other's records. Moving devices = the
+// Export/Import backup files in Settings.
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
-import { AppState, STORAGE_KEY, SlotEntry, MarkStatus, MASTER_TIMETABLE } from "./data";
+import { AppState, SlotEntry, MarkStatus, MASTER_TIMETABLE } from "./data";
 import { todayISO, getClinicalPostingForDate, shiftDate } from "./engine";
+import { ServerUser, apiMe, apiLogin, apiTotpVerify, apiRegister, apiLogout, apiVerifyPassword } from "./sync";
 import {
-  SyncStatus, ServerOp, ServerUser, enqueueOps, readPendingOps, writePendingOps, pendingCount,
-  clearQueue, pullAndMerge, apiMe, apiLogin, apiTotpVerify, apiRegister, apiLogout, apiPush, apiWipeServerData,
-} from "./sync";
+  StorageConsent, readConsent, grantConsent as persistConsentFlag, requestPersistent as askPersistent,
+  isPersistent, migrateLegacyStore, readOwnerStore, writeOwnerStore, removeOwnerStore, wipeAllDeviceData,
+} from "./device-storage";
 
 function MASTER_SLOTS(dow: number) { return MASTER_TIMETABLE[dow] || []; }
 function resolvePostingCached(iso: string, subGroup: string): string | null {
@@ -32,30 +36,19 @@ export function createDefaultState(): AppState {
   };
 }
 
-function loadStored(): AppState {
+function normalizeStored(parsed: Partial<AppState> | null): AppState {
   const base = createDefaultState();
-  if (typeof window === "undefined") return base;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      return {
-        ...base,
-        ...parsed,
-        profile: { ...base.profile, ...(parsed.profile || {}) },
-        logs: parsed.logs || {},
-        baseline: parsed.baseline || {},
-        aetcomDone: parsed.aetcomDone || {},
-        pandemicDone: parsed.pandemicDone || {},
-        syncOwnerId: typeof parsed.syncOwnerId === "string" ? parsed.syncOwnerId : null,
-      };
-    }
-  } catch { /* fall back to defaults */ }
-  return base;
-}
-
-export function saveStored(state: AppState) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch { /* storage unavailable */ }
+  if (!parsed || typeof parsed !== "object") return base;
+  return {
+    ...base,
+    ...parsed,
+    profile: { ...base.profile, ...(parsed.profile || {}) },
+    logs: parsed.logs || {},
+    baseline: parsed.baseline || {},
+    aetcomDone: parsed.aetcomDone || {},
+    pandemicDone: parsed.pandemicDone || {},
+    syncOwnerId: typeof parsed.syncOwnerId === "string" ? parsed.syncOwnerId : null,
+  };
 }
 
 export function isSignedIn(state: AppState): boolean {
@@ -77,58 +70,6 @@ export function applyThemeClass(theme: "light" | "dark") {
   document.documentElement.style.colorScheme = theme;
 }
 
-/* ---------- mutation diffing → server ops ---------- */
-const PROFILE_FIELDS = ["name", "email", "rollNo", "theoryTarget", "clinicalTarget", "theme"] as const;
-
-function diffOps(prev: AppState, next: AppState): ServerOp[] {
-  const ops: ServerOp[] = [];
-  if (prev.logs !== next.logs) {
-    const dates = new Set([...Object.keys(prev.logs), ...Object.keys(next.logs)]);
-    for (const date of dates) {
-      const a = prev.logs[date] || {};
-      const b = next.logs[date] || {};
-      const slots = new Set([...Object.keys(a), ...Object.keys(b)]);
-      for (const slotId of slots) {
-        if (a[slotId] === b[slotId]) continue;
-        const e = b[slotId];
-        if (!e) ops.push({ t: "log.del", date, slotId });
-        else ops.push({ t: "log.set", date, slotId, status: e.status, subject: e.subject ?? null, kind: e.kind ?? null });
-      }
-    }
-  }
-  if (prev.baseline !== next.baseline) {
-    const codes = new Set([...Object.keys(prev.baseline), ...Object.keys(next.baseline)]);
-    for (const code of codes) {
-      if (prev.baseline[code] === next.baseline[code]) continue;
-      const b = next.baseline[code];
-      ops.push({
-        t: "baseline.set", code,
-        b: b ? { tp: b.theoryPresent || 0, tt: b.theoryTotal || 0, cp: b.clinicalPresent || 0, ct: b.clinicalTotal || 0 } : null,
-      });
-    }
-  }
-  if (prev.aetcomDone !== next.aetcomDone) {
-    for (const id of Object.keys(next.aetcomDone)) {
-      if (prev.aetcomDone[id] !== next.aetcomDone[id]) ops.push({ t: "module.set", key: `aetcom:${id}`, done: Boolean(next.aetcomDone[id]) });
-    }
-  }
-  if (prev.pandemicDone !== next.pandemicDone) {
-    for (const id of Object.keys(next.pandemicDone)) {
-      if (prev.pandemicDone[id] !== next.pandemicDone[id]) ops.push({ t: "module.set", key: `pandemic:${id}`, done: Boolean(next.pandemicDone[id]) });
-    }
-  }
-  const patch: Partial<{ name: string; rollNo: number; theoryTarget: number; clinicalTarget: number; theme: string }> = {};
-  let hasPatch = false;
-  for (const f of PROFILE_FIELDS) {
-    if (prev.profile[f] !== next.profile[f] && f !== "email") {
-      (patch as Record<string, unknown>)[f] = next.profile[f];
-      hasPatch = true;
-    }
-  }
-  if (hasPatch) ops.push({ t: "profile.set", patch });
-  return ops;
-}
-
 /* ---------- context ---------- */
 export interface UndoSnapshot { label: string; state: AppState }
 
@@ -148,15 +89,19 @@ export interface AttendMateCtx {
   resetAll: (stepUp?: { password: string; code?: string }) => Promise<void>;
   importState: (json: string) => boolean;
   setTheme: (theme: "light" | "dark") => void;
-  /* sync */
+  /* account */
   authed: boolean;
-  syncStatus: SyncStatus;
-  pending: number;
   signIn: (email: string, password: string) => Promise<{ ok: boolean; error?: string; twoFactorRequired?: boolean }>;
   verifyTotp: (code: string) => Promise<{ ok: boolean; error?: string }>;
   signUp: (email: string, name: string, rollNo: number, password: string) => Promise<{ ok: boolean; error?: string }>;
   signOut: () => Promise<void>;
-  retrySync: () => void;
+  /* device storage consent */
+  storageState: StorageConsent;
+  persistent: boolean;
+  grantStorage: () => Promise<void>;
+  denyStorage: () => void;
+  requestPersistent: () => Promise<void>;
+  forgetDevice: () => void;
 }
 const Ctx = createContext<AttendMateCtx | null>(null);
 
@@ -166,16 +111,13 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
   const [lastAction, setLastAction] = useState<string | null>(null);
   const [lastActionAt, setLastActionAt] = useState(0);
   const [authed, setAuthed] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<SyncStatus>("local");
-  const [pending, setPending] = useState(0);
+  const [storageState, setStorageState] = useState<StorageConsent>("unknown");
+  const [persistent, setPersistent] = useState(false);
   const undoRef = useRef<UndoSnapshot[]>([]);
-  const hydrated = useRef(false);
   const stateRef = useRef<AppState>(state);
   const authedRef = useRef(false);
-  const userIdRef = useRef<string | null>(null);
-  const inFlight = useRef(false);
-  const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const ownerRef = useRef<string | null>(null); // active store owner: userId | null = guest
+  const consentRef = useRef<StorageConsent>("unknown");
   useEffect(() => { stateRef.current = state; }, [state]);
 
   const note = useCallback((label: string) => {
@@ -183,109 +125,77 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
     setLastActionAt(Date.now());
   }, []);
 
-  /**
-   * Account isolation: local storage (state + op queue) belongs to exactly one
-   * account. When the active session user differs from the stored copy's owner
-   * — or the copy is un-attributable guest data — discard it before pulling the
-   * server snapshot, so two students sharing a browser can never see or merge
-   * each other's records.
-   */
-  const adoptLocalCopyFor = useCallback((user: { id: string }, migrateGuest: boolean) => {
-    const local = loadStored();
-    const owner = local.syncOwnerId ?? null;
-    const foreign = owner !== null && owner !== user.id;
-    const guest = owner === null;
-    if (foreign || (guest && !migrateGuest)) {
-      const fresh = createDefaultState();
-      fresh.profile.theme = getStoredTheme(); // theme stays device-local
-      saveStored(fresh);
-      clearQueue(user.id);
-    }
-  }, []);
-
+  /** Consent-gated write: the ONLY path any data ever reaches storage. */
   const persist = useCallback((next: AppState) => {
-    saveStored(next);
+    if (consentRef.current === "granted") writeOwnerStore(ownerRef.current, next);
     setCanUndo(undoRef.current.length > 0);
   }, []);
 
-  const refreshPending = useCallback(() => setPending(pendingCount(userIdRef.current)), []);
-
-  /* ---------- flush loop ---------- */
-  const flush = useCallback(async () => {
-    if (!authedRef.current || inFlight.current) return;
-    const ops = readPendingOps(userIdRef.current);
-    if (ops.length === 0) { setSyncStatus("synced"); return; }
-    inFlight.current = true;
-    setSyncStatus("saving");
-    const startedAt = Date.now();
-    try {
-      await apiPush(ops.map((e) => e.op));
-      // drop the ops we just pushed, unless they were re-touched mid-flight
-      const pushedKeys = new Set(ops.map((e) => e.key));
-      const rest = readPendingOps(userIdRef.current).filter((e) => !pushedKeys.has(e.key) || e.at > startedAt);
-      writePendingOps(rest, userIdRef.current);
-      refreshPending();
-      setSyncStatus(rest.length === 0 ? "synced" : "queued");
-    } catch (err) {
-      const status = (err as Error & { status?: number }).status;
-      if (status === 401) {
-        authedRef.current = false;
-        userIdRef.current = null;
-        setAuthed(false);
-        setSyncStatus("local");
-      } else if (status && status < 500) {
-        setSyncStatus("error"); // bad request — needs human attention, queue kept
-      } else {
-        setSyncStatus("offline");
-        if (retryTimer.current) clearTimeout(retryTimer.current);
-        retryTimer.current = setTimeout(() => { void flush(); }, 8000);
-      }
-    } finally {
-      inFlight.current = false;
+  /** Builds the active state for an owner store (identity overlaid from the server, theme stays device-local). */
+  const applyOwnerState = useCallback((owner: string | null, user: ServerUser | null, carryGuestData: boolean) => {
+    const existing = readOwnerStore<Partial<AppState>>(owner);
+    const theme = getStoredTheme();
+    let next: AppState;
+    const hasGuestData = Boolean(existing) || (() => {
+      const s = stateRef.current;
+      return Object.keys(s.logs).length + Object.keys(s.baseline).length + Object.keys(s.aetcomDone).length + Object.keys(s.pandemicDone).length > 0;
+    })();
+    if (existing) {
+      next = normalizeStored(existing);
+      if (user) next.profile = { ...next.profile, email: user.email, name: user.name, rollNo: user.rollNo };
+    } else if (carryGuestData && user && hasGuestData) {
+      // First sign-up on a device that already has guest data: carry it into the new account's store.
+      next = { ...stateRef.current, profile: { ...stateRef.current.profile, email: user.email, name: user.name, rollNo: user.rollNo, theme } };
+    } else {
+      next = createDefaultState();
+      next.profile.theme = theme;
+      if (user) next.profile = { ...next.profile, email: user.email, name: user.name, rollNo: user.rollNo };
     }
-  }, [refreshPending]);
+    next.syncOwnerId = owner; // store is locked to its owner
+    ownerRef.current = owner;
+    setStateRaw(next);
+    persist(next);
+  }, [persist]);
 
-  const scheduleFlush = useCallback(() => {
-    if (!authedRef.current) return;
-    setSyncStatus("queued");
-    refreshPending();
-    if (flushTimer.current) clearTimeout(flushTimer.current);
-    flushTimer.current = setTimeout(() => { void flush(); }, 900);
-  }, [flush, refreshPending]);
+  /** Saves the active store under its current owner, then re-points the owner. */
+  const switchOwner = useCallback((owner: string | null, user: ServerUser | null, carryGuestData = false) => {
+    if (consentRef.current === "granted") writeOwnerStore(ownerRef.current, stateRef.current);
+    applyOwnerState(owner, user, carryGuestData);
+  }, [applyOwnerState]);
 
-  /* ---------- boot: hydrate local, then reconcile with the server ---------- */
+  /* ---------- boot: consent first, then hydrate the owner's device store ---------- */
   useEffect(() => {
-    const loaded = loadStored();
+    const consent = readConsent();
+    consentRef.current = consent;
     const theme = getStoredTheme();
     applyThemeClass(theme);
-    setStateRaw({ ...loaded, profile: { ...loaded.profile, theme } });
-    hydrated.current = true;
-    refreshPending();
 
     (async () => {
-      const user = await apiMe();
-      if (!user) { setSyncStatus("local"); return; }
-      authedRef.current = true;
-      userIdRef.current = user.id;
-      setAuthed(true);
-      adoptLocalCopyFor(user, false); // a live session never adopts foreign or guest copies
-      const merge = await pullAndMerge(loadStored(), user.id);
-      if (merge) {
-        setStateRaw({ ...merge.state, profile: { ...merge.state.profile, theme: getStoredTheme() } });
-        setSyncStatus(merge.importedOps > 0 || pendingCount(user.id) > 0 ? "queued" : "synced");
+      setStorageState(consent);
+      const user = await apiMe(); // credentials-only session restore — fetches no data
+      if (consent === "granted") {
+        migrateLegacyStore(); // pre-multi-owner single store → per-owner stores
+        void isPersistent().then(setPersistent);
+        if (user) {
+          authedRef.current = true;
+          setAuthed(true);
+          applyOwnerState(user.id, user, false);
+        } else {
+          applyOwnerState(null, null, false);
+        }
       } else {
-        setSyncStatus("offline");
+        // Nothing is read or written before an explicit allow; remember who the
+        // cookie belongs to so granting later loads the right store.
+        ownerRef.current = user?.id ?? null;
+        if (user) {
+          authedRef.current = true;
+          setAuthed(true);
+        }
       }
-      refreshPending();
-      void flush();
     })();
-
-    const onOnline = () => void flush();
-    window.addEventListener("online", onOnline);
-    return () => window.removeEventListener("online", onOnline);
   }, []);
 
-  /* ---------- state mutation (with op diffing) ---------- */
+  /* ---------- state mutation ---------- */
   const setState = useCallback((updater: (prev: AppState) => AppState, undoLabel?: string) => {
     setStateRaw((prev) => {
       if (undoLabel) {
@@ -294,16 +204,10 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
       }
       const next = updater(prev);
       persist(next);
-      const ops = diffOps(prev, next);
-      if (authedRef.current && ops.length > 0) {
-        enqueueOps(ops, userIdRef.current);
-        // schedule outside the updater to avoid side effects mid-render
-        setTimeout(scheduleFlush, 0);
-      }
       return next;
     });
     if (undoLabel) note(undoLabel);
-  }, [persist, note, scheduleFlush]);
+  }, [persist, note]);
 
   const markSlot = useCallback((iso: string, slotId: string, status: MarkStatus, subject?: string, kind?: "theory" | "clinical") => {
     setState((prev) => {
@@ -397,69 +301,53 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
     if (!snap) return;
     setStateRaw(snap.state);
     persist(snap.state);
-    const ops = diffOps(stateRef.current, snap.state);
-    if (authedRef.current && ops.length > 0) {
-      enqueueOps(ops, userIdRef.current);
-      setTimeout(scheduleFlush, 0);
-    }
     setCanUndo(undoRef.current.length > 0);
     note("Last action undone");
-  }, [persist, note, scheduleFlush]);
+  }, [persist, note]);
 
   const resetAll = useCallback(async (stepUp?: { password: string; code?: string }) => {
     if (authedRef.current) {
-      // Destructive: requires a fresh password (+ TOTP) proof. A failed proof
-      // throws — nothing is erased, locally or on the server.
+      // Destructive, so identity is re-proven server-side (password + TOTP when
+      // enabled). The server stores nothing — it only says yes/no; a failed
+      // proof throws and nothing is erased.
       if (!stepUp) throw new Error("Confirm with your password to erase your data");
-      await apiWipeServerData(stepUp);
+      await apiVerifyPassword(stepUp);
     }
-    clearQueue(userIdRef.current);
-    refreshPending();
+    removeOwnerStore(ownerRef.current);
     const fresh = createDefaultState();
-    fresh.syncOwnerId = userIdRef.current; // reset copy stays bound to the active account
+    fresh.profile.theme = getStoredTheme();
+    fresh.syncOwnerId = ownerRef.current; // the fresh copy stays bound to the active owner
     setStateRaw(fresh);
-    saveStored(fresh);
+    persist(fresh);
     undoRef.current = [];
     setCanUndo(false);
-    setSyncStatus(authedRef.current ? "synced" : "local");
-    note("All data erased");
-  }, [note, refreshPending]);
+    note("All data erased from this device");
+  }, [note, persist]);
 
   const importState = useCallback((json: string): boolean => {
     try {
       const parsed = JSON.parse(json);
       if (!parsed || typeof parsed !== "object" || !parsed.profile) return false;
-      // Imported copies never carry a foreign owner tag — they belong to the
-      // active account (or stay guest data when signed out).
-      setState(() => ({ ...createDefaultState(), ...parsed, syncOwnerId: userIdRef.current, profile: { ...createDefaultState().profile, ...(parsed.profile || {}) } }), "Import backup");
+      // Imported copies belong to the active owner (account or guest) on this device.
+      setState(() => ({ ...normalizeStored(parsed), syncOwnerId: ownerRef.current }), "Import backup");
       return true;
     } catch { return false; }
   }, [setState]);
 
   const setTheme = useCallback((theme: "light" | "dark") => {
     applyThemeClass(theme);
-    try { localStorage.setItem("attendmate_site_theme", theme); } catch { /* ignore */ }
+    if (consentRef.current === "granted") {
+      try { localStorage.setItem("attendmate_site_theme", theme); } catch { /* ignore */ }
+    }
     setState((prev) => ({ ...prev, profile: { ...prev.profile, theme } }));
   }, [setState]);
 
-  /* ---------- auth flows ---------- */
-  const adoptServerSession = useCallback(async (user: ServerUser) => {
-    // Isolation: only reuse the local copy if it belongs to this account.
-    // Foreign-account and guest copies are wiped first (guest data cannot be
-    // attributed, so it never flows into an existing account) — the server
-    // snapshot is the single source of truth.
-    adoptLocalCopyFor(user, false);
+  /* ---------- auth flows (credentials only — no data ever moves) ---------- */
+  const enterAccount = useCallback((user: ServerUser, carryGuestData = false) => {
+    switchOwner(user.id, user, carryGuestData);
     authedRef.current = true;
-    userIdRef.current = user.id;
     setAuthed(true);
-    const merge = await pullAndMerge(loadStored(), user.id);
-    if (merge) {
-      setStateRaw({ ...merge.state, profile: { ...merge.state.profile, email: user.email, theme: getStoredTheme() } });
-    }
-    setSyncStatus(pendingCount(user.id) > 0 ? "queued" : "synced");
-    refreshPending();
-    void flush();
-  }, [flush, refreshPending, adoptLocalCopyFor]);
+  }, [switchOwner]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     try {
@@ -469,67 +357,94 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
         // step and calls verifyTotp() next. No session exists yet.
         return { ok: false, twoFactorRequired: true as const };
       }
-      await adoptServerSession(r.user);
+      enterAccount(r.user);
+      note("Signed in — data stays on this device");
       return { ok: true as const };
     } catch (err) {
       return { ok: false as const, error: (err as Error).message || "Sign-in failed" };
     }
-  }, [adoptServerSession]);
+  }, [enterAccount, note]);
 
   const verifyTotp = useCallback(async (code: string) => {
     try {
       const user = await apiTotpVerify(code);
-      await adoptServerSession(user);
+      enterAccount(user);
+      note("Signed in — data stays on this device");
       return { ok: true as const };
     } catch (err) {
       return { ok: false as const, error: (err as Error).message || "Invalid or expired code" };
     }
-  }, [adoptServerSession]);
+  }, [enterAccount, note]);
 
   const signUp = useCallback(async (email: string, name: string, rollNo: number, password: string) => {
     try {
       const user = await apiRegister(email, name, rollNo, password);
-      // First-time migration: an un-attributed guest copy (this device, never
-      // signed in) is imported into the new account. A copy that belongs to
-      // another account is wiped — it must never flow into the new account.
-      adoptLocalCopyFor(user, true);
-      authedRef.current = true;
-      userIdRef.current = user.id;
-      setAuthed(true);
-      // Server is empty, so pullAndMerge queues all local-only records and the
-      // flush imports them.
-      const merge = await pullAndMerge(loadStored(), user.id);
-      if (merge) {
-        setStateRaw({ ...merge.state, profile: { ...merge.state.profile, email: user.email, theme: getStoredTheme() } });
-      }
-      setSyncStatus("queued");
-      refreshPending();
-      void flush();
-      return { ok: true };
+      // First registration on a device: guest data on this device is carried
+      // into the new account's store (still device-local — nothing uploads).
+      enterAccount(user, true);
+      note("Account created — data stays on this device");
+      return { ok: true as const };
     } catch (err) {
       return { ok: false, error: (err as Error).message || "Registration failed" };
     }
-  }, [flush, refreshPending, adoptLocalCopyFor]);
+  }, [enterAccount, note]);
 
   const signOut = useCallback(async () => {
     try { await apiLogout(); } catch { /* session may already be gone */ }
-    // Drop queued ops so nothing can flush into a different account later; the
-    // local copy stays on this device, locked to this account via its owner tag.
-    clearQueue(null);
-    userIdRef.current = null;
+    // The account's device store stays on this device (its data never left it);
+    // the guest store becomes active. The dashboard locks until sign-in because
+    // the fresh/default guest copy has no profile — ownership stays intact.
+    switchOwner(null, null, false);
     authedRef.current = false;
     setAuthed(false);
-    setSyncStatus("local");
-    note("Signed out — data stays on this device, locked to your account");
+    note("Signed out — your data stays on this device");
+  }, [switchOwner, note]);
+
+  /* ---------- device-storage consent ---------- */
+  const grantStorage = useCallback(async () => {
+    persistConsentFlag();
+    consentRef.current = "granted";
+    setStorageState("granted");
+    void askPersistent().then(setPersistent);
+    migrateLegacyStore();
+    // Load whichever owner the session (or guest) points at — before this
+    // moment nothing was read or written.
+    const user = authedRef.current ? await apiMe() : null;
+    if (user) applyOwnerState(user.id, user, false);
+    else if (!authedRef.current) applyOwnerState(null, null, false);
+  }, [applyOwnerState]);
+
+  const denyStorage = useCallback(() => {
+    // No write happens here (removal only applies if saving had been granted before).
+    try { localStorage.removeItem("attendmate_storage_consent"); } catch { /* ignore */ }
+    consentRef.current = "denied";
+    setStorageState("denied");
+  }, []);
+
+  const requestPersistent = useCallback(async () => {
+    const ok = await askPersistent();
+    setPersistent(ok);
+    note(ok ? "Storage marked persistent" : "Browser declined persistent storage");
   }, [note]);
 
-  const retrySync = useCallback(() => { void flush(); }, [flush]);
+  const forgetDevice = useCallback(() => {
+    const n = wipeAllDeviceData();
+    const fresh = createDefaultState();
+    fresh.profile.theme = getStoredTheme();
+    fresh.syncOwnerId = ownerRef.current;
+    setStateRaw(fresh);
+    persist(fresh);
+    undoRef.current = [];
+    setCanUndo(false);
+    note(n > 0 ? `Erased ${n} stored data file${n === 1 ? "" : "s"} from this device` : "Nothing stored on this device");
+  }, [note, persist]);
 
   const value = useMemo<AttendMateCtx>(() => ({
     state, setState, markSlot, bulkMarkDay, copyPreviousDay, addExtraClass, removeSlot,
     bulkFill, undo, canUndo, lastAction, lastActionAt, resetAll, importState, setTheme,
-    authed, syncStatus, pending, signIn, verifyTotp, signUp, signOut, retrySync,
-  }), [state, setState, markSlot, bulkMarkDay, copyPreviousDay, addExtraClass, removeSlot, bulkFill, undo, canUndo, lastAction, lastActionAt, resetAll, importState, setTheme, authed, syncStatus, pending, signIn, verifyTotp, signUp, signOut, retrySync]);
+    authed, signIn, verifyTotp, signUp, signOut,
+    storageState, persistent, grantStorage, denyStorage, requestPersistent, forgetDevice,
+  }), [state, setState, markSlot, bulkMarkDay, copyPreviousDay, addExtraClass, removeSlot, bulkFill, undo, canUndo, lastAction, lastActionAt, resetAll, importState, setTheme, authed, signIn, verifyTotp, signUp, signOut, storageState, persistent, grantStorage, denyStorage, requestPersistent, forgetDevice]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
