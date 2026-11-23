@@ -1,7 +1,7 @@
 "use client";
 // Today view: the working day — mark slots, advice chips, bulk tools.
-import { useState } from "react";
-import { ChevronLeft, ChevronRight, Check, X, Ban, Copy, Umbrella, Plus, Trash2, Repeat } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, Check, X, Ban, Copy, Umbrella, Plus, Trash2, Repeat, Lock } from "lucide-react";
 import { useAttendMate } from "@/lib/attendmate/storage";
 import {
   MASTER_TIMETABLE, SUBJECTS, SUBJECT_MAP, Slot,
@@ -33,6 +33,25 @@ export default function TodayView() {
   const [fillStatus, setFillStatus] = useState<"present" | "absent">("present");
   const [extraSub, setExtraSub] = useState("IM");
   const [extraKind, setExtraKind] = useState<"theory" | "clinical">("theory");
+
+  /* midnight rollover: if the app stays open past 00:00 while viewing what was
+     "today", follow the calendar to the new day — the old day becomes past and
+     locks itself automatically. Any other selected date is left untouched. */
+  const wasTodayRef = useRef(iso === todayISO());
+  const rolloverDayRef = useRef(todayISO());
+  useEffect(() => {
+    const snap = () => {
+      const now = todayISO();
+      if (now !== rolloverDayRef.current && wasTodayRef.current) {
+        setState((p) => ({ ...p, selectedDate: now }), "New day");
+      }
+      wasTodayRef.current = iso === rolloverDayRef.current; // viewing the day that was "today"
+      rolloverDayRef.current = now;
+    };
+    const t = setInterval(snap, 30_000);
+    document.addEventListener("visibilitychange", snap);
+    return () => { clearInterval(t); document.removeEventListener("visibilitychange", snap); };
+  }, [iso, setState]);
 
   /* hero helpers: greeting + Mon–Sun week strip around the selected date */
   const hr = new Date().getHours();
@@ -147,7 +166,7 @@ export default function TodayView() {
           {/* actions */}
           {/* day-level marking tools — today only, like the per-slot buttons;
               past catch-up stays with the explicit bulk-fill tool below */}
-          {canMark && (
+          {canMark ? (
             <div className="am-card-in flex flex-wrap gap-2 [animation-delay:120ms]">
               <button onClick={() => bulkMarkDay(iso, "present", subGroup)}
                 className="clay-btn clay-primary clay-md">
@@ -161,6 +180,13 @@ export default function TodayView() {
                 className="clay-btn clay-soft clay-md">
                 <Umbrella className="h-4 w-4" /> Declare holiday
               </button>
+            </div>
+          ) : iso < todayISO() && slots.some((s) => !state.logs[iso]?.[s.id]) && (
+            /* past day with gaps: keep the log visible but explain the lock and
+               point at the one sanctioned way to catch up */
+            <div className="am-card-in flex items-center gap-2 rounded-2xl border border-muted bg-muted/40 px-4 py-3 text-[12.5px] text-muted-foreground [animation-delay:120ms]">
+              <Lock className="h-3.5 w-3.5 shrink-0" />
+              <span>This day has passed — its log is locked. To backfill unlogged classes, use <strong className="font-semibold">Bulk-fill past days</strong> below.</span>
             </div>
           )}
 

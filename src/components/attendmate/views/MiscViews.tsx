@@ -1,7 +1,8 @@
 "use client";
 // Timetable · Postings · Exams · Modules · Settings views.
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Download, LogOut, RotateCcw, Upload, Stethoscope, CalendarClock } from "lucide-react";
+import { Download, History, LogOut, RotateCcw, Upload, Stethoscope, CalendarClock } from "lucide-react";
+import { listOwnerSnapshots, OwnerSnapshot } from "@/lib/attendmate/device-storage";
 import { useAttendMate } from "@/lib/attendmate/storage";
 import {
   MASTER_TIMETABLE, SUBJECT_MAP, AETCOM_MODULES, PANDEMIC_MODULES, EXAMS,
@@ -231,6 +232,7 @@ export function SettingsView() {
   const [totpEnabled, setTotpEnabled] = useState(false);
   const [resetBusy, setResetBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const snaps = useMemo(() => listOwnerSnapshots(state.syncOwnerId ?? null), [state.syncOwnerId]);
   const [form, setForm] = useState({
     name: state.profile.name, email: state.profile.email, rollNo: String(state.profile.rollNo),
     theoryTarget: String(state.profile.theoryTarget), clinicalTarget: String(state.profile.clinicalTarget),
@@ -241,6 +243,7 @@ export function SettingsView() {
     if (!authed) return;
     apiSecurity().then((s) => setTotpEnabled(s.totpEnabled)).catch(() => { /* offline */ });
   }, [authed]);
+
 
   const exportBackup = () => {
     const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
@@ -388,6 +391,26 @@ export function SettingsView() {
             <LogOut className="h-4 w-4" /> Sign out
           </button>
         </div>
+        {snaps.length > 0 && (
+          <div className="mt-4 border-t border-dashed pt-3">
+            <p className="text-[11px] font-semibold text-muted-foreground">
+              Device snapshots — automatic daily copies of this profile&apos;s data, kept on this device only.
+              Restoring replaces the current data with the snapshot.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {snaps.map((s) => (
+                <button key={s.dayKey}
+                  onClick={() => {
+                    const ok = importState(JSON.stringify(s.state));
+                    setMsg(ok ? `Snapshot ${s.dayKey} restored.` : "That snapshot couldn't be restored.");
+                  }}
+                  className="clay-btn clay-soft clay-sm">
+                  <History className="h-3.5 w-3.5" /> Restore {s.dayKey}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         {msg && <p className="mt-3 rounded-xl border border-dashed p-2.5 text-[12px] font-semibold">{msg}</p>}
         <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">
           AttendMate Pro is an unofficial, student-built tool — not affiliated with NSMCH or Aryabhatta Knowledge University.

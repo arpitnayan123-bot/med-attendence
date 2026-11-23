@@ -7,14 +7,14 @@ import { useEffect, useState } from "react";
 import { ArrowRight, CloudUpload, Loader2, ShieldCheck } from "lucide-react";
 import DitherReveal from "@/components/originkit/ui/dither-reveal";
 import { BrandWord } from "./bits";
-import { useAttendMate, createDefaultState } from "@/lib/attendmate/storage";
+import { useAttendMate } from "@/lib/attendmate/storage";
 import { apiExists, apiResetRequest } from "@/lib/attendmate/sync";
 import { getGroupInfo } from "@/lib/attendmate/engine";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function SignIn({ onDone, nav }: { onDone: () => void; nav: (to: string) => void }) {
-  const { state, setState, signIn, verifyTotp, signUp } = useAttendMate();
+  const { state, claimDeviceProfile, signIn, verifyTotp, signUp } = useAttendMate();
   const [step, setStep] = useState<"email" | "login" | "register" | "totp" | "forgot">("email");
   const [deviceOnly, setDeviceOnly] = useState(false);
   const [email, setEmail] = useState("");
@@ -114,12 +114,10 @@ export default function SignIn({ onDone, nav }: { onDone: () => void; nav: (to: 
     setErr("");
     setBusy(true);
     if (deviceOnly) {
-      // Never build a device-only profile on top of another student's copy.
-      setState((prev) => {
-        const base = prev.syncOwnerId ? createDefaultState() : prev;
-        if (base !== prev) base.profile.theme = prev.profile.theme; // theme stays device-local
-        return { ...base, profile: { ...base.profile, name: n, email: email.trim(), rollNo: r } };
-      });
+      // A device-only profile claims the guest store as this device's primary
+      // identity. If an account copy is active it is parked under its own
+      // owner key first (sign back in to get it back) — never wiped inline.
+      claimDeviceProfile(n, email.trim(), r);
       setBusy(false);
       finish();
       return;

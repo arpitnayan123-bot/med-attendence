@@ -16,6 +16,9 @@ export const LEGACY_STORE_KEY = "attendmate_pro_v2";
 export const LEGACY_QUEUE_KEY = "attendmate_sync_queue";
 /** Per-owner data stores: one isolated namespace per account (or guest). */
 export const OWNER_PREFIX = "attendmate_pro_v2:";
+/** Rolling per-owner snapshots — a device-side safety net so past logs can
+ *  always be recovered, even from a future mistake. Newest few are kept. */
+export const SNAPSHOT_PREFIX = "attendmate_pro_v2_snap:";
 
 export function ownerStoreKey(owner: string | null): string {
   return OWNER_PREFIX + (owner || "guest");
@@ -71,7 +74,7 @@ export function attendmateKeys(): string[] {
   try {
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k && (k.startsWith(OWNER_PREFIX) || k === LEGACY_STORE_KEY || k === LEGACY_QUEUE_KEY || k === CONSENT_KEY || k === "attendmate_site_theme")) {
+      if (k && (k.startsWith(OWNER_PREFIX) || k.startsWith(SNAPSHOT_PREFIX) || k === LEGACY_STORE_KEY || k === LEGACY_QUEUE_KEY || k === CONSENT_KEY || k === "attendmate_site_theme")) {
         keys.push(k);
       }
     }
@@ -85,7 +88,7 @@ export function wipeAllDeviceData(): number {
   try {
     for (let i = localStorage.length - 1; i >= 0; i--) {
       const k = localStorage.key(i);
-      if (k && (k.startsWith(OWNER_PREFIX) || k === LEGACY_STORE_KEY || k === LEGACY_QUEUE_KEY)) {
+      if (k && (k.startsWith(OWNER_PREFIX) || k.startsWith(SNAPSHOT_PREFIX) || k === LEGACY_STORE_KEY || k === LEGACY_QUEUE_KEY)) {
         localStorage.removeItem(k);
         n++;
       }
@@ -134,4 +137,38 @@ export function writeOwnerStore(owner: string | null, value: unknown): void {
 
 export function removeOwnerStore(owner: string | null): void {
   try { localStorage.removeItem(ownerStoreKey(owner)); } catch { /* ignore */ }
+}
+
+function snapshotKeyPrefix(owner: string | null): string {
+  return SNAPSHOT_PREFIX + (owner || "guest") + ":";
+}
+
+/** Best-effort daily snapshot of an owner's store (date-keyed, newest `keep`
+ *  kept per owner). Never throws — a failed snapshot must not block the real
+ *  persist. */
+export function snapshotOwnerStore(owner: string | null, value: unknown, dayKey: string, keep = 3): void {
+  try {
+    localStorage.setItem(snapshotKeyPrefix(owner) + dayKey, JSON.stringify(value));
+    const mine = Object.keys(localStorage)
+      .filter((k) => k.startsWith(snapshotKeyPrefix(owner)))
+      .sort();
+    while (mine.length > keep) localStorage.removeItem(mine.shift() as string);
+  } catch { /* storage full — the live store is still authoritative */ }
+}
+
+export interface OwnerSnapshot { dayKey: string; state: unknown }
+
+/** Snapshots available for an owner, newest first — powers Settings restore. */
+export function listOwnerSnapshots(owner: string | null): OwnerSnapshot[] {
+  const out: OwnerSnapshot[] = [];
+  try {
+    const prefix = snapshotKeyPrefix(owner);
+    for (const k of Object.keys(localStorage)) {
+      if (!k.startsWith(prefix)) continue;
+      try {
+        out.push({ dayKey: k.slice(prefix.length), state: JSON.parse(localStorage.getItem(k) as string) });
+      } catch { /* skip corrupt snapshot */ }
+    }
+  } catch { /* ignore */ }
+  return out.sort((a, b) => (a.dayKey < b.dayKey ? 1 : -1));
 }

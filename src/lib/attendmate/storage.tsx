@@ -13,7 +13,7 @@ import { todayISO, getClinicalPostingForDate, shiftDate } from "./engine";
 import { ServerUser, apiMe, apiLogin, apiTotpVerify, apiRegister, apiLogout, apiVerifyPassword } from "./sync";
 import {
   StorageConsent, readConsent, grantConsent as persistConsentFlag, requestPersistent as askPersistent,
-  isPersistent, migrateLegacyStore, readOwnerStore, writeOwnerStore, removeOwnerStore, wipeAllDeviceData,
+  isPersistent, migrateLegacyStore, readOwnerStore, writeOwnerStore, removeOwnerStore, wipeAllDeviceData, snapshotOwnerStore,
 } from "./device-storage";
 
 function MASTER_SLOTS(dow: number) { return MASTER_TIMETABLE[dow] || []; }
@@ -95,6 +95,7 @@ export interface AttendMateCtx {
   signIn: (email: string, password: string) => Promise<{ ok: boolean; error?: string; twoFactorRequired?: boolean }>;
   verifyTotp: (code: string) => Promise<{ ok: boolean; error?: string }>;
   signUp: (email: string, name: string, rollNo: number, password: string) => Promise<{ ok: boolean; error?: string }>;
+  claimDeviceProfile: (name: string, email: string, rollNo: number) => void;
   signOut: () => Promise<void>;
   /* device storage consent */
   storageState: StorageConsent;
@@ -126,9 +127,28 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
     setLastActionAt(Date.now());
   }, []);
 
+  /* snapshot throttle: at most one rolling snapshot per minute / per day /
+     owner — owner switches always snapshot (that is when copies get replaced) */
+  const lastSnapDayRef = useRef("");
+  const lastSnapAtRef = useRef(0);
+  const lastSnapOwnerRef = useRef<string | null>(null);
+
   /** Consent-gated write: the ONLY path any data ever reaches storage. */
   const persist = useCallback((next: AppState) => {
-    if (consentRef.current === "granted") writeOwnerStore(ownerRef.current, next);
+    if (consentRef.current === "granted") {
+      writeOwnerStore(ownerRef.current, next);
+      const day = todayISO();
+      const now = Date.now();
+      const hasData = Object.keys(next.logs).length + Object.keys(next.baseline).length
+        + Object.keys(next.aetcomDone).length + Object.keys(next.pandemicDone).length > 0;
+      const ownerChanged = ownerRef.current !== lastSnapOwnerRef.current;
+      if (hasData && (ownerChanged || day !== lastSnapDayRef.current || now - lastSnapAtRef.current > 60_000)) {
+        lastSnapDayRef.current = day;
+        lastSnapAtRef.current = now;
+        lastSnapOwnerRef.current = ownerRef.current;
+        snapshotOwnerStore(ownerRef.current, next, day); // rolling safety net
+      }
+    }
     setCanUndo(undoRef.current.length > 0);
   }, []);
 
@@ -399,6 +419,15 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
     }
   }, [enterAccount, note]);
 
+  /** Device-only profile ("Continue on this device"): the primary identity of
+   *  this device's guest store. If an account copy is currently active it is
+   *  parked under its own owner key first — recoverable by signing back in —
+   *  never wiped inline. Guest data on the device is kept and claimed. */
+  const claimDeviceProfile = useCallback((name: string, email: string, rollNo: number) => {
+    if (stateRef.current.syncOwnerId) switchOwner(null, null, false); // park owned copy, activate guest store
+    setState((prev) => ({ ...prev, profile: { ...prev.profile, name, email, rollNo } }), "Continue on this device");
+  }, [switchOwner, setState]);
+
   const signOut = useCallback(async () => {
     try { await apiLogout(); } catch { /* session may already be gone */ }
     // The account's device store stays on this device (its data never left it);
@@ -450,11 +479,11 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
   }, [note, persist]);
 
   const value = useMemo<AttendMateCtx>(() => ({
-    state, setState, markSlot, unmarkSlot, bulkMarkDay, copyPreviousDay, addExtraClass, removeSlot,
+    state, setState, markSlot, unmarkSlot, bulkMarkDay, copyPreviousDay, addExtraClass, removeSlot, claimDeviceProfile,
     bulkFill, undo, canUndo, lastAction, lastActionAt, resetAll, importState, setTheme,
     authed, signIn, verifyTotp, signUp, signOut,
     storageState, persistent, grantStorage, denyStorage, requestPersistent, forgetDevice,
-  }), [state, setState, markSlot, unmarkSlot, bulkMarkDay, copyPreviousDay, addExtraClass, removeSlot, bulkFill, undo, canUndo, lastAction, lastActionAt, resetAll, importState, setTheme, authed, signIn, verifyTotp, signUp, signOut, storageState, persistent, grantStorage, denyStorage, requestPersistent, forgetDevice]);
+  }), [state, setState, markSlot, unmarkSlot, bulkMarkDay, copyPreviousDay, addExtraClass, removeSlot, bulkFill, claimDeviceProfile, undo, canUndo, lastAction, lastActionAt, resetAll, importState, setTheme, authed, signIn, verifyTotp, signUp, signOut, storageState, persistent, grantStorage, denyStorage, requestPersistent, forgetDevice]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
