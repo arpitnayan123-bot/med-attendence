@@ -12,6 +12,7 @@ import {
   getGroupInfo, daySummary,
 } from "@/lib/attendmate/engine";
 import { TierPill, statusChip } from "../bits";
+import ActivityPanel from "../ActivityPanel";
 
 export default function TodayView() {
   const { state, setState, markSlot, bulkMarkDay, copyPreviousDay, addExtraClass, removeSlot, bulkFill } = useAttendMate();
@@ -59,6 +60,9 @@ export default function TodayView() {
 
   return (
     <div className="space-y-5">
+      {/* activity panel — GitHub/LeetCode-style contribution graph, computed on-device */}
+      <ActivityPanel state={state} />
+
       {/* hero header — warm sunset spotlight card */}
       <section className="am-card-in relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-500 via-orange-600 to-rose-500 p-4 text-white shadow-xl shadow-orange-600/30 sm:p-5">
         <div aria-hidden className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-white/15 blur-2xl" />

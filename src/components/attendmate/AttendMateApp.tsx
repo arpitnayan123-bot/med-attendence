@@ -10,6 +10,7 @@ import { useHashRoute } from "./bits";
 import SignIn from "./SignIn";
 import Dashboard from "./Dashboard";
 import StorageConsent from "./StorageConsent";
+import AppErrorBoundary from "./AppErrorBoundary";
 import { SiteChrome, FeaturesPage, GuidePage, RosterPage, FaqPage, AboutPage, NotFoundPage } from "./Site";
 
 const MARKETING = ["features", "how-it-works", "roster", "faq", "about"] as const;
@@ -19,6 +20,13 @@ function Shell() {
   const [route, nav] = useHashRoute();
 
   useEffect(() => { applyThemeClass(getStoredTheme()); }, []);
+
+  // PWA: offline shell via service worker (production only — never cache in dev)
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production" && "serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => { /* offline shell is best-effort */ });
+    }
+  }, []);
 
   /**
    * Account isolation on shared browsers: a device copy tagged with a server
@@ -61,8 +69,10 @@ function Shell() {
 
 export default function AttendMateApp() {
   return (
-    <AttendMateProvider>
-      <Shell />
-    </AttendMateProvider>
+    <AppErrorBoundary>
+      <AttendMateProvider>
+        <Shell />
+      </AttendMateProvider>
+    </AppErrorBoundary>
   );
 }

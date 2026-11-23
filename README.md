@@ -18,10 +18,16 @@ Marketing (#/features | #/how-it-works | #/roster | #/faq | #/about) + 404
 
 - `src/lib/attendmate/data.ts` — official subjects, master timetable, A1–F4 rosters, exams, modules
 - `src/lib/attendmate/engine.ts` — pure logic: stats, bunk math, advice tiers, streaks, projection
+- `src/lib/attendmate/activity.ts` — pure activity analytics: contribution-graph heat tiers, streaks, totals
 - `src/lib/attendmate/storage.tsx` — state + undo + theme + per-owner device stores (consent-gated)
 - `src/lib/attendmate/device-storage.ts` — storage consent, persistence request, usage, legacy migration
-- `src/lib/attendmate/sync.ts` — credentials/security API client (no data sync exists)
+- `src/lib/attendmate/sync.ts` — credentials/security API client, 15s abort timeouts (no data sync exists)
 - `src/lib/server/*` — auth (JWT/bcrypt), rate limiting, zod validation, route helpers
+
+**Engineering hardening** — installable PWA (`manifest.webmanifest` + generated
+icons); `public/sw.js` offline shell (cache-first hashed assets, network-first
+documents, `/api/*` never cached, registration production-only); app-level error
+boundary with a recovery card; all credential requests abort after 15 s.
 
 ## Backend
 

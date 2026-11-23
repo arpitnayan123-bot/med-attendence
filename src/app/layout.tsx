@@ -18,10 +18,19 @@ export const metadata: Metadata = {
   description:
     "Offline-first attendance intelligence for NSMCH Bihta Phase-III (Part-2): roster resolver, safe-bunk planner, heatmap calendar, analytics and a projection to Sentup. Built with the Originkit Dither Reveal.",
   keywords: ["AttendMate", "attendance", "NSMCH", "medical school", "Phase-III", "tracker"],
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+  },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#7c3aed",
+  themeColor: "#ea580c",
   width: "device-width",
   initialScale: 1,
 };

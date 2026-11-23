@@ -11,17 +11,33 @@ export interface ServerUser {
 }
 
 /* ---------- low-level fetch ---------- */
+/** 15s abort so a hung captive-portal request can never freeze the UI. */
+function timeoutSignal(ms = 15_000): AbortSignal | undefined {
+  try {
+    if (typeof AbortSignal !== "undefined" && AbortSignal.timeout) return AbortSignal.timeout(ms);
+  } catch { /* unsupported */ }
+  return undefined;
+}
 async function api(path: string, init?: RequestInit): Promise<Response> {
-  const res = await fetch(path, {
-    ...init,
-    headers: {
-      "content-type": "application/json",
-      // CSRF: custom header cross-site requests cannot set without a preflight
-      "x-am-csrf": "1",
-      ...(init?.headers || {}),
-    },
-    credentials: "same-origin",
-  });
+  let res: Response;
+  try {
+    res = await fetch(path, {
+      ...init,
+      signal: timeoutSignal(),
+      headers: {
+        "content-type": "application/json",
+        // CSRF: custom header cross-site requests cannot set without a preflight
+        "x-am-csrf": "1",
+        ...(init?.headers || {}),
+      },
+      credentials: "same-origin",
+    });
+  } catch (err) {
+    if ((err as Error).name === "TimeoutError" || (err as Error).name === "AbortError") {
+      throw new Error("Request timed out — check your connection");
+    }
+    throw err;
+  }
   return res;
 }
 async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
