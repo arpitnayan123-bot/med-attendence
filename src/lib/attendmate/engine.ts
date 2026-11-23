@@ -261,7 +261,16 @@ export function streakInfo(state: AppState): StreakInfo {
   let curStreak = 0;
   let probe = todayISO();
   if (!(state.logs[probe] && daySummary(state, probe).judged > 0)) probe = shiftDate(probe, -1);
-  while (state.logs[probe] && isPerfect(probe)) { curStreak++; probe = shiftDate(probe, -1); }
+  while (state.logs[probe] && isPerfect(probe)) {
+    curStreak++;
+    probe = shiftDate(probe, -1);
+    // Sundays are structurally logless (no scheduled classes): treat them as
+    // neutral so Sat→Mon perfect days stay one continuous streak — `best`
+    // already behaves this way because it iterates logged dates only.
+    while (getDayOfWeek(probe) === 0 && daySummary(state, probe).judged === 0) {
+      probe = shiftDate(probe, -1);
+    }
+  }
   const perfectDays = dates.filter(isPerfect).length;
   return { best, current: curStreak, perfectDays, totalLoggedDays: dates.length };
 }

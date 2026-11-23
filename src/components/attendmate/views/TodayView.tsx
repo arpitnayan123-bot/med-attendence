@@ -13,6 +13,7 @@ import {
 } from "@/lib/attendmate/engine";
 import { TierPill, statusChip } from "../bits";
 import ActivityPanel from "../ActivityPanel";
+import FirstRunTips from "../FirstRunTips";
 
 export default function TodayView() {
   const { state, setState, markSlot, bulkMarkDay, copyPreviousDay, addExtraClass, removeSlot, bulkFill } = useAttendMate();
@@ -60,6 +61,9 @@ export default function TodayView() {
 
   return (
     <div className="space-y-5">
+      {/* first-run guide — dismissable; disappears once the user knows the flow */}
+      <FirstRunTips />
+
       {/* activity panel — GitHub/LeetCode-style contribution graph, computed on-device */}
       <ActivityPanel state={state} />
 
