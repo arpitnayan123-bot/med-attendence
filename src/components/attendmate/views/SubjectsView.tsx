@@ -1,8 +1,10 @@
 "use client";
-// Subjects view: tiered priority cards with per-subject details, baselines
-// and the what-if simulator.
-import { useMemo, useState } from "react";
-import { ChevronDown } from "lucide-react";
+// Subjects view: tiered priority cards. A row opens a detail dialog (bottom
+// sheet on mobile, centered modal on desktop) with the current theory and
+// clinical percentages, a what-if simulator (preview only — never touches the
+// log) and the prior-record baseline editor.
+import { useEffect, useMemo, useState } from "react";
+import { ChevronRight, RotateCcw, X } from "lucide-react";
 import { useAttendMate } from "@/lib/attendmate/storage";
 import { SUBJECTS, Subject } from "@/lib/attendmate/data";
 import { computeSubjectStats, calcBunkInfo, classifySkipPriority, getGroupInfo } from "@/lib/attendmate/engine";
@@ -10,21 +12,21 @@ import { Ring, TierPill } from "../bits";
 
 export default function SubjectsView() {
   const { state, setState } = useAttendMate();
-  const [open, setOpen] = useState<string | null>(null);
+  const [detail, setDetail] = useState<string | null>(null);
   const stats = useMemo(() => computeSubjectStats(state), [state]);
   const mode = state.subjMode;
   const target = mode === "clinical" ? state.profile.clinicalTarget : state.profile.theoryTarget;
   const subGroup = getGroupInfo(state.profile.rollNo).subGroup;
 
   const tiered = useMemo(() => {
-    type Tiered = Subject & { _pct: number | null; _pill: string; _reason: string };
+    type Tiered = Subject & { _pill: string; _reason: string };
     const tiers: Record<"dont" | "careful" | "safe", Tiered[]> = { dont: [], careful: [], safe: [] };
     for (const s of SUBJECTS) {
       const st = stats[s.code];
       const pr = mode === "clinical" ? st.clinical.present : st.theory.present;
       const tt = mode === "clinical" ? st.clinical.total : st.theory.total;
       const pr2 = classifySkipPriority(s, pr, tt, target, mode);
-      tiers[pr2.tier].push({ ...s, _pct: tt > 0 ? (pr / tt) * 100 : null, _pill: pr2.pill, _reason: pr2.reason });
+      tiers[pr2.tier].push({ ...s, _pill: pr2.pill, _reason: pr2.reason });
     }
     return tiers;
   }, [stats, mode, target]);
@@ -34,6 +36,8 @@ export default function SubjectsView() {
     careful: { title: "Be Careful", cls: "text-amber-600 dark:text-amber-300", dot: "bg-amber-500" },
     safe: { title: "Safe to Miss", cls: "text-emerald-600 dark:text-emerald-300", dot: "bg-emerald-500" },
   } as const;
+
+  const detailSubject = detail ? SUBJECTS.find((s) => s.code === detail) || null : null;
 
   return (
     <div className="space-y-5">
@@ -66,11 +70,10 @@ export default function SubjectsView() {
                 const pr = mode === "clinical" ? st.clinical.present : st.theory.present;
                 const tt = mode === "clinical" ? st.clinical.total : st.theory.total;
                 const pct = tt > 0 ? (pr / tt) * 100 : null;
-                const bunk = calcBunkInfo(pr, tt, target);
-                const isOpen = open === s.code;
                 return (
                   <div key={s.code} className="clay-card transition">
-                    <button onClick={() => setOpen(isOpen ? null : s.code)} className="flex w-full items-center gap-3 p-4 text-left" aria-expanded={isOpen}>
+                    <button onClick={() => setDetail(s.code)} className="flex w-full items-center gap-3 p-4 text-left"
+                      aria-haspopup="dialog" aria-expanded={detail === s.code}>
                       <Ring pct={pct} target={target} size={64} stroke={7} />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
@@ -84,41 +87,8 @@ export default function SubjectsView() {
                         </div>
                         <p className="mt-1 truncate text-[11px] text-muted-foreground" title={s._reason}>{s._reason}</p>
                       </div>
-                      <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition ${isOpen ? "rotate-180" : ""}`} />
+                      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                     </button>
-
-                    {isOpen && (
-                      <div className="border-t px-4 py-4">
-                        {/* mode totals + bunk */}
-                        <div className="grid grid-cols-2 gap-3 text-center text-[11px] font-semibold text-muted-foreground">
-                          <div className="rounded-xl bg-muted/60 p-2.5">
-                            <div className="text-[13px] font-extrabold text-foreground">Theory</div>
-                            {st.theory.total > 0 ? `${st.theory.present}/${st.theory.total} · ${((st.theory.present / st.theory.total) * 100).toFixed(1)}%` : "no data"}
-                          </div>
-                          <div className="rounded-xl bg-muted/60 p-2.5">
-                            <div className="text-[13px] font-extrabold text-foreground">Clinical</div>
-                            {st.clinical.total > 0 ? `${st.clinical.present}/${st.clinical.total} · ${((st.clinical.present / st.clinical.total) * 100).toFixed(1)}%` : "no data"}
-                          </div>
-                        </div>
-                        {tt > 0 && (
-                          <p className="mt-3 rounded-xl border border-dashed p-2.5 text-center text-[12px] font-semibold">
-                            {bunk.message}
-                          </p>
-                        )}
-
-                        {/* simulator */}
-                        <div className="mt-4">
-                          <h4 className="text-[11px] font-extrabold uppercase tracking-wide text-muted-foreground">What-if simulator (preview only)</h4>
-                          <div className="mt-2 flex flex-wrap items-center gap-2">
-                            <SimBtn code={s.code} mode={mode} delta={1} target={target} stats={stats} label="+1 attended" good />
-                            <SimBtn code={s.code} mode={mode} delta={-1} target={target} stats={stats} label="+1 missed" />
-                          </div>
-                        </div>
-
-                        {/* baselines */}
-                        <BaselineForm code={s.code} />
-                      </div>
-                    )}
                   </div>
                 );
               })}
@@ -126,29 +96,105 @@ export default function SubjectsView() {
           </section>
         )
       ))}
+
+      {/* detail dialog: bottom sheet on mobile, centered modal on desktop */}
+      {detailSubject && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-label={`${detailSubject.name} details`}>
+          <div className="absolute inset-0 bg-black/55 backdrop-blur-sm" onClick={() => setDetail(null)} aria-hidden />
+          <div className="relative max-h-[88vh] w-full overflow-y-auto rounded-t-3xl border border-border bg-card p-5 shadow-2xl sm:max-w-lg sm:rounded-3xl sm:p-6">
+            <SubjectDetail code={detailSubject.code} onClose={() => setDetail(null)} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function SimBtn({ code, mode, delta, target, stats, label, good }: {
-  code: string; mode: "theory" | "clinical"; delta: number; target: number;
-  stats: ReturnType<typeof computeSubjectStats>; label: string; good?: boolean;
-}) {
+function SubjectDetail({ code, onClose }: { code: string; onClose: () => void }) {
+  const { state, setState } = useAttendMate();
+  const stats = useMemo(() => computeSubjectStats(state), [state]);
+  const s = SUBJECTS.find((x) => x.code === code)!;
   const st = stats[code];
+  const mode = state.subjMode;
+  const theoryTarget = state.profile.theoryTarget;
+  const clinicalTarget = state.profile.clinicalTarget;
+  const target = mode === "clinical" ? clinicalTarget : theoryTarget;
+
+  /* preview-only what-if state — { p, t } are preview numbers, never the log */
   const baseP = mode === "clinical" ? st.clinical.present : st.theory.present;
   const baseT = mode === "clinical" ? st.clinical.total : st.theory.total;
-  if (baseT === 0) return null;
-  const np = Math.max(0, baseP + (delta > 0 ? 1 : 0));
-  const nt = baseT + 1;
-  const pct = (np / nt) * 100;
-  const bunk = calcBunkInfo(np, nt, target);
+  const [sim, setSim] = useState<{ p: number; t: number } | null>(null);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const preview = sim ? calcBunkInfo(sim.p, sim.t, target) : null;
+
   return (
-    <span className="clay-input inline-flex items-center gap-2 px-3 py-2 text-[11.5px] font-semibold">
-      <button className={`clay-btn clay-sm rounded-[0.7rem] ${good ? "clay-success" : "clay-danger"}`}>{label}</button>
-      <span className={pct >= target ? "text-emerald-600 dark:text-emerald-400" : pct >= target - 7.5 ? "text-amber-600 dark:text-amber-400" : "text-rose-600 dark:text-rose-400"}>
-        {pct.toFixed(1)}% · {bunk.canBunk > 0 ? `can skip ${bunk.canBunk}` : `must attend ${bunk.mustAttend}`}
-      </span>
-    </span>
+    <>
+      {/* header */}
+      <div className="flex items-start gap-3">
+        <span className="mt-1.5 h-3 w-3 shrink-0 rounded-full" style={{ background: s.color }} />
+        <div className="min-w-0 flex-1">
+          <h3 className="text-[16px] font-extrabold">{s.name}</h3>
+          <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">{s.code} · {s.lecture}L hrs theory · {s.clinicalWeeks}-wk posting</p>
+        </div>
+        <button onClick={onClose} aria-label="Close details" className="clay-btn clay-soft clay-icon h-8 w-8 text-muted-foreground"><X className="h-4 w-4" /></button>
+      </div>
+
+      {/* current theory + clinical percentages (both, regardless of mode toggle) */}
+      <div className="mt-4 grid grid-cols-2 gap-3 text-center text-[11px] font-semibold text-muted-foreground">
+        <div className="rounded-xl bg-muted/60 p-3">
+          <div className="text-[13px] font-extrabold text-foreground">Theory</div>
+          {st.theory.total > 0 ? `${st.theory.present}/${st.theory.total} · ${((st.theory.present / st.theory.total) * 100).toFixed(1)}%` : "no data"}
+        </div>
+        <div className="rounded-xl bg-muted/60 p-3">
+          <div className="text-[13px] font-extrabold text-foreground">Clinical</div>
+          {st.clinical.total > 0 ? `${st.clinical.present}/${st.clinical.total} · ${((st.clinical.present / st.clinical.total) * 100).toFixed(1)}%` : "no data"}
+        </div>
+      </div>
+      {baseT > 0 && (
+        <p className="mt-3 rounded-xl border border-dashed p-2.5 text-center text-[12px] font-semibold">
+          {calcBunkInfo(baseP, baseT, target).message}
+        </p>
+      )}
+
+      {/* what-if simulator — preview numbers only */}
+      <div className="mt-4 border-t pt-4">
+        <h4 className="text-[11px] font-extrabold uppercase tracking-wide text-muted-foreground">What-if simulator</h4>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <button onClick={() => setSim({ p: baseP + 1, t: baseT + 1 })}
+            disabled={sim !== null}
+            className="clay-btn clay-sm rounded-[0.7rem] clay-success disabled:opacity-50">+1 attended</button>
+          <button onClick={() => setSim({ p: baseP, t: baseT + 1 })}
+            disabled={sim !== null}
+            className="clay-btn clay-sm rounded-[0.7rem] clay-danger disabled:opacity-50">+1 missed</button>
+        </div>
+        {sim && preview && (
+          <div className="mt-3 rounded-xl border border-dashed border-orange-400/60 bg-orange-500/5 p-3">
+            <div className="flex items-center justify-between">
+              <span className="rounded-full bg-orange-500/15 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-orange-600 dark:text-orange-300">Preview</span>
+              <button onClick={() => setSim(null)} className="inline-flex items-center gap-1 text-[11px] font-bold text-muted-foreground transition hover:text-foreground">
+                <RotateCcw className="h-3 w-3" /> Reset
+              </button>
+            </div>
+            <p className="mt-2 text-[13px] font-extrabold">
+              {preview.pct === null ? "—" : `${preview.pct.toFixed(1)}%`}
+              <span className="ml-2 text-[11px] font-semibold text-muted-foreground">
+                {sim.p}/{sim.t} · {preview.canBunk > 0 ? `can skip ${preview.canBunk}` : preview.mustAttend > 0 ? `must attend ${preview.mustAttend}` : "on target"}
+              </span>
+            </p>
+          </div>
+        )}
+        {baseT === 0 && <p className="mt-2 text-[11px] text-muted-foreground">Log or baseline a few classes first — the preview starts from your current count.</p>}
+      </div>
+
+      {/* prior-record baseline */}
+      <BaselineForm code={code} />
+    </>
   );
 }
 
@@ -159,6 +205,14 @@ function BaselineForm({ code }: { code: string }) {
   const [tt, setTt] = useState(String(b.theoryTotal ?? ""));
   const [cp, setCp] = useState(String(b.clinicalPresent ?? ""));
   const [ct, setCt] = useState(String(b.clinicalTotal ?? ""));
+  const clear = () => {
+    setTp(""); setTt(""); setCp(""); setCt("");
+    setState((prev) => {
+      const next = { ...prev.baseline };
+      delete next[code];
+      return { ...prev, baseline: next };
+    }, "Clear baseline");
+  };
   return (
     <div className="mt-4 border-t pt-4">
       <h4 className="text-[11px] font-extrabold uppercase tracking-wide text-muted-foreground">Prior-record baseline (merged with new logs)</h4>
@@ -174,18 +228,21 @@ function BaselineForm({ code }: { code: string }) {
           </label>
         ))}
       </div>
-      <button
-        onClick={() => setState((prev) => ({
-          ...prev,
-          baseline: { ...prev.baseline, [code]: {
-            theoryPresent: parseInt(tp, 10) || 0, theoryTotal: parseInt(tt, 10) || 0,
-            clinicalPresent: parseInt(cp, 10) || 0, clinicalTotal: parseInt(ct, 10) || 0,
-          } },
-        }), "Update baseline")}
-        className="clay-btn clay-primary clay-sm mt-3"
-      >
-        Save baseline
-      </button>
+      <div className="mt-3 flex gap-2">
+        <button
+          onClick={() => setState((prev) => ({
+            ...prev,
+            baseline: { ...prev.baseline, [code]: {
+              theoryPresent: parseInt(tp, 10) || 0, theoryTotal: parseInt(tt, 10) || 0,
+              clinicalPresent: parseInt(cp, 10) || 0, clinicalTotal: parseInt(ct, 10) || 0,
+            } },
+          }), "Update baseline")}
+          className="clay-btn clay-primary clay-sm"
+        >
+          Save baseline
+        </button>
+        <button onClick={clear} className="clay-btn clay-soft clay-sm">Clear</button>
+      </div>
     </div>
   );
 }

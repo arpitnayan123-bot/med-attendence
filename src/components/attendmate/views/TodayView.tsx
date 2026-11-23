@@ -1,7 +1,7 @@
 "use client";
 // Today view: the working day — mark slots, advice chips, bulk tools.
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Check, X, Ban, Copy, Umbrella, Plus, Trash2, Lock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, X, Ban, Copy, Umbrella, Plus, Trash2, Repeat, History } from "lucide-react";
 import { useAttendMate } from "@/lib/attendmate/storage";
 import {
   MASTER_TIMETABLE, SUBJECTS, SUBJECT_MAP, Slot,
@@ -16,24 +16,27 @@ import ActivityPanel from "../ActivityPanel";
 import FirstRunTips from "../FirstRunTips";
 
 export default function TodayView() {
-  const { state, setState, markSlot, unmarkSlot, bulkMarkDay, copyPreviousDay, addExtraClass, removeSlot } = useAttendMate();
+  const { state, setState, markSlot, unmarkSlot, bulkMarkDay, bulkFill, copyPreviousDay, addExtraClass, removeSlot } = useAttendMate();
   const iso = state.selectedDate;
   const subGroup = getGroupInfo(state.profile.rollNo).subGroup;
   const sum = daySummary(state, iso);
   const dow = getDayOfWeek(iso);
-  // Marking is a today-only action: past days are read-only and stay as
-  // logged, future days have nothing to mark yet.
-  const canMark = iso === todayISO();
+  // Marking works on today and past days (history stays correctable); future
+  // days have nothing to mark yet.
+  const canMark = iso <= todayISO();
   const slots: Slot[] = dow !== 0 ? (MASTER_TIMETABLE[dow] || []) : [];
   const stats = computeSubjectStats(state);
   const customIds = Object.keys(state.logs[iso] || {}).filter((id) => id.startsWith("x-"));
   const posting = getClinicalPostingForDate(iso, subGroup);
   const [extraSub, setExtraSub] = useState("IM");
   const [extraKind, setExtraKind] = useState<"theory" | "clinical">("theory");
+  const [fillFrom, setFillFrom] = useState(shiftDate(todayISO(), -7));
+  const [fillTo, setFillTo] = useState(shiftDate(todayISO(), -1));
+  const [fillStatus, setFillStatus] = useState<"present" | "absent">("present");
 
   /* midnight rollover: if the app stays open past 00:00 while viewing what was
-     "today", follow the calendar to the new day — the old day becomes past and
-     locks itself automatically. Any other selected date is left untouched. */
+     "today", follow the calendar to the new day — the old day becomes a past
+     day (still editable). Any other selected date is left untouched. */
   const wasTodayRef = useRef(iso === todayISO());
   const rolloverDayRef = useRef(todayISO());
   useEffect(() => {
@@ -161,7 +164,7 @@ export default function TodayView() {
       {dow !== 0 && (
         <>
           {/* actions */}
-          {/* day-level marking tools — today only, like the per-slot buttons */}
+          {/* day-level marking tools */}
           {canMark ? (
             <div className="am-card-in flex flex-wrap gap-2 [animation-delay:120ms]">
               <button onClick={() => bulkMarkDay(iso, "present", subGroup)}
@@ -177,12 +180,12 @@ export default function TodayView() {
                 <Umbrella className="h-4 w-4" /> Declare holiday
               </button>
             </div>
-          ) : iso < todayISO() && slots.some((s) => !state.logs[iso]?.[s.id]) && (
-            /* past day with gaps: keep the log visible but explain the lock and
-               point at the one sanctioned way to catch up */
+          ) : null}
+          {iso < todayISO() && (
+            /* past day: every control below still works — say so plainly */
             <div className="am-card-in flex items-center gap-2 rounded-2xl border border-muted bg-muted/40 px-4 py-3 text-[12.5px] text-muted-foreground [animation-delay:120ms]">
-              <Lock className="h-3.5 w-3.5 shrink-0" />
-              <span>This day has passed — its log is locked as recorded.</span>
+              <History className="h-3.5 w-3.5 shrink-0" />
+              <span>Editing a past day — changes update every total and streak immediately.</span>
             </div>
           )}
 
@@ -208,8 +211,8 @@ export default function TodayView() {
                     </div>
                     <div className="mt-1 flex flex-wrap items-center gap-1.5">
                       {statusChip(st)}
-                      {/* advice is a decision aid — pointless once the slot is decided, and on read-only days */}
-                      {canMark && !st && advice && <TierPill tier={advice.tier}>{advice.pill}</TierPill>}
+                      {/* advice is a decision aid — pointless once the slot is decided, and retroactive skip advice makes no sense on a past day */}
+                      {iso === todayISO() && !st && advice && <TierPill tier={advice.tier}>{advice.pill}</TierPill>}
                       {isCP && posting && <span className="text-[10.5px] text-muted-foreground">{posting.block} · till {formatDisplayDate(posting.end)}</span>}
                     </div>
                   </div>
@@ -256,7 +259,7 @@ export default function TodayView() {
                         ))}
                       </>
                     ) : (
-                      !st && <span className="text-[10.5px] font-semibold italic text-muted-foreground">{iso < todayISO() ? "not logged" : "upcoming"}</span>
+                      !st && <span className="text-[10.5px] font-semibold italic text-muted-foreground">upcoming</span>
                     )}
                   </div>
                 </div>
@@ -282,32 +285,61 @@ export default function TodayView() {
             })}
           </section>
 
-          {/* tools — today only: extras and make-up classes are logged the day they happen */}
+          {/* tools — marking tools and make-up classes, on today and past days */}
           {canMark && (
-            <section className="clay-card am-card-in p-4 sm:p-5 [animation-delay:240ms]">
+            <div className="am-card-in grid gap-4 lg:grid-cols-2 [animation-delay:240ms]">
+              <section className="clay-card p-4 sm:p-5">
+                <h3 className="flex items-center gap-2 text-[14px] font-extrabold"><Repeat className="h-4 w-4 text-orange-600 dark:text-orange-300" /> Bulk-fill past days</h3>
+                <p className="mt-1 text-xs text-muted-foreground">Marks a whole past date range (skips Sundays and already-logged days). CP credits resolve from the roster per date.</p>
+                <div className="mt-3 flex flex-wrap items-end gap-2">
+                  <label className="text-[11px] font-semibold text-muted-foreground">From
+                    <input type="date" value={fillFrom} max={todayISO()} onChange={(e) => setFillFrom(e.target.value)}
+                      className="clay-input mt-1 block px-3 py-2 text-[12.5px]" />
+                  </label>
+                  <label className="text-[11px] font-semibold text-muted-foreground">To
+                    <input type="date" value={fillTo} max={todayISO()} onChange={(e) => setFillTo(e.target.value)}
+                      className="clay-input mt-1 block px-3 py-2 text-[12.5px]" />
+                  </label>
+                  <label className="text-[11px] font-semibold text-muted-foreground">Status
+                    <select value={fillStatus} onChange={(e) => setFillStatus(e.target.value as "present" | "absent")}
+                      className="clay-input mt-1 block px-3 py-2 text-[12.5px]">
+                      <option value="present">Present</option>
+                      <option value="absent">Absent</option>
+                    </select>
+                  </label>
+                  <button onClick={() => bulkFill(fillFrom, fillTo, fillStatus, subGroup)}
+                    disabled={fillFrom > fillTo}
+                    className="clay-btn clay-primary clay-sm disabled:opacity-50">
+                    Apply
+                  </button>
+                </div>
+                {fillFrom > fillTo && <p className="mt-2 text-[11px] font-semibold text-rose-600 dark:text-rose-400">The start date is after the end date.</p>}
+              </section>
 
-              <h3 className="flex items-center gap-2 text-[14px] font-extrabold"><Plus className="h-4 w-4 text-orange-600 dark:text-orange-300" /> Add extra / make-up class</h3>
-              <p className="mt-1 text-xs text-muted-foreground">Unplanned lecture or posting held beyond the timetable — logs under the chosen subject and mode.</p>
-              <div className="mt-3 flex flex-wrap items-end gap-2">
-                <label className="text-[11px] font-semibold text-muted-foreground">Subject
-                  <select value={extraSub} onChange={(e) => setExtraSub(e.target.value)}
-                    className="clay-input mt-1 block max-w-[220px] px-3 py-2 text-[12.5px]">
-                    {SUBJECTS.map((s) => <option key={s.code} value={s.code}>{s.name} ({s.code})</option>)}
-                  </select>
-                </label>
-                <label className="text-[11px] font-semibold text-muted-foreground">Mode
-                  <select value={extraKind} onChange={(e) => setExtraKind(e.target.value as "theory" | "clinical")}
-                    className="clay-input mt-1 block px-3 py-2 text-[12.5px]">
-                    <option value="theory">Theory</option>
-                    <option value="clinical">Clinical</option>
-                  </select>
-                </label>
-                <button onClick={() => addExtraClass(iso, extraSub, extraKind)}
-                  className="clay-btn clay-primary clay-sm">
-                  Add class
-                </button>
-              </div>
-            </section>
+              <section className="clay-card p-4 sm:p-5">
+                <h3 className="flex items-center gap-2 text-[14px] font-extrabold"><Plus className="h-4 w-4 text-orange-600 dark:text-orange-300" /> Add extra / make-up class</h3>
+                <p className="mt-1 text-xs text-muted-foreground">Unplanned lecture or posting held beyond the timetable — logs under the chosen subject and mode.</p>
+                <div className="mt-3 flex flex-wrap items-end gap-2">
+                  <label className="text-[11px] font-semibold text-muted-foreground">Subject
+                    <select value={extraSub} onChange={(e) => setExtraSub(e.target.value)}
+                      className="clay-input mt-1 block max-w-[220px] px-3 py-2 text-[12.5px]">
+                      {SUBJECTS.map((s) => <option key={s.code} value={s.code}>{s.name} ({s.code})</option>)}
+                    </select>
+                  </label>
+                  <label className="text-[11px] font-semibold text-muted-foreground">Mode
+                    <select value={extraKind} onChange={(e) => setExtraKind(e.target.value as "theory" | "clinical")}
+                      className="clay-input mt-1 block px-3 py-2 text-[12.5px]">
+                      <option value="theory">Theory</option>
+                      <option value="clinical">Clinical</option>
+                    </select>
+                  </label>
+                  <button onClick={() => addExtraClass(iso, extraSub, extraKind)}
+                    className="clay-btn clay-primary clay-sm">
+                    Add class
+                  </button>
+                </div>
+              </section>
+            </div>
           )}
         </>
       )}

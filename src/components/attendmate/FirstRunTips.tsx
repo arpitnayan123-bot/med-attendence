@@ -34,8 +34,8 @@ const STEPS = [
   },
   {
     icon: CalendarCheck,
-    title: "Mark the day as it happens",
-    body: "Mark each class during the day; the moment a day passes it locks, keeping your history honest. The Calendar is always there to review every logged detail.",
+    title: "Mark the day, fix it later",
+    body: "Tap Present, Absent or Cancelled on each slot. Fell behind? Open any past day to edit it, or bulk-fill a whole date range in one go.",
   },
   {
     icon: BarChart3,

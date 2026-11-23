@@ -159,7 +159,7 @@ export function GuidePage({ nav }: { nav: (to: string) => void }) {
     ["Read the advice", "Each subject shows a live tier — Don't Miss, Be Careful or Safe to Miss — with exact safe-skip or must-attend counts. Check it before deciding to bunk."],
   ] as const;
   const detail = [
-    ["Day navigation, honest history", "Arrows around the date header move through any day to review every logged detail; “Copy previous day” clones yesterday's marks onto today in one tap; each day locks the moment it passes, so the log stays an honest record of what actually happened — mark during the day, review any time."],
+    ["Day navigation, honest history", "Arrows around the date header move through any day to review every logged detail; “Copy previous day” clones yesterday's marks onto today in one tap; past days stay editable, and the bulk-fill card marks a whole date range in one action — skipping Sundays and already-logged days."],
     ["Extra and make-up classes", "Cancelled a class? Mark it Cancelled so it stops counting. Unplanned extra class? Add it from the extra-class form — it logs under the right subject and mode and appears in all totals immediately."],
     ["Baselines for prior records", "Tracked attendance elsewhere? Open any subject's details, enter prior present/total counts for theory and clinical, and the app merges them with everything you log from then on."],
     ["The what-if simulator", "Every subject card has a simulator: press “+1 attended” or “+1 missed” and watch the percentage and skip math update instantly — without touching your real log."],

@@ -9,7 +9,7 @@
 // Export/Import backup files in Settings.
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
 import { AppState, SlotEntry, MarkStatus, MASTER_TIMETABLE } from "./data";
-import { todayISO, getClinicalPostingForDate, shiftDate } from "./engine";
+import { todayISO, getClinicalPostingForDate, shiftDate, daysBetween } from "./engine";
 import { ServerUser, apiMe, apiLogin, apiTotpVerify, apiRegister, apiLogout, apiVerifyPassword, friendlyAuthError } from "./sync";
 import {
   StorageConsent, readConsent, grantConsent as persistConsentFlag, requestPersistent as askPersistent,
@@ -79,6 +79,7 @@ export interface AttendMateCtx {
   markSlot: (iso: string, slotId: string, status: MarkStatus, subject?: string, kind?: "theory" | "clinical") => void;
   unmarkSlot: (iso: string, slotId: string) => void;
   bulkMarkDay: (iso: string, status: MarkStatus, subGroup?: string) => void;
+  bulkFill: (from: string, to: string, status: MarkStatus, subGroup: string) => void;
   copyPreviousDay: (iso: string) => void;
   addExtraClass: (iso: string, subject: string, kind: "theory" | "clinical") => void;
   removeSlot: (iso: string, slotId: string) => void;
@@ -263,6 +264,38 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
     }, `Mark all ${iso}`);
   }, [setState]);
 
+  const bulkFill = useCallback((from: string, to: string, status: MarkStatus, subGroup: string) => {
+    // Guard an inverted range; clamp a runaway range to 92 days (~a quarter).
+    if (!from || !to || from > to) { note("Nothing to fill — check the date range"); return; }
+    let end = to;
+    if (daysBetween(from, end) > 91) end = shiftDate(from, 91);
+    let n = 0;
+    setState((prev) => {
+      const logs = { ...prev.logs };
+      let d = from;
+      while (d <= end) {
+        const dow = new Date(d + "T12:00:00").getDay();
+        if (dow !== 0 && !logs[d]) {
+          // CP credit resolves from the roster PER DATE — never copied across dates.
+          const dayLog: Record<string, SlotEntry> = {};
+          for (const s of MASTER_SLOTS(dow)) {
+            if (status === "present" && s.type === "clinical" && subGroup) {
+              const posting = resolvePostingCached(d, subGroup);
+              dayLog[s.id] = { status, subject: posting || "CP", kind: "clinical" };
+            } else {
+              dayLog[s.id] = { status, subject: s.subject };
+            }
+          }
+          logs[d] = dayLog;
+          n++;
+        }
+        d = shiftDate(d, 1);
+      }
+      return { ...prev, logs };
+    }, "Bulk fill");
+    note(n > 0 ? `Bulk-filled ${n} day${n === 1 ? "" : "s"}` : "Nothing to fill — those days are already logged or are Sundays");
+  }, [setState, note]);
+
   const copyPreviousDay = useCallback((iso: string) => {
     setState((prev) => {
       const prevIso = shift(iso, -1);
@@ -446,11 +479,11 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
   }, [note, persist]);
 
   const value = useMemo<AttendMateCtx>(() => ({
-    state, setState, markSlot, unmarkSlot, bulkMarkDay, copyPreviousDay, addExtraClass, removeSlot, claimDeviceProfile,
+    state, setState, markSlot, unmarkSlot, bulkMarkDay, bulkFill, copyPreviousDay, addExtraClass, removeSlot, claimDeviceProfile,
     undo, canUndo, lastAction, lastActionAt, resetAll, importState, setTheme,
     authed, signIn, verifyTotp, signUp, signOut,
     storageState, persistent, grantStorage, denyStorage, requestPersistent, forgetDevice,
-  }), [state, setState, markSlot, unmarkSlot, bulkMarkDay, copyPreviousDay, addExtraClass, removeSlot, claimDeviceProfile, undo, canUndo, lastAction, lastActionAt, resetAll, importState, setTheme, authed, signIn, verifyTotp, signUp, signOut, storageState, persistent, grantStorage, denyStorage, requestPersistent, forgetDevice]);
+  }), [state, setState, markSlot, unmarkSlot, bulkMarkDay, bulkFill, copyPreviousDay, addExtraClass, removeSlot, claimDeviceProfile, undo, canUndo, lastAction, lastActionAt, resetAll, importState, setTheme, authed, signIn, verifyTotp, signUp, signOut, storageState, persistent, grantStorage, denyStorage, requestPersistent, forgetDevice]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
