@@ -83,7 +83,7 @@ export default function Dashboard({ nav }: { nav: (to: string) => void }) {
           <BrandMark size={38} />
           <div>
             <div className="text-[15px] font-extrabold leading-tight">AttendMate <span className="bg-gradient-to-r from-orange-600 to-rose-500 bg-clip-text text-transparent">Pro</span></div>
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">NSMCH Bihta · Phase-III (Part-2) · 2026–27</div>
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">NSMCH Bihta · Phase-III (Part-2) · 2026–28</div>
           </div>
         </div>
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2">

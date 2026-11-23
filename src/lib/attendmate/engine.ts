@@ -153,18 +153,33 @@ export function calcBunkInfo(present: number, total: number, targetPct: number):
 }
 
 export interface SkipPriority { tier: "dont" | "careful" | "safe"; pill: string; reason: string }
+/** How many slots of this subject exist on the master timetable (0 = extras only). */
+export function masterSlotCount(code: string): number {
+  let n = 0;
+  for (let dow = 0; dow <= 6; dow++) {
+    for (const s of MASTER_TIMETABLE[dow] || []) {
+      if (s.subject === code || s.altSubject === code) n++;
+    }
+  }
+  return n;
+}
 export function classifySkipPriority(subj: Subject, present: number, total: number, targetPct: number, mode: "theory" | "clinical"): SkipPriority {
   const bunk = calcBunkInfo(present, total, targetPct);
+  // Subjects with no master-timetable slot (AETCOM) must not claim a weekly
+  // frequency — they are logged via the extra-class form only.
+  const offTimetable = mode === "theory" && masterSlotCount(subj.code) === 0;
   const isLowFreq = mode === "clinical" ? subj.clinicalWeeks <= 3 : subj.weeklySlots <= 1;
   const isHighFreq = mode === "clinical" ? subj.clinicalWeeks >= 10 : subj.weeklySlots >= 5;
   const dropOnOneMiss = total > 0 ? ((present / total) - (present / (total + 1))) * 100 : 0;
 
   if (total === 0) {
     if (isLowFreq) return {
-      tier: "dont", pill: "Don't Miss",
+      tier: "dont", pill: offTimetable ? "Not on the timetable" : "Don't Miss",
       reason: mode === "clinical"
         ? `Short ${subj.clinicalWeeks}-wk posting — every day counts`
-        : `Only ${subj.weeklySlots}/wk (${subj.lecture}L hrs) — very little margin`,
+        : offTimetable
+          ? "not on the master timetable — log it via Add extra class"
+          : `Only ${subj.weeklySlots}/wk (${subj.lecture}L hrs) — very little margin`,
     };
     if (isHighFreq) return {
       tier: "safe", pill: "High-Freq Buffer",
@@ -173,10 +188,12 @@ export function classifySkipPriority(subj: Subject, present: number, total: numb
         : `${subj.weeklySlots} classes/wk (${subj.total} hrs) — highest skip flexibility`,
     };
     return {
-      tier: "careful", pill: "Moderate",
+      tier: "careful", pill: offTimetable ? "Not on the timetable" : "Moderate",
       reason: mode === "clinical"
         ? `${subj.clinicalWeeks}-wk posting — log counts to see exact skips`
-        : `${subj.weeklySlots} classes/wk — limited cushion`,
+        : offTimetable
+          ? "not on the master timetable — log it via Add extra class"
+          : `${subj.weeklySlots} classes/wk — limited cushion`,
     };
   }
   if (bunk.status === "danger" || bunk.canBunk === 0) return {

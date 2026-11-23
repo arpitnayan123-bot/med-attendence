@@ -87,7 +87,7 @@ export function SiteChrome({ route, nav, children }: {
         <div className="border-t">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-5 py-3 text-[11px] text-muted-foreground">
             <span>© {new Date().getFullYear()} AttendMate Pro · student-built, not affiliated with NSMCH or AKU</span>
-            <span>Phase-III (Part-2) · Batch 2023 · Session 2026–27</span>
+            <span>Phase-III (Part-2) · Batch 2023 · Session 2026–28</span>
           </div>
         </div>
       </footer>

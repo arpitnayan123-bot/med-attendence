@@ -9,7 +9,7 @@
 // Export/Import backup files in Settings.
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
 import { AppState, SlotEntry, MarkStatus, MASTER_TIMETABLE } from "./data";
-import { todayISO, getClinicalPostingForDate, shiftDate, daysBetween } from "./engine";
+import { todayISO, getClinicalPostingForDate, shiftDate, daysBetween, getGroupInfo } from "./engine";
 import { ServerUser, apiMe, apiLogin, apiTotpVerify, apiRegister, apiLogout, apiVerifyPassword, friendlyAuthError } from "./sync";
 import {
   StorageConsent, readConsent, grantConsent as persistConsentFlag, requestPersistent as askPersistent,
@@ -72,6 +72,22 @@ export function applyThemeClass(theme: "light" | "dark") {
 
 /* ---------- context ---------- */
 export interface UndoSnapshot { label: string; state: AppState }
+
+/* Undo lives in memory while the tab is open and is mirrored to a per-owner
+   store so a reload (or an app switch the browser kept alive long enough to
+   drop) restores it. Cap 40, same as the stack. Key is additive to the main
+   store schema — nothing in attendmate_pro_v2:<owner> changes shape. */
+function undoKey(owner: string | null): string { return `attendmate_pro_v2_undo:${owner || "guest"}`; }
+function readUndoStore(owner: string | null): UndoSnapshot[] {
+  try {
+    const raw = localStorage.getItem(undoKey(owner));
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr.filter((x) => x && typeof x.label === "string" && x.state).slice(-40) : [];
+  } catch { return []; }
+}
+function writeUndoStore(owner: string | null, stack: UndoSnapshot[]): void {
+  try { localStorage.setItem(undoKey(owner), JSON.stringify(stack.slice(-40))); } catch { /* quota — undo stays in-memory */ }
+}
 
 export interface AttendMateCtx {
   state: AppState;
@@ -137,6 +153,7 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
   const persist = useCallback((next: AppState) => {
     if (consentRef.current === "granted") {
       writeOwnerStore(ownerRef.current, next);
+      writeUndoStore(ownerRef.current, undoRef.current);
       const day = todayISO();
       const now = Date.now();
       const hasData = Object.keys(next.logs).length + Object.keys(next.baseline).length
@@ -175,6 +192,8 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
     next.syncOwnerId = owner; // store is locked to its owner
     ownerRef.current = owner;
     setStateRaw(next);
+    undoRef.current = readUndoStore(owner); // reload wipes in-memory undo — restore it
+    setCanUndo(undoRef.current.length > 0);
     persist(next);
   }, [persist]);
 
@@ -303,8 +322,17 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
       if (!src) return prev;
       const dow = new Date(iso + "T12:00:00").getDay();
       const valid = new Set(dow !== 0 ? MASTER_SLOTS(dow).map((s) => s.id) : []);
+      // The CP credit re-resolves from the roster for the TARGET date: carrying
+      // yesterday's department across a rotation boundary would credit the
+      // wrong one. Manual per-day theory credits copy verbatim.
+      const posting = resolvePostingCached(iso, getGroupInfo(prev.profile.rollNo).subGroup);
       const dayLog: Record<string, SlotEntry> = {};
-      for (const id of Object.keys(src)) if (valid.has(id)) dayLog[id] = { ...src[id] };
+      for (const id of Object.keys(src)) {
+        if (!valid.has(id)) continue;
+        const e = { ...src[id] };
+        if (id.endsWith("-cp")) e.subject = posting || "CP";
+        dayLog[id] = e;
+      }
       return { ...prev, logs: { ...prev.logs, [iso]: dayLog } };
     }, "Copy previous day");
   }, [setState]);
@@ -350,6 +378,7 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
     setStateRaw(fresh);
     persist(fresh);
     undoRef.current = [];
+    writeUndoStore(ownerRef.current, []);
     setCanUndo(false);
     note("All data erased from this device");
   }, [note, persist]);
@@ -474,6 +503,7 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
     setStateRaw(fresh);
     persist(fresh);
     undoRef.current = [];
+    writeUndoStore(ownerRef.current, []);
     setCanUndo(false);
     note(n > 0 ? `Erased ${n} stored data file${n === 1 ? "" : "s"} from this device` : "Nothing stored on this device");
   }, [note, persist]);

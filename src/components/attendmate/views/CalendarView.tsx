@@ -95,7 +95,7 @@ export default function CalendarView() {
         </div>
         <div className="clay-card p-4 text-center">
           <div className="text-xl font-extrabold">{holidays}</div>
-          <div className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">holidays</div>
+          <div className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">declared holidays</div>
         </div>
       </section>
 
