@@ -1,29 +1,12 @@
 "use client";
-// "Your work, at a glance" — GitHub-contribution-style heatmap + LeetCode-style
-// stat tiles, rendered at the top of the Today view. Everything is computed
-// on-device from the user's own logs (device-only data model).
+// "Your work, at a glance" — identity strip + LeetCode-style stat tiles at
+// the top of the Today view, computed on-device from the user's own logs.
+// The old mini heatmap was cut (the Calendar tab owns the day-by-day view).
 import { Flame, HardDrive, Activity, Fingerprint, BadgeCheck } from "lucide-react";
 import { ReactNode } from "react";
 import { AppState } from "@/lib/attendmate/data";
 import { getGroupInfo } from "@/lib/attendmate/engine";
-import { buildHeatmapWeeks, computeActivityStats, ActivityDay } from "@/lib/attendmate/activity";
-
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-const TIER_CLS = [
-  "bg-stone-200/80 dark:bg-stone-700/50",
-  "bg-emerald-200 dark:bg-emerald-500/25",
-  "bg-emerald-300 dark:bg-emerald-500/45",
-  "bg-emerald-500/80 dark:bg-emerald-500/70",
-  "bg-emerald-600 dark:bg-emerald-400",
-] as const;
-
-function dayTitle(d: ActivityDay, isToday: boolean): string {
-  const date = `${d.iso.slice(8, 10)} ${MONTHS[Number(d.iso.slice(5, 7)) - 1]}`;
-  if (d.marked === 0) return `${date}${isToday ? " · today" : ""} — nothing logged`;
-  const pct = d.scheduled > 0 ? ` (${Math.round((d.marked / d.scheduled) * 100)}% of ${d.scheduled})` : "";
-  return `${date}${isToday ? " · today" : ""} — ${d.marked} marked${pct}, ${d.present} present`;
-}
+import { computeActivityStats } from "@/lib/attendmate/activity";
 
 function StatTile({ label, value, accent }: { label: string; value: ReactNode; accent?: string }) {
   return (
@@ -37,19 +20,7 @@ function StatTile({ label, value, accent }: { label: string; value: ReactNode; a
 export default function ActivityPanel({ state, authed }: { state: AppState; authed: boolean }) {
   const weeks = 18;
   // React Compiler memoizes these from `state`; no manual useMemo needed.
-  const cols = buildHeatmapWeeks(state, weeks);
   const stats = computeActivityStats(state, weeks);
-  const now = new Date();
-  const localToday = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-
-  /* month labels: a label on the first column whose first day starts a new month */
-  const monthLabels: (string | null)[] = [];
-  let lastMonth = -1;
-  for (const col of cols) {
-    const m = Number(col[0].iso.slice(5, 7)) - 1;
-    monthLabels.push(m !== lastMonth ? MONTHS[m] : null);
-    lastMonth = m;
-  }
 
   const presentRate = stats.totalMarks > 0 ? Math.round((stats.totalPresent / stats.totalMarks) * 100) : 0;
   const gi = getGroupInfo(state.profile.rollNo);
@@ -99,45 +70,6 @@ export default function ActivityPanel({ state, authed }: { state: AppState; auth
         <StatTile label="present rate" value={`${presentRate}%`} accent="text-orange-600 dark:text-orange-400" />
       </div>
 
-      <div className="mt-4 overflow-x-auto pb-1">
-        <div className="inline-flex flex-col gap-1">
-          {/* month labels */}
-          <div className="flex gap-[3px]" aria-hidden>
-            {monthLabels.map((m, i) => (
-              <span key={i} className="w-[13px] shrink-0 text-[9px] font-bold text-muted-foreground">{m}</span>
-            ))}
-          </div>
-          <div className="flex gap-[3px]">
-            {/* weekday labels column */}
-            <div className="mr-0.5 flex flex-col gap-[3px]" aria-hidden>
-              {["", "Mon", "", "Wed", "", "Fri", ""].map((d, i) => (
-                <span key={i} className="h-[13px] text-[9px] font-bold leading-[13px] text-muted-foreground">{d}</span>
-              ))}
-            </div>
-            {/* heatmap */}
-            {cols.map((col, wi) => (
-              <div key={wi} className="flex flex-col gap-[3px]">
-                {col.map((d) => (
-                  <span
-                    key={d.iso}
-                    title={dayTitle(d, d.iso === localToday)}
-                    className={`h-[13px] w-[13px] shrink-0 rounded-[3px] ${TIER_CLS[d.tier]} ${d.iso === localToday ? "ring-2 ring-orange-500 ring-offset-1 ring-offset-background" : ""} ${d.iso > localToday ? "opacity-0" : ""}`}
-                  />
-                ))}
-              </div>
-            ))}
-            {/* legend */}
-            <div className="ml-2 flex items-end gap-[3px]" aria-hidden>
-              <span className="mr-0.5 text-[9px] font-bold text-muted-foreground">Less</span>
-              {TIER_CLS.map((c, i) => <span key={i} className={`h-[13px] w-[13px] rounded-[3px] ${c}`} />)}
-              <span className="ml-0.5 text-[9px] font-bold text-muted-foreground">More</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <p className="mt-2 text-[11px] text-muted-foreground">
-        Last {weeks} weeks of attendance logging — each square is a day, darker = more of the day&apos;s classes marked. Hover a square for details.
-      </p>
-    </section>
+</section>
   );
 }

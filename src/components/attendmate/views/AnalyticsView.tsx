@@ -1,7 +1,7 @@
 "use client";
 // Analytics view: streaks, rings, trend, weekday averages, leaderboard,
 // and the session-end projection to Sentup.
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { TrendingUp } from "lucide-react";
 import { useAttendMate } from "@/lib/attendmate/storage";
 import { SUBJECTS } from "@/lib/attendmate/data";
@@ -21,6 +21,7 @@ export default function AnalyticsView() {
   const trend = useMemo(() => trendSeries(state, 15), [state]);
   const weekdays = useMemo(() => weekdayAverages(state), [state]);
   const proj = useMemo(() => projectSessionEnd(state), [state]);
+  const [showAll, setShowAll] = useState(false);
 
   let holidays = 0, attended = 0;
   for (const day of Object.values(state.logs)) {
@@ -103,7 +104,9 @@ export default function AnalyticsView() {
       </section>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        {/* weekday averages */}
+        {/* weekday averages — six zero bars teach nothing; wait for real data
+            on at least three weekdays before the section earns its place */}
+        {weekdays.filter((w) => w.count > 0).length >= 3 && (
         <section className="clay-card p-5">
           <h2 className="text-[15px] font-extrabold">Average by weekday</h2>
           <p className="text-xs text-muted-foreground">Where your week is strongest</p>
@@ -123,6 +126,7 @@ export default function AnalyticsView() {
             ))}
           </div>
         </section>
+        )}
 
         {/* projection */}
         <section className="clay-card p-5">
@@ -161,7 +165,7 @@ export default function AnalyticsView() {
           </div>
         </div>
         <div className="mt-3 space-y-2">
-          {leaderboard.map((r, i) => (
+          {(showAll ? leaderboard : leaderboard.slice(0, 3)).map((r, i) => (
             <div key={r.s.code} className="flex items-center gap-3 rounded-xl border p-2.5">
               <span className={`w-6 text-center text-[13px] font-extrabold ${i === 0 ? "text-amber-500" : i === leaderboard.length - 1 ? "text-rose-500" : "text-muted-foreground"}`}>{i + 1}</span>
               <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: r.s.color }} />
@@ -181,6 +185,11 @@ export default function AnalyticsView() {
           ))}
         </div>
         <p className="mt-2 text-[10.5px] text-muted-foreground">−N = safe skips left · +N = classes to attend · sorted by {mode} %</p>
+        {leaderboard.length > 3 && (
+          <button onClick={() => setShowAll((v) => !v)} className="mt-1 text-[11.5px] font-bold text-orange-600 transition hover:underline dark:text-orange-400">
+            {showAll ? "Show top 3" : `See all ${leaderboard.length} subjects`}
+          </button>
+        )}
       </section>
     </div>
   );

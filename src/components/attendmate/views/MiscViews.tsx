@@ -1,11 +1,13 @@
 "use client";
-// Timetable · Postings · Exams · Modules · Settings views.
+// Postings · Exams · Settings views (the read-only timetable grid and the
+// static module checklist were cut — the timetable's one useful footnote
+// lives in Postings, and the modules export as a printable logbook).
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Download, History, LogOut, RotateCcw, Upload, Stethoscope, CalendarClock } from "lucide-react";
 import { listOwnerSnapshots, OwnerSnapshot } from "@/lib/attendmate/device-storage";
 import { useAttendMate } from "@/lib/attendmate/storage";
 import {
-  MASTER_TIMETABLE, SUBJECT_MAP, AETCOM_MODULES, PANDEMIC_MODULES, EXAMS, Slot,
+  AETCOM_MODULES, PANDEMIC_MODULES, EXAMS,
 } from "@/lib/attendmate/data";
 import {
   todayISO, getGroupInfo, getClinicalPostingForDate, getPersonalRosterTimeline,
@@ -13,77 +15,6 @@ import {
 } from "@/lib/attendmate/engine";
 import { apiSecurity } from "@/lib/attendmate/sync";
 import SecuritySection, { StorageCard } from "./Security";
-
-/* ================= TIMETABLE ================= */
-export function TimetableView() {
-  const { state } = useAttendMate();
-  const subGroup = getGroupInfo(state.profile.rollNo).subGroup;
-  const days = [1, 2, 3, 4, 5, 6];
-  const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  const rows = ["09", "cp", "14", "15", "16"];
-  // weekly hours computed from the timetable itself — never hard-coded
-  const slotHours = (s: Slot): number => {
-    const [a, b] = s.time.split("–").map((t) => t.trim());
-    const toMin = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + (m || 0); };
-    return (toMin(b) - toMin(a)) / 60;
-  };
-  const theoryHrs = days.reduce((acc, d) => acc + (MASTER_TIMETABLE[d] || []).filter((s) => s.type !== "clinical").reduce((a, s) => a + slotHours(s), 0), 0);
-  const clinicalHrs = days.reduce((acc, d) => acc + (MASTER_TIMETABLE[d] || []).filter((s) => s.type === "clinical").reduce((a, s) => a + slotHours(s), 0), 0);
-  const rowTime = (slotId: string) => {
-    for (const d of days) { const s = (MASTER_TIMETABLE[d] || []).find((x) => x.id.endsWith(slotId === "cp" ? "-cp" : `-${slotId}`)); if (s) return s.time; }
-    return "";
-  };
-
-  return (
-    <div className="space-y-5">
-      <section className="clay-card p-4 sm:p-5">
-        <div className="flex flex-wrap items-center gap-3">
-          <h2 className="text-[15px] font-extrabold">Master weekly timetable</h2>
-          <span className="rounded-full bg-orange-500/10 px-2.5 py-1 text-[11px] font-bold text-orange-600 dark:text-orange-300">Sub-group {subGroup}</span>
-          <span className="ml-auto text-[11px] font-semibold text-muted-foreground">{theoryHrs} theory hrs · {clinicalHrs} clinical hrs per week</span>
-        </div>
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-[640px] border-collapse text-[12px]">
-            <thead>
-              <tr>
-                <th className="w-24 rounded-tl-xl bg-muted p-2.5 text-left text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Time</th>
-                {dayNames.map((d) => <th key={d} className="bg-muted p-2.5 text-left text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{d}</th>)}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r, ri) => (
-                <tr key={r}>
-                  <td className="border-t bg-muted/40 p-2.5 text-[11px] font-bold text-muted-foreground">{rowTime(r)}</td>
-                  {days.map((d) => {
-                    const slot = (MASTER_TIMETABLE[d] || [])[ri];
-                    if (!slot) return <td key={d} className="border-t p-1.5" />;
-                    const isCP = slot.type === "clinical";
-                    const posting = isCP ? getClinicalPostingForDate(todayISO(), subGroup) : null;
-                    const meta = isCP ? null : SUBJECT_MAP[slot.subject];
-                    return (
-                      <td key={d} className="border-t p-1.5">
-                        <div className="rounded-lg border px-2.5 py-2"
-                          style={meta ? { borderColor: `${meta.color}55`, background: `${meta.color}14` } : { borderColor: "rgb(249 115 22 / .35)", background: "rgb(249 115 22 / .08)" }}>
-                          <div className="font-bold">{isCP ? `CP — ${posting ? posting.code : "—"}` : slot.subject}</div>
-                          <div className="mt-0.5 line-clamp-1 text-[10px] text-muted-foreground" title={slot.label}>
-                            {isCP ? (posting ? posting.name : "Clinical Posting") : meta?.name}
-                          </div>
-                        </div>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <p className="mt-3 text-[11px] text-muted-foreground">
-          PS/DR (Tue 09) and RD/AN (Wed 14) alternate weekly in the official schedule — mark the slot, then credit either subject. The 10 AM – 1 PM posting credits the department your sub-group is rotating through.
-        </p>
-      </section>
-    </div>
-  );
-}
 
 /* ================= POSTINGS ================= */
 export function PostingsView() {
@@ -123,6 +54,11 @@ export function PostingsView() {
           No rotation scheduled for today — check the timeline below.
         </section>
       )}
+
+      {/* footnote inherited from the retired read-only timetable grid */}
+      <p className="rounded-2xl border border-dashed bg-card p-4 text-[12px] leading-relaxed text-muted-foreground">
+        PS/DR (Tue 09) and RD/AN (Wed 14) alternate weekly in the official schedule — mark the slot, then credit either subject. The 10 AM – 1 PM posting credits the department your sub-group is rotating through.
+      </p>
 
       <section className="clay-card overflow-hidden">
         <div className="border-b bg-muted/40 px-5 py-3 text-[13px] font-extrabold">Full posting timeline — Sub-group {subGroup}</div>
@@ -182,54 +118,6 @@ export function ExamsView() {
   );
 }
 
-/* ================= MODULES ================= */
-export function ModulesView() {
-  const { state, setState } = useAttendMate();
-  const aetcomDone = AETCOM_MODULES.filter((m) => state.aetcomDone[m.id]).length;
-  const panDone = PANDEMIC_MODULES.filter((m) => state.pandemicDone[m.id]).length;
-
-  const section = (title: string, mods: typeof AETCOM_MODULES, done: number, doneMap: Record<string, boolean>, key: "aetcomDone" | "pandemicDone") => (
-    <section className="clay-card overflow-hidden">
-      <div className="border-b bg-muted/40 px-5 py-3.5">
-        <div className="flex items-center gap-3">
-          <h3 className="text-[13.5px] font-extrabold">{title}</h3>
-          <span className="rounded-full bg-orange-500/10 px-2.5 py-1 text-[11px] font-bold text-orange-600 dark:text-orange-300">{done}/{mods.length} done</span>
-        </div>
-        <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-muted">
-          <div className="h-full rounded-full bg-gradient-to-r from-orange-500 to-rose-500" style={{ width: `${(done / mods.length) * 100}%` }} />
-        </div>
-      </div>
-      <div className="max-h-[360px] overflow-y-auto">
-        {mods.map((m) => (
-          <label key={m.id} className="flex cursor-pointer items-start gap-3 border-b px-5 py-3 last:border-b-0 hover:bg-muted/30">
-            <input
-              type="checkbox"
-              checked={Boolean(doneMap[m.id])}
-              onChange={(e) => setState((p) => ({ ...p, [key]: { ...p[key], [m.id]: e.target.checked } }), "Toggle module")}
-              className="mt-1 h-4 w-4 shrink-0 cursor-pointer accent-orange-500"
-            />
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className={`text-[12.5px] font-bold ${doneMap[m.id] ? "text-muted-foreground line-through" : ""}`}>{m.title}</span>
-                <span className="rounded bg-muted px-1.5 py-0.5 text-[9.5px] font-bold text-muted-foreground">{m.hours}</span>
-              </div>
-              <div className="mt-0.5 text-[11px] font-semibold text-orange-600 dark:text-orange-300">{m.dept}</div>
-              <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{m.topic}</p>
-            </div>
-          </label>
-        ))}
-      </div>
-    </section>
-  );
-
-  return (
-    <div className="space-y-5">
-      {section("AETCOM Module — Foundation Course (Phase-III)", AETCOM_MODULES, aetcomDone, state.aetcomDone, "aetcomDone")}
-      {section("Pandemic Management Module", PANDEMIC_MODULES, panDone, state.pandemicDone, "pandemicDone")}
-    </div>
-  );
-}
-
 /* ================= SETTINGS ================= */
 export function SettingsView() {
   const { state, setState, resetAll, importState, setTheme, authed, signOut } = useAttendMate();
@@ -252,6 +140,35 @@ export function SettingsView() {
     apiSecurity().then((s) => setTotpEnabled(s.totpEnabled)).catch(() => { /* offline */ });
   }, [authed]);
 
+
+  /** Printable AETCOM + Pandemic logbook: the actual student need is a paper
+   *  checklist the department signs — this renders both module lists with
+   *  tick, date and signature columns into a standalone print-ready HTML. */
+  const downloadLogbook = () => {
+    const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+    const rows = (mods: typeof AETCOM_MODULES, done: Record<string, boolean>) => mods.map((m) => `
+      <tr><td>${done[m.id] ? "☑" : "☐"}</td><td><b>${esc(m.title)}</b><br/><small>${esc(m.dept)} · ${esc(m.hours)}</small><br/><small>${esc(m.topic)}</small></td>
+      <td></td><td></td></tr>`).join("");
+    const student = esc(state.profile.name || "Name:") + " · Roll " + esc(String(state.profile.rollNo));
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>AETCOM logbook</title>
+<style>body{font-family:Georgia,serif;margin:36px;color:#111}h1{font-size:20px;margin:0}h2{font-size:15px;margin:22px 0 6px}table{width:100%;border-collapse:collapse;font-size:12px}td,th{border:1px solid #999;padding:7px;vertical-align:top}th{background:#eee;text-align:left}td:first-child{width:26px;text-align:center}.sig{width:110px}.meta{font-size:12px;color:#444}@media print{.noprint{display:none}}</style></head><body>
+<h1>AETCOM &amp; Pandemic Module Logbook</h1>
+<p class="meta">NSMCH Bihta · Phase-III (Part-2) · ${student}</p>
+<h2>AETCOM Module — Foundation Course (Phase-III)</h2>
+<table><thead><tr><th>✓</th><th>Module</th><th class="sig">Date</th><th class="sig">Faculty sign</th></tr></thead><tbody>${rows(AETCOM_MODULES, state.aetcomDone)}</tbody></table>
+<h2>Pandemic Management Module</h2>
+<table><thead><tr><th>✓</th><th>Module</th><th class="sig">Date</th><th class="sig">Faculty sign</th></tr></thead><tbody>${rows(PANDEMIC_MODULES, state.pandemicDone)}</tbody></table>
+<p class="noprint" style="margin-top:20px;font-size:12px">Print this page, tick each completed module, and collect signatures. Regenerate any time from AttendMate Pro → Settings.</p>
+</body></html>`;
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `aetcom-logbook-${todayISO()}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setMsg("Logbook downloaded — open it and print.");
+  };
 
   const exportBackup = () => {
     const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
@@ -358,6 +275,9 @@ export function SettingsView() {
         <div className="mt-4 flex flex-wrap gap-2">
           <button onClick={exportBackup} className="clay-btn clay-soft clay-md">
             <Download className="h-4 w-4" /> Export backup
+          </button>
+          <button onClick={downloadLogbook} className="clay-btn clay-soft clay-md">
+            <Download className="h-4 w-4" /> AETCOM logbook
           </button>
           <button onClick={() => fileRef.current?.click()} className="clay-btn clay-soft clay-md">
             <Upload className="h-4 w-4" /> Import backup

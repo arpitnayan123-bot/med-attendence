@@ -14,29 +14,27 @@ import TodayView from "./views/TodayView";
 import CalendarView from "./views/CalendarView";
 import SubjectsView from "./views/SubjectsView";
 import AnalyticsView from "./views/AnalyticsView";
-import { TimetableView, PostingsView, ExamsView, ModulesView, SettingsView } from "./views/MiscViews";
+import { PostingsView, ExamsView, SettingsView } from "./views/MiscViews";
 
 const TABS = [
   { id: "today", label: "Today", Icon: Home },
   { id: "calendar", label: "Calendar", Icon: CalendarDays },
   { id: "subjects", label: "Subjects", Icon: BookOpen },
   { id: "analytics", label: "Analytics", Icon: LineChart },
-  { id: "timetable", label: "Timetable", Icon: Clock },
   { id: "postings", label: "Postings", Icon: Stethoscope },
   { id: "exams", label: "Exams", Icon: GraduationCap },
-  { id: "modules", label: "Modules", Icon: ClipboardCheck },
   { id: "settings", label: "Settings", Icon: Settings },
 ] as const;
 
 const VIEW_MAP: Record<string, ComponentType> = {
   today: TodayView, calendar: CalendarView, subjects: SubjectsView, analytics: AnalyticsView,
-  timetable: TimetableView, postings: PostingsView, exams: ExamsView, modules: ModulesView, settings: SettingsView,
+  postings: PostingsView, exams: ExamsView, settings: SettingsView,
 };
 
 /* Mobile: five primary tabs on a bottom bar; the rest live behind "More".
    Tab order here is the single source of truth for both mobile surfaces. */
 const PRIMARY_TABS = ["today", "calendar", "subjects", "analytics"] as const;
-const MORE_TABS = ["timetable", "postings", "exams", "modules", "settings"] as const;
+const MORE_TABS = ["postings", "exams", "settings"] as const;
 
 export default function Dashboard({ nav }: { nav: (to: string) => void }) {
   const { state, setState, undo, canUndo, lastAction, lastActionAt, setTheme, authed, storageState, persistent } = useAttendMate();
@@ -58,6 +56,11 @@ export default function Dashboard({ nav }: { nav: (to: string) => void }) {
 
   // Same isolation rule as the app shell: an account-tagged device copy needs
   // that account's live session — a direct #/dashboard visit can't bypass it.
+  // A stored tab may point at a view this build no longer ships.
+  useEffect(() => {
+    if (!VIEW_MAP[state.activeTab]) setState((p) => ({ ...p, activeTab: "today" }));
+  }, [state.activeTab, setState]);
+
   if (!isSignedIn(state) || (Boolean(state.syncOwnerId) && !authed)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
