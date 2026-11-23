@@ -160,7 +160,7 @@ export default function SignIn({ onDone, nav }: { onDone: () => void; nav: (to: 
         <header className="flex items-center justify-between px-5 py-4 sm:px-8">
           <BrandWord size={34} />
           <span className="hidden items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-[11px] font-semibold text-white/80 backdrop-blur sm:inline-flex">
-            <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> Encrypted sync · stored on this device too
+            <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> Device-only data · optional account
           </span>
         </header>
 
@@ -173,7 +173,7 @@ export default function SignIn({ onDone, nav }: { onDone: () => void; nav: (to: 
                     <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z" /><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5" /></svg>
                   </span>
                   <h1 className="text-[22px] font-bold tracking-tight">Sign in</h1>
-                  <p className="mt-1.5 text-[13px] text-white/60">to sync AttendMate Pro across devices</p>
+                  <p className="mt-1.5 text-[13px] text-white/60">to lock this device's profile</p>
                 </div>
                 <label className="mb-1 block text-xs font-semibold text-white/70" htmlFor="lm-email">Email</label>
                 <input
@@ -305,7 +305,7 @@ export default function SignIn({ onDone, nav }: { onDone: () => void; nav: (to: 
                   </span>
                   <h1 className="text-[20px] font-bold tracking-tight">{email}</h1>
                   <p className="mt-1.5 text-[13px] text-white/60">
-                    {deviceOnly ? "Profile stays on this device" : "Create your account — nothing gets uploaded"}
+                    {deviceOnly ? "Profile stays on this device" : "Create your account — only your email and password reach the server"}
                   </p>
                   {deviceOnly && (
                     <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold text-white/70">

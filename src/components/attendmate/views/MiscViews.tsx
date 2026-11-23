@@ -260,7 +260,7 @@ export function SettingsView() {
     const reader = new FileReader();
     reader.onload = () => {
       const ok = importState(String(reader.result));
-      setMsg(ok ? "Backup imported successfully — syncing to your account." : "That file doesn't look like an AttendMate Pro backup.");
+      setMsg(ok ? "Backup imported successfully — stored on this device." : "That file doesn't look like an AttendMate Pro backup.");
     };
     reader.readAsText(file);
   };
@@ -287,7 +287,7 @@ export function SettingsView() {
         <p className="mt-1.5 max-w-[70ch] text-xs text-muted-foreground">
           {authed
             ? "Your account exists only to prove who you are (password + 2FA) and to lock your device store to you on shared browsers. Every record — attendance, subjects, modules, targets — is stored on this device and is never uploaded. Moving to a new device? Export a backup file here and import it there."
-            : "Everything lives in this browser only — nothing is transmitted or uploaded. Create an account from the sign-in page if you want password-protected access on shared devices; your data still never leaves this device."}
+            : "Your attendance lives in this browser only. The server stores just the email and password that protect the profile — nothing else. The optional account exists to keep shared-device access locked down."}
         </p>
       </section>
 

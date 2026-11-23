@@ -1,7 +1,7 @@
 {
   "name": "AttendMate Pro — NSMCH Phase-III Attendance",
   "short_name": "AttendMate",
-  "description": "Device-only attendance intelligence: everything stays on your device, nothing is uploaded.",
+  "description": "Offline-first attendance tracker for NSMCH Phase-III (Part-2). Your attendance stays on your device; the optional account protects it with a password.",
   "id": "/",
   "start_url": "/",
   "scope": "/",

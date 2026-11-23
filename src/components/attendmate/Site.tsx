@@ -66,7 +66,7 @@ export function SiteChrome({ route, nav, children }: {
           <div>
             <BrandWord size={28} />
             <p className="mt-2.5 max-w-[32ch] text-[12px] leading-relaxed text-muted-foreground">
-              Unofficial, offline-first attendance intelligence for NSMCH Bihta Phase-III (Part-2). Your data never leaves your device.
+              Unofficial, offline-first attendance intelligence for NSMCH Bihta Phase-III (Part-2). Your attendance never leaves your device.
             </p>
           </div>
           <div>
@@ -324,9 +324,9 @@ const FAQS = [
     ["Does it work on my phone?", "Yes — the whole app is responsive: the dashboard switches from a sidebar to a tab strip on small screens, and it keeps working fully offline once loaded."],
   ]],
   ["Privacy & data", [
-    ["Does the sign-in send my data to Google?", "No. The sign-in is a local simulation: your email, name and roll number live only in your browser's localStorage. Nothing is transmitted anywhere — the app makes zero network calls."],
+    ["Does the sign-in send my attendance anywhere?", "Your email goes to our server to identify the account; your attendance never does. The server stores only the email, a password hash and 2FA/session details — marks, subjects, module progress and settings live in this browser alone."],
     ["Where does my attendance data live?", "Entirely in your browser, with a JSON export in Settings. Clearing browser data erases it, so export a backup regularly and import it on any new device."],
-    ["Can I use it on two devices?", "Yes, with a manual sync: export the backup JSON from device one and import it on device two. No server means no automatic sync — by design, for privacy."],
+    ["Can I use it on two devices?", "Yes — export the backup JSON from device one and import it on device two. There is no automatic sync, by design, for privacy."],
   ]],
   ["Roster & accuracy", [
     ["What if a posting looks wrong for my group?", "The rosters are entered from the official schedule, but dates can shift. Verify with your class coordinator, and use the swap control on any clinical slot to credit the correct department for that day."],
