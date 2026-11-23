@@ -16,11 +16,14 @@ import ActivityPanel from "../ActivityPanel";
 import FirstRunTips from "../FirstRunTips";
 
 export default function TodayView() {
-  const { state, setState, markSlot, bulkMarkDay, copyPreviousDay, addExtraClass, removeSlot, bulkFill } = useAttendMate();
+  const { state, setState, markSlot, unmarkSlot, bulkMarkDay, copyPreviousDay, addExtraClass, removeSlot, bulkFill } = useAttendMate();
   const iso = state.selectedDate;
   const subGroup = getGroupInfo(state.profile.rollNo).subGroup;
   const sum = daySummary(state, iso);
   const dow = getDayOfWeek(iso);
+  // Marking is a today-only action: past days are read-only (catch up via the
+  // explicit bulk-fill tool), future days have nothing to mark yet.
+  const canMark = iso === todayISO();
   const slots: Slot[] = dow !== 0 ? (MASTER_TIMETABLE[dow] || []) : [];
   const stats = computeSubjectStats(state);
   const customIds = Object.keys(state.logs[iso] || {}).filter((id) => id.startsWith("x-"));
@@ -142,20 +145,24 @@ export default function TodayView() {
       {dow !== 0 && (
         <>
           {/* actions */}
-          <div className="am-card-in flex flex-wrap gap-2 [animation-delay:120ms]">
-            <button onClick={() => bulkMarkDay(iso, "present", subGroup)}
-              className="clay-btn clay-primary clay-md">
-              <Check className="h-4 w-4" /> Mark all present
-            </button>
-            <button onClick={() => copyPreviousDay(iso)}
-              className="clay-btn clay-soft clay-md">
-              <Copy className="h-4 w-4" /> Copy previous day
-            </button>
-            <button onClick={() => bulkMarkDay(iso, "cancelled")}
-              className="clay-btn clay-soft clay-md">
-              <Umbrella className="h-4 w-4" /> Declare holiday
-            </button>
-          </div>
+          {/* day-level marking tools — today only, like the per-slot buttons;
+              past catch-up stays with the explicit bulk-fill tool below */}
+          {canMark && (
+            <div className="am-card-in flex flex-wrap gap-2 [animation-delay:120ms]">
+              <button onClick={() => bulkMarkDay(iso, "present", subGroup)}
+                className="clay-btn clay-primary clay-md">
+                <Check className="h-4 w-4" /> Mark all present
+              </button>
+              <button onClick={() => copyPreviousDay(iso)}
+                className="clay-btn clay-soft clay-md">
+                <Copy className="h-4 w-4" /> Copy previous day
+              </button>
+              <button onClick={() => bulkMarkDay(iso, "cancelled")}
+                className="clay-btn clay-soft clay-md">
+                <Umbrella className="h-4 w-4" /> Declare holiday
+              </button>
+            </div>
+          )}
 
           {/* slot list */}
           <section className="clay-card am-card-in divide-y overflow-hidden [animation-delay:180ms]">
@@ -179,47 +186,56 @@ export default function TodayView() {
                     </div>
                     <div className="mt-1 flex flex-wrap items-center gap-1.5">
                       {statusChip(st)}
-                      {advice && <TierPill tier={advice.tier}>{advice.pill}</TierPill>}
+                      {/* advice is a decision aid — pointless once the slot is decided, and on read-only days */}
+                      {canMark && !st && advice && <TierPill tier={advice.tier}>{advice.pill}</TierPill>}
                       {isCP && posting && <span className="text-[10.5px] text-muted-foreground">{posting.block} · till {formatDisplayDate(posting.end)}</span>}
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    {isCP && (
-                      <select
-                        value={credited || "CP"}
-                        onChange={(e) => markSlot(iso, slot.id, st || "present", e.target.value === "CP" ? "CP" : e.target.value, "clinical")}
-                        aria-label="Credit department"
-                        className="clay-input rounded-[0.7rem] px-2 py-1.5 text-[11px]"
-                      >
-                        <option value="CP">CP</option>
-                        {SUBJECTS.filter((s) => s.clinicalWeeks > 0).map((s) => <option key={s.code} value={s.code}>{s.code}</option>)}
-                      </select>
+                    {canMark ? (
+                      <>
+                        {isCP && (
+                          <select
+                            value={credited || "CP"}
+                            onChange={(e) => markSlot(iso, slot.id, st || "present", e.target.value === "CP" ? "CP" : e.target.value, "clinical")}
+                            aria-label="Credit department"
+                            className="clay-input rounded-[0.7rem] px-2 py-1.5 text-[11px]"
+                          >
+                            <option value="CP">CP</option>
+                            {SUBJECTS.filter((s) => s.clinicalWeeks > 0).map((s) => <option key={s.code} value={s.code}>{s.code}</option>)}
+                          </select>
+                        )}
+                        {!isCP && slot.altSubject && (
+                          <select
+                            value={credited || slot.subject}
+                            onChange={(e) => markSlot(iso, slot.id, st || "present", e.target.value, "theory")}
+                            aria-label="Credit subject"
+                            className="clay-input rounded-[0.7rem] px-2 py-1.5 text-[11px]"
+                          >
+                            <option value={slot.subject}>{slot.subject}</option>
+                            <option value={slot.altSubject}>{slot.altSubject}</option>
+                          </select>
+                        )}
+                        {(["present", "absent", "cancelled"] as const).map((s) => (
+                          <button
+                            key={s}
+                            onClick={() => st === s ? unmarkSlot(iso, slot.id) : markSlot(iso, slot.id, s, isCP ? (posting?.code || "CP") : slot.subject, slot.type)}
+                            aria-label={st === s ? `Unmark ${s}` : `Mark ${s}`}
+                            aria-pressed={st === s}
+                            title={st === s ? "Tap again to undo" : undefined}
+                            className={`clay-btn h-8 w-8 rounded-[0.7rem] ${
+                              st === s
+                                ? s === "present" ? "clay-success" : s === "absent" ? "clay-danger" : "bg-gradient-to-b from-slate-400 to-slate-500 text-white shadow-md shadow-slate-500/30"
+                                : "clay-soft text-muted-foreground"
+                            }`}
+                          >
+                            {s === "present" ? <Check className="h-4 w-4" /> : s === "absent" ? <X className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
+                          </button>
+                        ))}
+                      </>
+                    ) : (
+                      !st && <span className="text-[10.5px] font-semibold italic text-muted-foreground">{iso < todayISO() ? "not logged" : "upcoming"}</span>
                     )}
-                    {!isCP && slot.altSubject && (
-                      <select
-                        value={credited || slot.subject}
-                        onChange={(e) => markSlot(iso, slot.id, st || "present", e.target.value, "theory")}
-                        aria-label="Credit subject"
-                        className="clay-input rounded-[0.7rem] px-2 py-1.5 text-[11px]"
-                      >
-                        <option value={slot.subject}>{slot.subject}</option>
-                        <option value={slot.altSubject}>{slot.altSubject}</option>
-                      </select>
-                    )}
-                    {(["present", "absent", "cancelled"] as const).map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => markSlot(iso, slot.id, s, isCP ? (posting?.code || "CP") : slot.subject, slot.type)}
-                        aria-label={`Mark ${s}`}
-                        className={`clay-btn h-8 w-8 rounded-[0.7rem] ${
-                          st === s
-                            ? s === "present" ? "clay-success" : s === "absent" ? "clay-danger" : "bg-gradient-to-b from-slate-400 to-slate-500 text-white shadow-md shadow-slate-500/30"
-                            : "clay-soft text-muted-foreground"
-                        }`}
-                      >
-                        {s === "present" ? <Check className="h-4 w-4" /> : s === "absent" ? <X className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
-                      </button>
-                    ))}
                   </div>
                 </div>
               );

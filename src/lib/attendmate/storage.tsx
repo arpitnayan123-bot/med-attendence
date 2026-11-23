@@ -77,6 +77,7 @@ export interface AttendMateCtx {
   state: AppState;
   setState: (updater: (prev: AppState) => AppState, undoLabel?: string) => void;
   markSlot: (iso: string, slotId: string, status: MarkStatus, subject?: string, kind?: "theory" | "clinical") => void;
+  unmarkSlot: (iso: string, slotId: string) => void;
   bulkMarkDay: (iso: string, status: MarkStatus, subGroup?: string) => void;
   copyPreviousDay: (iso: string) => void;
   addExtraClass: (iso: string, subject: string, kind: "theory" | "clinical") => void;
@@ -216,6 +217,15 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
       dayLog[slotId] = entry;
       return { ...prev, logs: { ...prev.logs, [iso]: dayLog } };
     }, `Mark ${slotId}`);
+  }, [setState]);
+
+  const unmarkSlot = useCallback((iso: string, slotId: string) => {
+    setState((prev) => {
+      const dayLog = { ...(prev.logs[iso] || {}) };
+      if (!(slotId in dayLog)) return prev;
+      delete dayLog[slotId];
+      return { ...prev, logs: { ...prev.logs, [iso]: dayLog } };
+    }, `Unmark ${slotId}`);
   }, [setState]);
 
   const bulkMarkDay = useCallback((iso: string, status: MarkStatus, subGroup?: string) => {
@@ -440,11 +450,11 @@ export function AttendMateProvider({ children }: { children: ReactNode }) {
   }, [note, persist]);
 
   const value = useMemo<AttendMateCtx>(() => ({
-    state, setState, markSlot, bulkMarkDay, copyPreviousDay, addExtraClass, removeSlot,
+    state, setState, markSlot, unmarkSlot, bulkMarkDay, copyPreviousDay, addExtraClass, removeSlot,
     bulkFill, undo, canUndo, lastAction, lastActionAt, resetAll, importState, setTheme,
     authed, signIn, verifyTotp, signUp, signOut,
     storageState, persistent, grantStorage, denyStorage, requestPersistent, forgetDevice,
-  }), [state, setState, markSlot, bulkMarkDay, copyPreviousDay, addExtraClass, removeSlot, bulkFill, undo, canUndo, lastAction, lastActionAt, resetAll, importState, setTheme, authed, signIn, verifyTotp, signUp, signOut, storageState, persistent, grantStorage, denyStorage, requestPersistent, forgetDevice]);
+  }), [state, setState, markSlot, unmarkSlot, bulkMarkDay, copyPreviousDay, addExtraClass, removeSlot, bulkFill, undo, canUndo, lastAction, lastActionAt, resetAll, importState, setTheme, authed, signIn, verifyTotp, signUp, signOut, storageState, persistent, grantStorage, denyStorage, requestPersistent, forgetDevice]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

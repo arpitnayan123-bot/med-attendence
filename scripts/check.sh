@@ -36,8 +36,8 @@ step "6/6  smoke tests"
 # health payload
 curl -s http://localhost:3000/api/health | grep -q '"ok":true' \
   && ok "health ok:true" || bad "health payload wrong"
-# security headers present on HTML responses
-H=$(curl -sI http://localhost:3000/)
+# security headers present on HTML responses (retry: first request can race boot)
+H=$(curl -sI --retry 3 --retry-all-errors http://localhost:3000/)
 echo "$H" | grep -qi "x-frame-options: DENY" && ok "X-Frame-Options DENY" || bad "missing X-Frame-Options"
 echo "$H" | grep -qi "x-content-type-options: nosniff" && ok "nosniff" || bad "missing nosniff"
 echo "$H" | grep -qi "referrer-policy: strict-origin-when-cross-origin" && ok "Referrer-Policy" || bad "missing Referrer-Policy"
