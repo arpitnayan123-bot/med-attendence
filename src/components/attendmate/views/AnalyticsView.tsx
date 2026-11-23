@@ -7,7 +7,7 @@ import { useAttendMate } from "@/lib/attendmate/storage";
 import { SUBJECTS } from "@/lib/attendmate/data";
 import {
   computeSubjectStats, overallStats, streakInfo, trendSeries, weekdayAverages,
-  projectSessionEnd, calcBunkInfo, formatDisplayDate,
+  projectSessionEnd, calcBunkInfo, formatDisplayDate, CLINICAL_WEIGHT,
 } from "@/lib/attendmate/engine";
 import { Ring, Sparkline, StatCard, TierPill } from "../bits";
 
@@ -30,8 +30,13 @@ export default function AnalyticsView() {
     }
   }
 
+  // Combined figures are contact-hour weighted (theory 1 h, posting 3 h);
+  // the weights themselves stay invisible — only the math changes.
   const combT = ov.tT + ov.cT, combP = ov.tP + ov.cP;
-  const combinedTarget = combT > 0 ? (ov.tT * state.profile.theoryTarget + ov.cT * state.profile.clinicalTarget) / combT : state.profile.theoryTarget;
+  const combWT = ov.wT, combWP = ov.wP;
+  const combinedTarget = combT > 0
+    ? (ov.tT * state.profile.theoryTarget + CLINICAL_WEIGHT * ov.cT * state.profile.clinicalTarget) / combWT
+    : state.profile.theoryTarget;
   const mode = state.subjMode;
   const lbTarget = mode === "clinical" ? state.profile.clinicalTarget : state.profile.theoryTarget;
 
@@ -80,11 +85,11 @@ export default function AnalyticsView() {
             </div>
           </div>
           <div className="flex items-center gap-4 rounded-2xl bg-muted/60 p-4">
-            <Ring pct={combT > 0 ? (combP / combT) * 100 : null} target={combinedTarget} size={96} />
+            <Ring pct={combWT > 0 ? (combWP / combWT) * 100 : null} target={combinedTarget} size={96} />
             <div className="text-[12.5px]">
               <div className="font-extrabold">Combined</div>
-              <div className="text-muted-foreground">{combT > 0 ? `${combP}/${combT} total slots` : "no data"}</div>
-              <div className="mt-1 text-[11px] text-muted-foreground">Theory + clinical, weighted targets</div>
+              <div className="text-muted-foreground">{combT > 0 ? `${ov.tT} theory · ${ov.cT} clinical slots` : "no data"}</div>
+              <div className="mt-1 text-[11px] text-muted-foreground">Theory + clinical, weighted by contact hours</div>
             </div>
           </div>
         </div>

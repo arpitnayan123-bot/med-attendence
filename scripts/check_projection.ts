@@ -59,3 +59,33 @@ const weeklyT = [1, 2, 3, 4, 5, 6].reduce((a, dow) => a + perDow[dow].t, 0);
 const weeklyC = [1, 2, 3, 4, 5, 6].reduce((a, dow) => a + perDow[dow].c, 0);
 console.log("per-week from timetable:", { theorySlots: weeklyT, clinicalDays: weeklyC });
 console.log("P1-2 OK: remaining = timetable slots per weekday × (non-Sunday, non-exam, unlogged) days to", PROJECTION_HORIZON);
+
+/* ---------- P1-5: combined % weighted by contact hours (theory 1, clinical 3) ---------- */
+import { overallStats } from "../src/lib/attendmate/engine";
+const full = createDefaultState();
+full.logs["2026-11-14"] = {
+  "sat-t1": { status: "present", subject: "IM" }, "sat-t2": { status: "present", subject: "SU" },
+  "sat-t3": { status: "present", subject: "OG" }, "sat-t4": { status: "present", subject: "IM" },
+  "sat-cp": { status: "present", subject: "IM", kind: "clinical" },
+};
+const pf = projectSessionEnd(full);
+const ovf = overallStats(full);
+console.log("full day:", { wP: ovf.wP, wT: ovf.wT, combined: pf.combined?.toFixed(1) });
+if (ovf.wP !== 7 || ovf.wT !== 7 || pf.combined === null || Math.abs(pf.combined - 100) > 0.01) {
+  console.error("FAIL: fully attended day must read 7/7 weighted (100% combined)");
+  process.exit(1);
+}
+const postingOnly = createDefaultState();
+postingOnly.logs["2026-11-14"] = {
+  "sat-t1": { status: "absent", subject: "IM" }, "sat-t2": { status: "absent", subject: "SU" },
+  "sat-t3": { status: "absent", subject: "OG" }, "sat-t4": { status: "absent", subject: "IM" },
+  "sat-cp": { status: "present", subject: "IM", kind: "clinical" },
+};
+const po = projectSessionEnd(postingOnly);
+const ovo = overallStats(postingOnly);
+console.log("posting-only day:", { wP: ovo.wP, wT: ovo.wT, combined: po.combined?.toFixed(2) });
+if (ovo.wP !== 3 || ovo.wT !== 7 || po.combined === null || Math.abs(po.combined - 100) < 0.01) {
+  console.error("FAIL: posting-only day must be 3/7 weighted (42.9%), not the unweighted 20%");
+  process.exit(1);
+}
+console.log("P1-5 OK: full day = 7/7 (100%), posting-only = 3/7 (42.9% vs unweighted 20%)");

@@ -199,7 +199,12 @@ export function classifySkipPriority(subj: Subject, present: number, total: numb
   };
 }
 
-export interface Overall { tP: number; tT: number; cP: number; cT: number }
+export interface Overall { tP: number; tT: number; cP: number; cT: number; wP: number; wT: number }
+/* Contact-hour weights for COMBINED figures only: a clinical posting is a
+   3-hour block, a theory slot is 1 hour. Per-subject theory/clinical
+   percentages stay unweighted (they are per-mode and already correct). */
+export const THEORY_WEIGHT = 1;
+export const CLINICAL_WEIGHT = 3;
 export function overallStats(state: AppState): Overall {
   const stats = computeSubjectStats(state);
   let tP = 0, tT = 0, cP = 0, cT = 0;
@@ -207,7 +212,7 @@ export function overallStats(state: AppState): Overall {
     tP += stats[s.code].theory.present; tT += stats[s.code].theory.total;
     cP += stats[s.code].clinical.present; cT += stats[s.code].clinical.total;
   }
-  return { tP, tT, cP, cT };
+  return { tP, tT, cP, cT, wP: tP + cP * CLINICAL_WEIGHT, wT: tT + cT * CLINICAL_WEIGHT };
 }
 
 export interface DaySummary {
@@ -322,8 +327,12 @@ export function projectSessionEnd(state: AppState): Projection {
   };
   const theory = proj(tP, tT, remT);
   const clinical = proj(cP, cT, remC);
-  // Combined needs both modes observed — a missing side would fabricate its rate.
-  const combined = tT === 0 || cT === 0 ? null : ((tP + (tP / tT) * remT) + (cP + (cP / cT) * remC)) / (tT + remT + cT + remC) * 100;
+  // Combined needs both modes observed — a missing side would fabricate its
+  // rate. Contact-hour weighted: theory slots count 1, posting days count 3.
+  const combined = tT === 0 || cT === 0
+    ? null
+    : ((tP + (tP / tT) * remT) + CLINICAL_WEIGHT * (cP + (cP / cT) * remC))
+      / ((tT + remT) + CLINICAL_WEIGHT * (cT + remC)) * 100;
   return { theory, clinical, combined, remT, remC, horizon: PROJECTION_HORIZON };
 }
 
