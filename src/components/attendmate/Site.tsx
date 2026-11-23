@@ -128,7 +128,7 @@ const FEATURE_LIST = [
   ["Safe-bunk planner", "For every subject and both modes, the planner computes exactly how many consecutive classes you can miss while staying above target — and, if you are below, how many you must attend in a row to recover. It also shows the precise percentage cost of the very next miss, so \"one class won't hurt\" is a claim you can check before making it."],
   ["Priority advisor", "Every subject is auto-tiered into Don't Miss / Be Careful / Safe to Miss. With little data the tiers use structure — short postings and low-frequency subjects land in Don't Miss; as your log grows, live percentages take over and re-rank on every mark."],
   ["Calendar heatmap", "A Monday-start month grid colours each logged day by its percentage, marks Sundays, dashed assessment windows from the official exam calendar, and shows the month's logged days, average and perfect days. Tap any day to open it."],
-  ["Analytics & projection", "Six streak and volume stats, overall rings for theory, clinical and combined, a trend line of your last 15 logged days against the target, average performance per weekday, a full subject leaderboard, and a session-end projection to the Sentup exam at your current rate."],
+  ["Analytics & projection", "Six streak and volume stats, overall rings for theory, clinical and combined, a trend line of your last 15 logged days against the target, average performance per weekday, a full subject leaderboard, and a session-end projection (8 Jan 2028) at your current rate."],
   ["Offline & recoverable", "Your data never leaves your device — the server holds nothing but sign-in credentials. Every action pushes onto a 40-step undo stack, rolling device snapshots keep the past recoverable, prior records import as baselines, and one click exports a JSON backup you can re-import anywhere."],
 ] as const;
 
@@ -162,7 +162,7 @@ export function GuidePage({ nav }: { nav: (to: string) => void }) {
     ["Day navigation, honest history", "Arrows around the date header move through any day to review every logged detail; “Copy previous day” clones yesterday's marks onto today in one tap; past days stay editable, and the bulk-fill card marks a whole date range in one action — skipping Sundays and already-logged days."],
     ["Extra and make-up classes", "Cancelled a class? Mark it Cancelled so it stops counting. Unplanned extra class? Add it from the extra-class form — it logs under the right subject and mode and appears in all totals immediately."],
     ["Baselines for prior records", "Tracked attendance elsewhere? Open any subject's details, enter prior present/total counts for theory and clinical, and the app merges them with everything you log from then on."],
-    ["The what-if simulator", "Every subject card has a simulator: press “+1 attended” or “+1 missed” and watch the percentage and skip math update instantly — without touching your real log."],
+    ["The what-if simulator", "Open any subject and press “+1 attended” or “+1 missed” to preview the percentage and skip math instantly — without touching your real log."],
     ["Clinical slot credits", "The 10 AM – 1 PM posting automatically credits the department your sub-group is rotating through on that date. If reality differs, the select on the slot re-credits it in one tap."],
     ["Backups and recovery", "Settings → Data exports a JSON of your entire state; import restores it on any device; Reset wipes cleanly. The 40-step undo covers every wrong tap inside the session."],
   ] as const;
@@ -319,7 +319,7 @@ export function RosterPage({ nav }: { nav: (to: string) => void }) {
 const FAQS = [
   ["General", [
     ["Is this the official NSMCH app?", "No. AttendMate Pro is an unofficial, student-built study tool. It replicates and upgrades the Attendmate concept using the published Phase-III (Part-2) timetable, assessment calendar and posting rosters. Always confirm critical dates with the college."],
-    ["What does it actually calculate?", "Per-subject attendance for theory (75% target) and clinical (80% target), exact safe-skip counts, must-attend recovery plans, the percentage cost of the next miss, day and month summaries, streaks, and a session-end projection to the Sentup exam."],
+    ["What does it actually calculate?", "Per-subject attendance for theory (75% target) and clinical (80% target), exact safe-skip counts, must-attend recovery plans, the percentage cost of the next miss, day and month summaries, streaks, and a session-end projection to 8 Jan 2028."],
     ["Can I change the targets?", "Yes — Settings → Attendance targets accepts any value between 1 and 100 per mode. All advice, tiers and projections recompute immediately."],
     ["Does it work on my phone?", "Yes — the whole app is responsive: the dashboard switches from a sidebar to a tab strip on small screens, and it keeps working fully offline once loaded."],
   ]],
